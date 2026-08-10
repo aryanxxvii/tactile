@@ -3265,8 +3265,9 @@ kbd {
 }
 
 @keyframes reverse-content-collapse {
-  0%, 72% { opacity: 1; }
-  100% { opacity: 0; }
+  0% { opacity: 1; }
+  58% { opacity: 0.86; }
+  78%, 100% { opacity: 0; }
 }
 
 .phase-origin .object-window-content {
@@ -3375,7 +3376,7 @@ kbd {
 }
 
 .phase-origin.is-closing .source-echo {
-  opacity: 1;
+  opacity: 0;
 }
 
 .memory-contours {
