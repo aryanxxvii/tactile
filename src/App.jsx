@@ -765,6 +765,13 @@ export function App() {
     })),
   ]), [layers, workspace]);
 
+  const currentObject = workspace.objects[layers[layers.length - 1]?.objectId || workspaceRootId];
+  const currentObjectTitle = currentObject?.title || workspace.name || "Home";
+
+  useEffect(() => {
+    document.title = `Tactile — ${currentObjectTitle}`;
+  }, [currentObjectTitle]);
+
   const activeTheme = useMemo(
     () => resolveTheme(workspace.activeThemeId, workspace.themes),
     [workspace.activeThemeId, workspace.themes],

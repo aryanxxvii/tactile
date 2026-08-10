@@ -72,3 +72,4 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Embedded tile labels resolve the linked object title live from the workspace; ordinary cells continue to display their entered value, and navigation/source cues use the same resolved label.
 - Object headers have no description UI or reserved description row; descriptions may remain in portable data for compatibility but are never rendered or solicited.
 - Reverse In & Out fades child content before the window reaches the source cell and suppresses the source echo during contraction, preventing a one-frame parent/child double paint.
+- The browser document title always follows the active object as `Tactile — {object title}`, including nested and renamed objects.
