@@ -3716,14 +3716,6 @@ kbd {
   background: var(--paper);
 }
 
-/* Final active-cell geometry: the rust keyline sits on the tile perimeter. */
-.sheet-cell.is-selected::after {
-  inset: -1px;
-  box-sizing: border-box;
-  border-width: 1.5px;
-  border-radius: calc(var(--cell-radius) + 2px);
-}
-
 /* Selected ranges should read at a glance without competing with the active cell. */
 .sheet-cell.is-in-range {
   border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
@@ -3755,16 +3747,21 @@ kbd {
     var(--cell-shadow);
 }
 
-/* The sticky column-header rail owns the first 25px of the canvas. Keep the
-   first data row inside its lane so its lifted border never gets clipped. */
-.virtual-cell-slot[data-row="0"] .sheet-cell:hover,
-.virtual-cell-slot[data-row="0"] .sheet-cell.is-selected {
-  z-index: 22;
-  transform: translateY(-1px);
+/* The sticky column-header rail sits above the sheet by default. Let the
+   first row use the same lift as every other tile, but paint it above that
+   rail so the animation remains fully visible. */
+.virtual-cell-slot[data-row="0"] .sheet-cell:hover {
+  z-index: 24;
+  transform: translateY(-2px);
 }
 
 .virtual-cell-slot[data-row="0"] .sheet-cell.is-embedded:hover {
-  z-index: 22;
+  z-index: 24;
+  transform: translateY(-3px);
+}
+
+.virtual-cell-slot[data-row="0"] .sheet-cell.is-selected {
+  z-index: 24;
   transform: translateY(-1px);
 }
 
