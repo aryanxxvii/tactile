@@ -3664,6 +3664,12 @@ kbd {
   contain: layout;
 }
 
+/* The active cell's outline intentionally extends one pixel into the seam.
+   Raise the slot itself so a neighboring tile cannot paint over that edge. */
+.virtual-cell-slot.is-active-cell-slot {
+  z-index: 50;
+}
+
 .object-statusbar {
   height: 32px;
   min-height: 32px;

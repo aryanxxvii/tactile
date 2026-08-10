@@ -624,9 +624,10 @@ export function SheetGrid({
             const id = cellId(row, column);
             const cell = object.cells[id] || createCellRecord(row, column);
             const calculatedValue = cell.formula ? formatFormulaResult(formulaValues.get(cell.address)) : cell.value;
+            const isActiveCell = selectedAddress === cell.address;
             return (
               <div
-                className="virtual-cell-slot"
+                className={`virtual-cell-slot ${isActiveCell ? "is-active-cell-slot" : ""}`}
                 key={id}
                 data-row={row}
                 data-column={column}
@@ -642,7 +643,7 @@ export function SheetGrid({
                   cell={cell}
                   displayValue={formatCellValue(calculatedValue, cell.style)}
                   conditionalTone={conditionalToneForCell(object, cell, calculatedValue)}
-                  selected={selectedAddress === cell.address}
+                  selected={isActiveCell}
                   inRange={rangeContains(normalizedSelection, row, column)}
                   fillPreview={rangeContains(fillPreviewRange, row, column)}
                   inSelectedRow={showActiveAxisContext && selectedCoordinates.row === row}
