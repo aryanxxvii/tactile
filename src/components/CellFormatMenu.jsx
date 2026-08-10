@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconAlignCenter,
   IconAlignLeft,
@@ -10,6 +10,7 @@ import {
   IconPercentage,
   IconPlusMinus,
   IconTextColor,
+  IconTextSize,
 } from "@tabler/icons-react";
 
 const FILL_COLORS = [
@@ -29,6 +30,14 @@ const TEXT_COLORS = [
   { value: "negative", label: "Red", color: "#a33a30" },
   { value: "blue", label: "Blue", color: "#416b86" },
   { value: "muted", label: "Muted", color: "#81786d" },
+];
+
+const TEXT_SIZES = [
+  { value: undefined, label: "Standard", preview: "11.5" },
+  { value: 10, label: "Compact", preview: "10" },
+  { value: 13, label: "Large", preview: "13" },
+  { value: 15, label: "Extra large", preview: "15" },
+  { value: 17, label: "Display", preview: "17" },
 ];
 
 function FormatButton({ icon: Icon, label, selected, onSelect }) {
@@ -70,6 +79,63 @@ function ColorGroup({ label, icon: GroupIcon, colors, selected, onSelect }) {
   );
 }
 
+function TextSizeGroup({ selected, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const current = TEXT_SIZES.find((item) => item.value === selected) || TEXT_SIZES[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOutside = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    window.addEventListener("pointerdown", closeOutside);
+    return () => window.removeEventListener("pointerdown", closeOutside);
+  }, [open]);
+
+  return (
+    <div className="cell-size-control" ref={rootRef}>
+      <button
+        className="cell-size-trigger"
+        type="button"
+        aria-label="Text size"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        data-tooltip="Text size"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <IconTextSize size={14} stroke={1.65} aria-hidden="true" />
+        <span>{current.preview}</span>
+      </button>
+      {open ? (
+        <div className="cell-size-menu" role="listbox" aria-label="Text size">
+          <div className="cell-size-menu-label">Text size</div>
+          {TEXT_SIZES.map((item) => {
+            const isSelected = item.value === selected || (!item.value && !selected);
+            return (
+              <button
+                key={item.label}
+                className={`cell-size-option ${isSelected ? "is-selected" : ""}`}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  onSelect(item.value);
+                  setOpen(false);
+                }}
+              >
+                <span className="cell-size-preview" style={{ fontSize: `${item.value || 11.5}px` }}>Aa</span>
+                <span>{item.label}</span>
+                <code>{item.preview}</code>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function CellFormatMenu({ style = {}, onChange, onConditionalChange, hasConditionalFormat }) {
   const currentFill = useMemo(() => style.highlight || undefined, [style.highlight]);
 
@@ -78,6 +144,7 @@ export function CellFormatMenu({ style = {}, onChange, onConditionalChange, hasC
       <div className="cell-format-group" role="group" aria-label="Text style">
         <FormatButton icon={IconBold} label={style.bold ? "Remove bold" : "Bold"} selected={Boolean(style.bold)} onSelect={() => onChange?.({ bold: !style.bold })} />
       </div>
+      <TextSizeGroup selected={style.fontSize} onSelect={(value) => onChange?.({ fontSize: value })} />
       <ColorGroup label="Fill color" icon={IconHighlight} colors={FILL_COLORS} selected={currentFill} onSelect={(value) => onChange?.({ highlight: value })} />
       <ColorGroup label="Text color" icon={IconTextColor} colors={TEXT_COLORS} selected={style.textColor} onSelect={(value) => onChange?.({ textColor: value })} />
       <div className="cell-format-group" role="group" aria-label="Alignment">

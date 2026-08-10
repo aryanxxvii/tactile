@@ -29,6 +29,10 @@ export function SheetCell({
   const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
   const formulaError = cell.formula && String(shownValue).startsWith("#");
   const alignment = cell.style?.align;
+  const fontSize = Number(cell.style?.fontSize);
+  const cellStyle = Number.isFinite(fontSize)
+    ? { "--cell-font-size": `${fontSize}px` }
+    : undefined;
 
   useLayoutEffect(() => {
     if (!editing) return;
@@ -97,6 +101,7 @@ export function SheetCell({
       tabIndex={selected ? 0 : -1}
       data-object-id={objectId}
       data-cell-address={cell.address}
+      style={cellStyle}
       onPointerDown={(event) => onSelectionStart?.(event, cell)}
       onPointerEnter={() => onSelectionMove?.(cell)}
       onClick={handleClick}
