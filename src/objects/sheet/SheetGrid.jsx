@@ -311,6 +311,17 @@ export function SheetGrid({
     onSelectRange?.(drag.anchor, cell.address);
   }, [onSelectRange]);
 
+  const startCellEditing = useCallback((cellId, initialValue = "") => {
+    setEditingCellId(cellId);
+    if (!initialValue) return;
+    onCellChange?.(
+      cellId,
+      initialValue.startsWith("=")
+        ? { formula: initialValue, value: "", embed: null }
+        : { value: initialValue, formula: "", embed: null },
+    );
+  }, [onCellChange]);
+
   const startFill = useCallback((event, cell) => {
     event.preventDefault();
     event.stopPropagation();
@@ -654,7 +665,7 @@ export function SheetGrid({
                   onSelectionStart={startSelection}
                   onSelectionMove={moveSelectionGesture}
                   onFillStart={startFill}
-                  onEdit={setEditingCellId}
+                  onEdit={startCellEditing}
                   onCommit={() => setEditingCellId(null)}
                   onValueChange={(cellIdToUpdate, value) => onCellChange(
                     cellIdToUpdate,

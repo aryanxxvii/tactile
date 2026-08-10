@@ -67,3 +67,4 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - The bottom Tactile dock uses a balanced 32px rhythm: the mark/name, path, history, settings, active-cell status, and sheet metadata each have deliberate internal padding and group separators rather than touching icon edges.
 - Floating Expand must align to the child header action baseline, not hover above it; title fields keep stable horizontal padding across rest, hover, and focus.
 - Worksheet cell text defaults to a readable 11.5px Paper scale, with a direct custom text-size control in the always-visible tile formatting strip; size changes apply only to the selected cell range and remain local in the cell style.
+- An empty focused worksheet tile enters editing on the first printable keypress and seeds that character; Enter/F2 and double-click remain available for explicit edit entry.

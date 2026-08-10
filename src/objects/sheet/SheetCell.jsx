@@ -118,6 +118,17 @@ export function SheetCell({
         if ((event.key === "Enter" || event.key === "F2") && !cell.embed && !editing) {
           event.preventDefault();
           onEdit(cell.id);
+          return;
+        }
+        const isPrintable = event.key.length === 1
+          && !event.ctrlKey
+          && !event.metaKey
+          && !event.altKey
+          && !event.isComposing;
+        const isEmpty = !cell.embed && !cell.value && !cell.formula;
+        if (isPrintable && isEmpty && !editing) {
+          event.preventDefault();
+          onEdit(cell.id, event.key);
         }
       }}
     >
