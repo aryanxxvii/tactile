@@ -60,6 +60,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Range-selected tiles should have a clearly legible warm Paper tint and inner lift, while the active tile remains the single stronger rust outline with its fill handle.
 - A single active cell is signified by its rust border only: preserve its own fill/text formatting, do not wash the active row or column, and show the active address/value in the bottom status dock.
 - The first data row must remain inside the sticky column-header lane during hover/selection; preserve its visual lift with shadow and border, never by translating its border under the header rail.
+- Default data rows, including the first row, share one compact height and seam geometry; row-specific overrides are only for deliberate user resizing.
 - The shared object title input must retain focus when editing; revealing the optional description field must never auto-focus it and steal the title keystrokes.
 - Tactile's identity uses a transparent, scalable dotted tactile-field mark in warm rust; keep the same mark in the app dock and favicon, with the banner/README staying quiet and product-oriented.
 - Object headers stay visually quiet: the title is the primary top-left control, the parent action is compact, and the object path belongs in the bottom Tactile dock. Dock paths show `/`-separated object titles and collapse to first-two / ellipsis / last-two after four jumps.
