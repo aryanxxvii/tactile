@@ -4833,6 +4833,10 @@ kbd {
   color: var(--muted);
 }
 
+.keyboard-hint {
+  display: none !important;
+}
+
 .status-caption {
   color: var(--faint);
   font-size: 7.5px;

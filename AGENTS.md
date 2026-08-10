@@ -73,3 +73,4 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Object headers have no description UI or reserved description row; descriptions may remain in portable data for compatibility but are never rendered or solicited.
 - Reverse In & Out fades child content before the window reaches the source cell and suppresses the source echo during contraction, preventing a one-frame parent/child double paint.
 - The browser document title always follows the active object as `Tactile — {object title}`, including nested and renamed objects.
+- The bottom dock does not display the `[ ] in/out` keyboard hint; In & Out shortcuts remain available without occupying persistent status-bar space.
