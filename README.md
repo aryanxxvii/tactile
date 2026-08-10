@@ -1,14 +1,14 @@
-# Tactile *(alpha)*
+# Tactile
 
 ![Tactile — Fully local dimensional workspace](docs/tactile-banner.png)
 
 Tactile is a fully local dimensional workspace for sheets, documents, and nested objects. A cell can stay a value, or become a doorway into another object.
 
-The project is intentionally early. The useful parts are already here: compact A1 sheets, Markdown objects, portable workspace data, and the fast **In & Out** transition between levels.
+The project is intentionally focused. The useful parts are already here: compact A1 sheets, Markdown objects, portable workspace data, and the fast **In & Out** transition between levels.
 
 ## Objects
 
-These are the object types available in the alpha. The icons below are the same Tabler outline icons used inside the app.
+These are the object types available today. The icons below are the same Tabler outline icons used inside the app.
 
 ![Tactile object types](docs/object-icons.svg)
 
