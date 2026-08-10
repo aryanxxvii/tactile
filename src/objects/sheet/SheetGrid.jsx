@@ -183,7 +183,8 @@ export function SheetGrid({
     const scroller = scrollRef.current;
     if (!scroller) return;
     const activeElement = document.activeElement;
-    const restoreGridFocus = activeElement instanceof Element
+    const restoreGridFocus = !editingCellId
+      && activeElement instanceof Element
       && Boolean(activeElement.closest(".sheet-grid-shell"));
     const { rowHeaderWidth, columnHeaderHeight } = metrics;
     const selectedColumnPosition = columnPositionForIndex(selectedCoordinates.column);
@@ -211,7 +212,7 @@ export function SheetGrid({
         nextCell?.focus({ preventScroll: true });
       }));
     }
-  }, [columnOffsetForPosition, columnPositionForIndex, columnSizeForPosition, metrics, object.id, rowOffsetForPosition, rowPositionForIndex, rowSizeForPosition, scrollRef, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
+  }, [columnOffsetForPosition, columnPositionForIndex, columnSizeForPosition, editingCellId, metrics, object.id, rowOffsetForPosition, rowPositionForIndex, rowSizeForPosition, scrollRef, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
 
   useEffect(() => {
     const finishPointerGesture = () => {
