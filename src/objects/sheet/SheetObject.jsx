@@ -13,6 +13,7 @@ export function SheetObject({
   saveState,
   selectedAddress,
   selectionRange,
+  workspaceObjects,
   onSelectAddress,
   onSelectRange,
   onUpdateObject,
@@ -38,7 +39,9 @@ export function SheetObject({
   const selectedCell = materializeCell(object, selectedCoordinates.row, selectedCoordinates.column);
   const selectedRangeLabel = rangeLabel(selectionRange);
   const selectedRangeSize = rangeSize(selectionRange);
-  const selectedCellValue = selectedCell?.formula || selectedCell?.value || "";
+  const selectedCellValue = selectedCell?.embed
+    ? workspaceObjects?.[selectedCell.embed.objectId]?.title || selectedCell.value || "Embedded object"
+    : selectedCell?.formula || selectedCell?.value || "";
   const hasConditionalFormat = (object.conditionalFormats || []).some((rule) => rule.range === selectedRangeLabel);
 
   const handleFormulaChange = (value) => {
@@ -97,6 +100,7 @@ export function SheetObject({
         />
         <SheetGrid
           object={object}
+          workspaceObjects={workspaceObjects}
           selectedAddress={selectedCell?.address || "A1"}
           selectionRange={selectionRange}
           onSelect={onSelectAddress}

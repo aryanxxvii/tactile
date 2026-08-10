@@ -29,6 +29,7 @@ function rangeValues(start, end) {
 
 export function SheetGrid({
   object,
+  workspaceObjects,
   selectedAddress,
   selectionRange,
   onSelect,
@@ -636,6 +637,10 @@ export function SheetGrid({
             const id = cellId(row, column);
             const cell = object.cells[id] || createCellRecord(row, column);
             const calculatedValue = cell.formula ? formatFormulaResult(formulaValues.get(cell.address)) : cell.value;
+            const embeddedTitle = cell.embed ? workspaceObjects?.[cell.embed.objectId]?.title : "";
+            const displayValue = cell.embed
+              ? embeddedTitle || cell.value || "Embedded object"
+              : formatCellValue(calculatedValue, cell.style);
             const isActiveCell = selectedAddress === cell.address;
             return (
               <div
@@ -653,7 +658,7 @@ export function SheetGrid({
                 <SheetCell
                   objectId={object.id}
                   cell={cell}
-                  displayValue={formatCellValue(calculatedValue, cell.style)}
+                  displayValue={displayValue}
                   conditionalTone={conditionalToneForCell(object, cell, calculatedValue)}
                   selected={isActiveCell}
                   inRange={rangeContains(normalizedSelection, row, column)}
@@ -718,7 +723,7 @@ export function SheetGrid({
           onOpenObject?.({
             objectId: menu.cell.embed.objectId,
             sourceAddress: menu.cell.address,
-            sourceLabel: menu.cell.value,
+            sourceLabel: workspaceObjects?.[menu.cell.embed.objectId]?.title || menu.cell.value || "Embedded object",
             sourceType: menu.cell.embed.type,
             sourceElement: menu.sourceElement,
             mode: "floating",
@@ -729,7 +734,7 @@ export function SheetGrid({
           onOpenObject?.({
             objectId: menu.cell.embed.objectId,
             sourceAddress: menu.cell.address,
-            sourceLabel: menu.cell.value,
+            sourceLabel: workspaceObjects?.[menu.cell.embed.objectId]?.title || menu.cell.value || "Embedded object",
             sourceType: menu.cell.embed.type,
             sourceElement: menu.sourceElement,
             mode: "full",

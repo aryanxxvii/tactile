@@ -54,7 +54,7 @@ export function SheetCell({
     onOpenObject({
       objectId: cell.embed.objectId,
       sourceAddress: cell.address,
-      sourceLabel: cell.value,
+      sourceLabel: shownValue,
       sourceType: cell.embed.type,
       sourceElement,
       mode,
@@ -70,7 +70,7 @@ export function SheetCell({
       onOpenObject({
         objectId: cell.embed.objectId,
         sourceAddress: cell.address,
-        sourceLabel: cell.value,
+        sourceLabel: shownValue,
         sourceType: cell.embed.type,
         sourceElement,
         mode: "floating",

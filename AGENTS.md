@@ -69,3 +69,4 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Worksheet cell text defaults to a readable 11.5px Paper scale, with a direct custom text-size control in the always-visible tile formatting strip; size changes apply only to the selected cell range and remain local in the cell style.
 - An empty focused worksheet tile enters editing on the first printable keypress and seeds that character; Enter/F2 and double-click remain available for explicit edit entry.
 - Floating-window Expand guidance renders outside the clipped, scaled child surface so the Paper tooltip never gets cut off at the pane edge.
+- Embedded tile labels resolve the linked object title live from the workspace; ordinary cells continue to display their entered value, and navigation/source cues use the same resolved label.
