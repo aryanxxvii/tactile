@@ -38,6 +38,7 @@ export function SheetObject({
   const selectedCell = materializeCell(object, selectedCoordinates.row, selectedCoordinates.column);
   const selectedRangeLabel = rangeLabel(selectionRange);
   const selectedRangeSize = rangeSize(selectionRange);
+  const selectedCellValue = selectedCell?.formula || selectedCell?.value || "";
   const hasConditionalFormat = (object.conditionalFormats || []).some((rule) => rule.range === selectedRangeLabel);
 
   const handleFormulaChange = (value) => {
@@ -116,6 +117,11 @@ export function SheetObject({
       <footer className="object-statusbar">
         <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
+        <span className="status-item active-cell-status">
+          <span className="status-caption">{selectedRangeSize > 1 ? "Range" : "Active"}</span>
+          <code>{selectedRangeSize > 1 ? selectedRangeLabel : selectedCell?.address || "A1"}</code>
+          {selectedRangeSize === 1 && selectedCellValue ? <span className="active-cell-value">· {selectedCellValue}</span> : null}
+        </span>
         {selectedRangeSize > 1 ? <span className="status-item range-status">{selectedRangeLabel} · {selectedRangeSize} cells</span> : null}
         {object.filters?.length ? <span className="status-item filter-status">{object.filters.length} filter{object.filters.length === 1 ? "" : "s"} active</span> : null}
         {object.rowGroups?.length ? <span className="status-item">{object.rowGroups.length} row group{object.rowGroups.length === 1 ? "" : "s"}</span> : null}

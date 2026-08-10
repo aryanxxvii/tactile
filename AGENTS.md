@@ -58,6 +58,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Document formatting controls use custom Paper popovers (never native color inputs) for text color, highlight, underline, task lists, and richer inline Markdown while keeping the toolbar compact.
 - Header and footer rhythm is intentionally compact and symmetrical: aligned editorial columns, a short object header, a balanced 32px status dock, and no redundant local-save or embedded-object labels.
 - Range-selected tiles should have a clearly legible warm Paper tint and inner lift, while the active tile remains the single stronger rust outline with its fill handle.
+- A single active cell is signified by its rust border only: preserve its own fill/text formatting, do not wash the active row or column, and show the active address/value in the bottom status dock.
 - The first data row must remain inside the sticky column-header lane during hover/selection; preserve its visual lift with shadow and border, never by translating its border under the header rail.
 - The shared object title input must retain focus when editing; revealing the optional description field must never auto-focus it and steal the title keystrokes.
 - Tactile's identity uses a transparent, scalable dotted tactile-field mark in warm rust; keep the same mark in the app dock and favicon, with the banner/README staying quiet and product-oriented.

@@ -4303,8 +4303,9 @@ kbd {
 .sheet-cell.is-selected:not(.is-editing) {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--accent) 9%, var(--paper-elevated)),
-    color-mix(in srgb, var(--accent) 6%, var(--cell))
+    var(--paper-elevated),
+    var(--cell) 62%,
+    #f5f2eb 100%
   );
 }
 
@@ -4331,6 +4332,32 @@ kbd {
 }
 
 .sheet-cell.highlight-rose {
+  background: color-mix(in srgb, #edced0 50%, var(--cell));
+}
+
+.sheet-cell.is-selected.highlight-warm,
+.sheet-cell.is-selected.highlight-peach {
+  background: color-mix(in srgb, #f2d3a5 43%, var(--cell));
+}
+
+.sheet-cell.is-selected.highlight-cool,
+.sheet-cell.is-selected.highlight-blue {
+  background: color-mix(in srgb, #c9dbe0 49%, var(--cell));
+}
+
+.sheet-cell.is-selected.highlight-yellow {
+  background: color-mix(in srgb, #f4e7a1 56%, var(--cell));
+}
+
+.sheet-cell.is-selected.highlight-mint {
+  background: color-mix(in srgb, #c9e4d2 52%, var(--cell));
+}
+
+.sheet-cell.is-selected.highlight-lavender {
+  background: color-mix(in srgb, #ddd4eb 50%, var(--cell));
+}
+
+.sheet-cell.is-selected.highlight-rose {
   background: color-mix(in srgb, #edced0 50%, var(--cell));
 }
 
@@ -4670,4 +4697,32 @@ kbd {
    the child surface rather than letting the tooltip helper move it. */
 .object-window-expand[data-tooltip] {
   position: absolute;
+}
+
+.active-cell-status {
+  min-width: 0;
+  color: var(--muted);
+}
+
+.status-caption {
+  color: var(--faint);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.active-cell-status code {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 650;
+}
+
+.active-cell-value {
+  max-width: min(22vw, 180px);
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

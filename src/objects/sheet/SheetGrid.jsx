@@ -77,7 +77,7 @@ export function SheetGrid({
     && normalizedSelection.rowStart === 0
     && normalizedSelection.rowEnd === object.rows - 1
     && normalizedSelection.columnStart === normalizedSelection.columnEnd;
-  const showActiveAxisContext = !selectionHasMultipleCells || isFullRowSelection || isFullColumnSelection;
+  const showActiveAxisContext = isFullRowSelection || isFullColumnSelection;
   const fillPreviewRange = useMemo(
     () => fillTarget ? normalizeRange(selectedAddress, fillTarget) : null,
     [fillTarget, selectedAddress],
