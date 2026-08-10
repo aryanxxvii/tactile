@@ -4658,3 +4658,10 @@ kbd {
 .cell-format-trigger[data-tooltip]:focus-visible::after {
   transform: translateY(0);
 }
+
+/* Tooltip anchors normally use relative positioning. The floating-window
+   expand action is an intentional absolute overlay, so keep it anchored to
+   the child surface rather than letting the tooltip helper move it. */
+.object-window-expand[data-tooltip] {
+  position: absolute;
+}
