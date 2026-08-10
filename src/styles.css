@@ -4143,6 +4143,188 @@ kbd {
 .markdown-preview h2 { font-size: 23px; }
 .markdown-preview h3 { font-size: 18px; }
 
+/* The sheet format controls stay visible above the formula/value field. This
+   keeps the common color and alignment actions one click away without a
+   secondary menu. */
+.sheet-workspace {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.formula-bar {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 5px;
+  padding: 7px 10px 8px;
+}
+
+.formula-toolbar-row,
+.formula-input-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.formula-toolbar-row {
+  min-height: 24px;
+  gap: 8px;
+}
+
+.formula-input-row {
+  gap: 8px;
+}
+
+.formula-toolbar-label {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.cell-format-toolbar {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.cell-format-group,
+.cell-color-group {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 62%, var(--line));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--tray) 62%, var(--paper-elevated));
+}
+
+.cell-color-group {
+  gap: 4px;
+  padding: 2px 4px;
+}
+
+.cell-color-group > svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.cell-format-button {
+  width: 24px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.cell-format-button:hover,
+.cell-format-button:focus-visible,
+.cell-format-button.is-selected {
+  outline: 0;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cell-color-swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.cell-color-swatch {
+  width: 17px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.cell-color-swatch > span {
+  width: 11px;
+  height: 11px;
+  display: block;
+  border: 1px solid rgba(44, 41, 37, 0.16);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+}
+
+.cell-color-swatch:hover,
+.cell-color-swatch:focus-visible,
+.cell-color-swatch.is-selected {
+  outline: 0;
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+  background: var(--accent-soft);
+}
+
+.cell-color-swatch.is-clear {
+  color: var(--faint);
+}
+
+/* Preserve the active row/column context and the selected cell's own fill.
+   The rust outline remains the strongest cue, while the interior tint makes
+   a formatted active cell legible instead of reverting to plain white. */
+.sheet-cell.is-selected-row,
+.sheet-cell.is-selected-column {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 7%, var(--paper-elevated)),
+    color-mix(in srgb, var(--accent) 5%, var(--cell))
+  );
+}
+
+.sheet-cell.is-selected:not(.is-editing) {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 9%, var(--paper-elevated)),
+    color-mix(in srgb, var(--accent) 6%, var(--cell))
+  );
+}
+
+.sheet-cell.highlight-warm,
+.sheet-cell.highlight-peach {
+  background: color-mix(in srgb, #f2d3a5 43%, var(--cell));
+}
+
+.sheet-cell.highlight-cool,
+.sheet-cell.highlight-blue {
+  background: color-mix(in srgb, #c9dbe0 49%, var(--cell));
+}
+
+.sheet-cell.highlight-yellow {
+  background: color-mix(in srgb, #f4e7a1 56%, var(--cell));
+}
+
+.sheet-cell.highlight-mint {
+  background: color-mix(in srgb, #c9e4d2 52%, var(--cell));
+}
+
+.sheet-cell.highlight-lavender {
+  background: color-mix(in srgb, #ddd4eb 50%, var(--cell));
+}
+
+.sheet-cell.highlight-rose {
+  background: color-mix(in srgb, #edced0 50%, var(--cell));
+}
+
+.sheet-cell.text-accent .cell-value { color: var(--accent); }
+.sheet-cell.text-positive .cell-value { color: var(--positive); }
+.sheet-cell.text-negative .cell-value { color: var(--negative); }
+.sheet-cell.text-blue .cell-value { color: #416b86; }
+.sheet-cell.text-muted .cell-value { color: var(--muted); }
+
 .column-resize-handle,
 .row-resize-handle {
   position: absolute;

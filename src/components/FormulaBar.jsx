@@ -184,25 +184,30 @@ export function FormulaBar({ address, rangeLabel, cell, onChange, onAddressChang
 
   return (
     <div className="formula-bar" aria-label="Formula bar">
-      <AddressPicker address={address || "A1"} rangeLabel={rangeLabel} onChange={onAddressChange} />
-      <span className="formula-mark" aria-hidden="true">fx</span>
-      <FormulaEditor
-        value={formulaValue}
-        address={address}
-        onChange={(value) => onChange(value, Boolean(cell?.formula))}
-      />
-      {filterCount ? (
-        <button className="formula-filter-chip" type="button" onClick={onClearFilters} data-tooltip="Clear active filters">
-          <IconFilterOff size={13} stroke={1.65} />
-          <span>{filterCount} filter{filterCount === 1 ? "" : "s"}</span>
-        </button>
-      ) : null}
-      <CellFormatMenu
-        style={cell?.style || {}}
-        onChange={onFormat}
-        onConditionalChange={onConditionalFormat}
-        hasConditionalFormat={hasConditionalFormat}
-      />
+      <div className="formula-toolbar-row">
+        <span className="formula-toolbar-label">Cell format</span>
+        <CellFormatMenu
+          style={cell?.style || {}}
+          onChange={onFormat}
+          onConditionalChange={onConditionalFormat}
+          hasConditionalFormat={hasConditionalFormat}
+        />
+        {filterCount ? (
+          <button className="formula-filter-chip" type="button" onClick={onClearFilters} data-tooltip="Clear active filters">
+            <IconFilterOff size={13} stroke={1.65} />
+            <span>{filterCount} filter{filterCount === 1 ? "" : "s"}</span>
+          </button>
+        ) : null}
+      </div>
+      <div className="formula-input-row">
+        <AddressPicker address={address || "A1"} rangeLabel={rangeLabel} onChange={onAddressChange} />
+        <span className="formula-mark" aria-hidden="true">fx</span>
+        <FormulaEditor
+          value={formulaValue}
+          address={address}
+          onChange={(value) => onChange(value, Boolean(cell?.formula))}
+        />
+      </div>
     </div>
   );
 }
