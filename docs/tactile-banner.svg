@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="img" aria-labelledby="title desc">
+  <title id="title">Tactile</title>
+  <desc id="desc">Tactile, a local-first spatial workspace.</desc>
+  <g fill="#B34D35" shape-rendering="geometricPrecision">
+    <circle cx="186" cy="166" r="8" opacity=".66"/><circle cx="214" cy="166" r="9" opacity=".78"/><circle cx="242" cy="166" r="10" opacity=".9"/><circle cx="270" cy="166" r="10"/><circle cx="298" cy="166" r="9" opacity=".9"/><circle cx="326" cy="166" r="8" opacity=".72"/>
+    <circle cx="172" cy="194" r="8" opacity=".54"/><circle cx="200" cy="194" r="9" opacity=".76"/><circle cx="228" cy="194" r="10" opacity=".9"/><circle cx="256" cy="194" r="10"/><circle cx="284" cy="194" r="10" opacity=".95"/><circle cx="312" cy="194" r="9" opacity=".78"/><circle cx="340" cy="194" r="8" opacity=".58"/>
+    <circle cx="186" cy="222" r="8" opacity=".6"/><circle cx="214" cy="222" r="9" opacity=".76"/><circle cx="242" cy="222" r="10" opacity=".9"/><circle cx="270" cy="222" r="10"/><circle cx="298" cy="222" r="9" opacity=".88"/><circle cx="326" cy="222" r="8" opacity=".64"/>
+    <circle cx="242" cy="250" r="9" opacity=".9"/><circle cx="270" cy="250" r="10"/>
+    <circle cx="242" cy="278" r="9" opacity=".88"/><circle cx="270" cy="278" r="10"/>
+    <circle cx="242" cy="306" r="8" opacity=".76"/><circle cx="270" cy="306" r="9" opacity=".9"/>
+  </g>
+  <path d="M410 260h72" fill="none" stroke="#D6CDC2" stroke-width="2"/>
+  <text x="530" y="292" fill="#2C2925" font-family="Public Sans, Inter, system-ui, sans-serif" font-size="132" font-weight="560" letter-spacing="-7">Tactile</text>
+  <text x="540" y="346" fill="#766F67" font-family="Lilex, ui-monospace, monospace" font-size="20" letter-spacing="3">LOCAL-FIRST · SPATIAL WORKSPACE</text>
+</svg>

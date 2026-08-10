@@ -1,0 +1,554 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  DEFAULT_COLUMNS,
+  DEFAULT_ROWS,
+  createBlankWorkspace,
+  createCellRecord,
+  createObjectForType,
+  generatedObjectTitle,
+  inferFileObjectType,
+  isCellUsed,
+  normalizeWorkspace,
+} from "../model.js";
+import { cellAddress, cellId, coordinatesFromCellId } from "../sheet/coordinates.js";
+import {
+  adjustAxisGroups,
+  adjustColumnFilters,
+  adjustConditionalFormats,
+  adjustFormulaForAxis,
+  reorderFormulaForAxis,
+} from "../sheet/structure.js";
+import { loadWorkspace, loadWorkspaceCache, saveWorkspace } from "../storage.js";
+
+function initialWorkspace() {
+  return normalizeWorkspace(loadWorkspaceCache() || createBlankWorkspace());
+}
+
+function touch(workspace, objects) {
+  return {
+    ...workspace,
+    updatedAt: new Date().toISOString(),
+    objects,
+  };
+}
+
+function shiftCells(object, axis, index) {
+  const cells = {};
+  Object.values(object.cells || {}).forEach((cell) => {
+    const row = axis === "row" && cell.row >= index ? cell.row + 1 : cell.row;
+    const column = axis === "column" && cell.column >= index ? cell.column + 1 : cell.column;
+    const shifted = {
+      ...cell,
+      id: cellId(row, column),
+      address: cellAddress(row, column),
+      row,
+      column,
+      formula: adjustFormulaForAxis(cell.formula, axis, index, "insert"),
+    };
+    cells[shifted.id] = shifted;
+  });
+  return cells;
+}
+
+function removeSheetAxisCells(object, axis, index) {
+  const cells = {};
+  Object.values(object.cells || {}).forEach((cell) => {
+    if ((axis === "row" && cell.row === index) || (axis === "column" && cell.column === index)) return;
+    const row = axis === "row" && cell.row > index ? cell.row - 1 : cell.row;
+    const column = axis === "column" && cell.column > index ? cell.column - 1 : cell.column;
+    const shifted = {
+      ...cell,
+      id: cellId(row, column),
+      address: cellAddress(row, column),
+      row,
+      column,
+      formula: adjustFormulaForAxis(cell.formula, axis, index, "delete"),
+    };
+    cells[shifted.id] = shifted;
+  });
+  return cells;
+}
+
+function shiftAxisSizes(sizes, index, operation) {
+  const next = {};
+  Object.entries(sizes || {}).forEach(([key, value]) => {
+    const current = Number(key);
+    if (!Number.isInteger(current)) return;
+    if (operation === "delete" && current === index) return;
+    const shifted = operation === "insert" && current >= index
+      ? current + 1
+      : operation === "delete" && current > index
+        ? current - 1
+        : current;
+    next[shifted] = value;
+  });
+  return next;
+}
+
+function reorderAxisSizes(sizes, indexMap) {
+  const next = {};
+  Object.entries(sizes || {}).forEach(([key, value]) => {
+    const current = Number(key);
+    const reordered = indexMap.get(current);
+    if (Number.isInteger(reordered)) next[reordered] = value;
+  });
+  return next;
+}
+
+function reorderSheetAxis(object, axis, from, to) {
+  const length = axis === "row" ? object.rows : object.columns;
+  if (from === to || from < 0 || to < 0 || from >= length || to >= length) return object;
+  const order = Array.from({ length }, (_, index) => index);
+  const [moved] = order.splice(from, 1);
+  order.splice(to, 0, moved);
+  const indexMap = new Map(order.map((original, next) => [original, next]));
+  const cells = {};
+  Object.values(object.cells || {}).forEach((cell) => {
+    const row = axis === "row" ? indexMap.get(cell.row) : cell.row;
+    const column = axis === "column" ? indexMap.get(cell.column) : cell.column;
+    const shifted = {
+      ...cell,
+      id: cellId(row, column),
+      address: cellAddress(row, column),
+      row,
+      column,
+      formula: reorderFormulaForAxis(cell.formula, axis, indexMap),
+    };
+    cells[shifted.id] = shifted;
+  });
+  return {
+    ...object,
+    cells,
+    rowHeights: axis === "row" ? reorderAxisSizes(object.rowHeights, indexMap) : object.rowHeights,
+    columnWidths: axis === "column" ? reorderAxisSizes(object.columnWidths, indexMap) : object.columnWidths,
+    filters: axis === "column"
+      ? (object.filters || []).map((filter) => ({ ...filter, column: indexMap.get(filter.column) ?? filter.column }))
+      : object.filters,
+    conditionalFormats: (object.conditionalFormats || []).map((rule) => ({
+      ...rule,
+      range: reorderFormulaForAxis(`=${rule.range}`, axis, indexMap).slice(1),
+    })),
+  };
+}
+
+export function useLocalWorkspace() {
+  const [workspace, setWorkspace] = useState(initialWorkspace);
+  const [saveState, setSaveState] = useState("loading local copy");
+  const [hydrated, setHydrated] = useState(false);
+  const saveTimer = useRef(null);
+  const historyRef = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
+
+  useEffect(() => {
+    let cancelled = false;
+    loadWorkspace().then((stored) => {
+      if (cancelled) return;
+      if (stored) setWorkspace(normalizeWorkspace(stored));
+      historyRef.current = { past: [], future: [], lastKey: null, lastAt: 0 };
+      setHydrated(true);
+      setSaveState("saved");
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    setSaveState("saving");
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(async () => {
+      const persisted = await saveWorkspace(workspace);
+      setSaveState(persisted ? "saved" : "saved in local cache");
+    }, 120);
+    return () => window.clearTimeout(saveTimer.current);
+  }, [hydrated, workspace]);
+
+  const commitWorkspace = useCallback((updater, historyKey = "workspace") => {
+    setWorkspace((current) => {
+      const next = updater(current);
+      if (next === current) return current;
+      const history = historyRef.current;
+      const now = Date.now();
+      const coalesced = history.lastKey === historyKey && now - history.lastAt < 650;
+      if (!coalesced) {
+        history.past.push(current);
+        if (history.past.length > 120) history.past.shift();
+      }
+      history.future = [];
+      history.lastKey = historyKey;
+      history.lastAt = now;
+      return next;
+    });
+  }, []);
+
+  const replaceWorkspace = useCallback((nextWorkspace) => {
+    historyRef.current = { past: [], future: [], lastKey: null, lastAt: 0 };
+    setWorkspace(normalizeWorkspace(nextWorkspace));
+  }, []);
+
+  const updateObject = useCallback((objectId, patch) => {
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (!object) return current;
+      return touch(current, {
+        ...current.objects,
+        [objectId]: { ...object, ...patch },
+      });
+    }, `object:${objectId}:${Object.keys(patch).sort().join(",")}`);
+  }, [commitWorkspace]);
+
+  const updateCell = useCallback((objectId, targetCellId, patch) => {
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet") return current;
+      const coordinates = coordinatesFromCellId(targetCellId);
+      if (!coordinates) return current;
+      const cell = createCellRecord(coordinates.row, coordinates.column, {
+        ...(object.cells[targetCellId] || {}),
+        ...patch,
+      });
+      const cells = { ...object.cells };
+      if (isCellUsed(cell)) cells[targetCellId] = cell;
+      else delete cells[targetCellId];
+      return touch(current, {
+        ...current.objects,
+        [objectId]: { ...object, cells },
+      });
+    }, `cell:${objectId}:${targetCellId}`);
+  }, [commitWorkspace]);
+
+  const updateCells = useCallback((objectId, changes, historyKey = "range") => {
+    if (!Array.isArray(changes) || !changes.length) return;
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet") return current;
+      const cells = { ...object.cells };
+      changes.forEach(({ cellId: targetCellId, patch }) => {
+        const coordinates = coordinatesFromCellId(targetCellId);
+        if (!coordinates) return;
+        const cell = createCellRecord(coordinates.row, coordinates.column, {
+          ...(cells[targetCellId] || {}),
+          ...(patch || {}),
+        });
+        if (isCellUsed(cell)) cells[targetCellId] = cell;
+        else delete cells[targetCellId];
+      });
+      return touch(current, {
+        ...current.objects,
+        [objectId]: { ...object, cells },
+      });
+    }, `${historyKey}:${objectId}`);
+  }, [commitWorkspace]);
+
+  const clearCell = useCallback((objectId, targetCellId) => {
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet" || !object.cells[targetCellId]) return current;
+      const cells = { ...object.cells };
+      delete cells[targetCellId];
+      return touch(current, {
+        ...current.objects,
+        [objectId]: { ...object, cells },
+      });
+    }, `clear:${objectId}:${targetCellId}`);
+  }, [commitWorkspace]);
+
+  const clearCells = useCallback((objectId, targetCellIds) => {
+    if (!Array.isArray(targetCellIds) || !targetCellIds.length) return;
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet") return current;
+      const cells = { ...object.cells };
+      let changed = false;
+      targetCellIds.forEach((targetCellId) => {
+        if (!cells[targetCellId]) return;
+        delete cells[targetCellId];
+        changed = true;
+      });
+      if (!changed) return current;
+      return touch(current, {
+        ...current.objects,
+        [objectId]: { ...object, cells },
+      });
+    }, `clear-range:${objectId}`);
+  }, [commitWorkspace]);
+
+  const createEmbeddedObject = useCallback((parentObjectId, parentCellId, type) => {
+    const coordinates = coordinatesFromCellId(parentCellId);
+    if (!coordinates) return null;
+    const address = cellAddress(coordinates.row, coordinates.column);
+    const created = createObjectForType(type, {
+      title: generatedObjectTitle(type, address),
+    });
+    commitWorkspace((current) => {
+      const parent = current.objects[parentObjectId];
+      if (parent?.type !== "sheet") return current;
+      const cell = createCellRecord(coordinates.row, coordinates.column, {
+        ...(parent.cells[parentCellId] || {}),
+        value: created.title,
+        formula: "",
+        embed: { objectId: created.id, type: created.type },
+      });
+      return touch(current, {
+        ...current.objects,
+        [parentObjectId]: {
+          ...parent,
+          cells: { ...parent.cells, [parentCellId]: cell },
+        },
+        [created.id]: created,
+      });
+    }, `create:${parentObjectId}:${parentCellId}`);
+    return created;
+  }, [commitWorkspace]);
+
+  const createEmbeddedFile = useCallback((parentObjectId, parentCellId, fileAsset) => {
+    const coordinates = coordinatesFromCellId(parentCellId);
+    if (!coordinates || !fileAsset) return null;
+    const type = inferFileObjectType(fileAsset);
+    const assetId = fileAsset.id || `asset-${Date.now().toString(36)}`;
+    const fileName = fileAsset.fileName || fileAsset.name || generatedObjectTitle(type);
+    const title = fileName.replace(/\.[^.]+$/, "") || generatedObjectTitle(type, cellAddress(coordinates.row, coordinates.column));
+    const created = createObjectForType(type, type === "markdown"
+      ? { title, content: fileAsset.text || "" }
+      : { title, assetId, source: type === "html" ? fileAsset.text || "" : "" });
+    const asset = { ...fileAsset, id: assetId, fileName };
+    commitWorkspace((current) => {
+      const parent = current.objects[parentObjectId];
+      if (parent?.type !== "sheet") return current;
+      const cell = createCellRecord(coordinates.row, coordinates.column, {
+        ...(parent.cells[parentCellId] || {}),
+        value: created.title,
+        formula: "",
+        embed: { objectId: created.id, type: created.type },
+      });
+      const next = touch(current, {
+          ...current.objects,
+          [parentObjectId]: {
+            ...parent,
+            cells: { ...parent.cells, [parentCellId]: cell },
+          },
+          [created.id]: created,
+        });
+      return type === "markdown"
+        ? next
+        : { ...next, assets: { ...current.assets, [assetId]: asset } };
+    }, `create-file:${parentObjectId}:${parentCellId}`);
+    return created;
+  }, [commitWorkspace]);
+
+  const replaceObjectFile = useCallback((objectId, fileAsset) => {
+    if (!fileAsset) return;
+    const type = inferFileObjectType(fileAsset);
+    const assetId = fileAsset.id || `asset-${Date.now().toString(36)}`;
+    const fileName = fileAsset.fileName || fileAsset.name || generatedObjectTitle(type);
+    commitWorkspace((current) => {
+      const previous = current.objects[objectId];
+      if (!previous || previous.type === "sheet") return current;
+      const replacement = type === "markdown"
+        ? {
+            id: previous.id,
+            type: "markdown",
+            title: previous.title,
+            description: previous.description || "",
+            content: fileAsset.text || "",
+          }
+        : {
+            id: previous.id,
+            type,
+            title: previous.title,
+            description: previous.description || "",
+            assetId,
+            source: type === "html" ? fileAsset.text || "" : "",
+          };
+      const objects = Object.fromEntries(Object.entries(current.objects).map(([id, object]) => {
+        if (id === objectId) return [id, replacement];
+        if (object.type !== "sheet") return [id, object];
+        let changed = false;
+        const cells = Object.fromEntries(Object.entries(object.cells || {}).map(([cellKey, cell]) => {
+          if (cell.embed?.objectId !== objectId) return [cellKey, cell];
+          changed = true;
+          return [cellKey, { ...cell, embed: { ...cell.embed, type } }];
+        }));
+        return [id, changed ? { ...object, cells } : object];
+      }));
+      const assets = { ...current.assets };
+      if (previous.assetId) delete assets[previous.assetId];
+      if (type !== "markdown") assets[assetId] = { ...fileAsset, id: assetId, fileName };
+      return {
+        ...touch(current, objects),
+        assets,
+      };
+    }, `replace-file:${objectId}`);
+  }, [commitWorkspace]);
+
+  const insertSheetAxis = useCallback((objectId, axis, index) => {
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet") return current;
+      const rows = axis === "row" ? Math.max(DEFAULT_ROWS, object.rows + 1) : object.rows;
+      const columns = axis === "column" ? Math.max(DEFAULT_COLUMNS, object.columns + 1) : object.columns;
+      return touch(current, {
+        ...current.objects,
+        [objectId]: {
+          ...object,
+          rows,
+          columns,
+          cells: shiftCells(object, axis, index),
+          rowHeights: axis === "row" ? shiftAxisSizes(object.rowHeights, index, "insert") : object.rowHeights,
+          columnWidths: axis === "column" ? shiftAxisSizes(object.columnWidths, index, "insert") : object.columnWidths,
+          rowGroups: axis === "row" ? adjustAxisGroups(object.rowGroups, index, "insert") : object.rowGroups,
+          columnGroups: axis === "column" ? adjustAxisGroups(object.columnGroups, index, "insert") : object.columnGroups,
+          filters: axis === "column" ? adjustColumnFilters(object.filters, index, "insert") : object.filters,
+          conditionalFormats: adjustConditionalFormats(object.conditionalFormats, axis, index, "insert"),
+        },
+      });
+    }, `insert:${objectId}:${axis}:${index}`);
+  }, [commitWorkspace]);
+
+  const deleteSheetAxis = useCallback((objectId, axis, index) => {
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet") return current;
+      const rows = axis === "row" ? Math.max(DEFAULT_ROWS, object.rows - 1) : object.rows;
+      const columns = axis === "column" ? Math.max(DEFAULT_COLUMNS, object.columns - 1) : object.columns;
+      return touch(current, {
+        ...current.objects,
+        [objectId]: {
+          ...object,
+          rows,
+          columns,
+          cells: removeSheetAxisCells(object, axis, index),
+          rowHeights: axis === "row" ? shiftAxisSizes(object.rowHeights, index, "delete") : object.rowHeights,
+          columnWidths: axis === "column" ? shiftAxisSizes(object.columnWidths, index, "delete") : object.columnWidths,
+          rowGroups: axis === "row" ? adjustAxisGroups(object.rowGroups, index, "delete") : object.rowGroups,
+          columnGroups: axis === "column" ? adjustAxisGroups(object.columnGroups, index, "delete") : object.columnGroups,
+          filters: axis === "column" ? adjustColumnFilters(object.filters, index, "delete") : object.filters,
+          conditionalFormats: adjustConditionalFormats(object.conditionalFormats, axis, index, "delete"),
+        },
+      });
+    }, `delete:${objectId}:${axis}:${index}`);
+  }, [commitWorkspace]);
+
+  const moveSheetAxis = useCallback((objectId, axis, from, to) => {
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from === to) return;
+    commitWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet") return current;
+      return touch(current, {
+        ...current.objects,
+        [objectId]: reorderSheetAxis(object, axis, from, to),
+      });
+    }, `move:${objectId}:${axis}`);
+  }, [commitWorkspace]);
+
+  const setHomeObject = useCallback((objectId) => {
+    commitWorkspace((current) => current.objects[objectId]
+      ? { ...current, homeObjectId: objectId, updatedAt: new Date().toISOString() }
+      : current, `home:${objectId}`);
+  }, [commitWorkspace]);
+
+  const setActiveTheme = useCallback((themeId) => {
+    commitWorkspace((current) => ({
+      ...current,
+      activeThemeId: themeId,
+      updatedAt: new Date().toISOString(),
+    }), `theme-select:${themeId}`);
+  }, [commitWorkspace]);
+
+  const saveTheme = useCallback((theme) => {
+    commitWorkspace((current) => ({
+      ...current,
+      activeThemeId: theme.id,
+      updatedAt: new Date().toISOString(),
+      themes: { ...current.themes, [theme.id]: theme },
+    }), `theme-save:${theme.id}`);
+  }, [commitWorkspace]);
+
+  const updateTheme = useCallback((themeId, patch) => {
+    commitWorkspace((current) => {
+      const theme = current.themes[themeId];
+      if (!theme) return current;
+      const nextTheme = {
+        ...theme,
+        ...patch,
+        tokens: patch.tokens ? { ...theme.tokens, ...patch.tokens } : theme.tokens,
+      };
+      return {
+        ...current,
+        updatedAt: new Date().toISOString(),
+        themes: { ...current.themes, [themeId]: nextTheme },
+      };
+    }, `theme-update:${themeId}:${Object.keys(patch.tokens || patch).sort().join(",")}`);
+  }, [commitWorkspace]);
+
+  const deleteTheme = useCallback((themeId) => {
+    commitWorkspace((current) => {
+      if (!current.themes[themeId]) return current;
+      const themes = { ...current.themes };
+      delete themes[themeId];
+      return {
+        ...current,
+        activeThemeId: current.activeThemeId === themeId ? "paper-public" : current.activeThemeId,
+        updatedAt: new Date().toISOString(),
+        themes,
+      };
+    }, `theme-delete:${themeId}`);
+  }, [commitWorkspace]);
+
+  const updateSettings = useCallback((patch) => {
+    commitWorkspace((current) => ({
+      ...current,
+      updatedAt: new Date().toISOString(),
+      settings: { ...current.settings, ...patch },
+    }), `settings:${Object.keys(patch).sort().join(",")}`);
+  }, [commitWorkspace]);
+
+  const undo = useCallback(() => {
+    setWorkspace((current) => {
+      const history = historyRef.current;
+      const previous = history.past.pop();
+      if (!previous) return current;
+      history.future.push(current);
+      history.lastKey = null;
+      history.lastAt = 0;
+      return { ...previous, updatedAt: new Date().toISOString() };
+    });
+  }, []);
+
+  const redo = useCallback(() => {
+    setWorkspace((current) => {
+      const history = historyRef.current;
+      const next = history.future.pop();
+      if (!next) return current;
+      history.past.push(current);
+      history.lastKey = null;
+      history.lastAt = 0;
+      return { ...next, updatedAt: new Date().toISOString() };
+    });
+  }, []);
+
+  return {
+    workspace,
+    saveState,
+    replaceWorkspace,
+    updateObject,
+    updateCell,
+    updateCells,
+    clearCell,
+    clearCells,
+    createEmbeddedObject,
+    createEmbeddedFile,
+    replaceObjectFile,
+    insertSheetAxis,
+    deleteSheetAxis,
+    moveSheetAxis,
+    setHomeObject,
+    setActiveTheme,
+    saveTheme,
+    updateTheme,
+    deleteTheme,
+    updateSettings,
+    undo,
+    redo,
+    canUndo: historyRef.current.past.length > 0,
+    canRedo: historyRef.current.future.length > 0,
+  };
+}
