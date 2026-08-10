@@ -1,8 +1,8 @@
 # Tactile *(alpha)*
 
-![Tactile](docs/tactile-banner.svg)
+![Tactile — Fully local dimensional workspace](docs/tactile-banner.png)
 
-Tactile is a local-first workspace for sheets, documents, and nested objects. A cell can stay a value, or become a doorway into another object.
+Tactile is a fully local dimensional workspace for sheets, documents, and nested objects. A cell can stay a value, or become a doorway into another object.
 
 The project is intentionally early. The useful parts are already here: compact A1 sheets, Markdown objects, portable workspace data, and the fast **In & Out** transition between levels.
 
