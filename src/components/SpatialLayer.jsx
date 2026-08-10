@@ -1,7 +1,9 @@
 import { objectTypeFor } from "../objects/objectTypes.js";
 import { IconArrowsMaximize } from "@tabler/icons-react";
+import { useState } from "react";
 
 export function SpatialLayer({ layer, children, onExpand, onClose, depth = 1 }) {
+  const [expandHintVisible, setExpandHintVisible] = useState(false);
   const source = layer.sourceRect;
   const viewport = layer.viewport || { width: window.innerWidth, height: window.innerHeight };
   const SourceIcon = objectTypeFor(layer.sourceType).icon;
@@ -19,6 +21,13 @@ export function SpatialLayer({ layer, children, onExpand, onClose, depth = 1 }) 
         "--floating-y": `${viewport.height * (1 - floatingScale) / 2}px`,
       }
     : undefined;
+  const expandTooltipStyle = layer.phase === "floating" && !layer.closing
+    ? {
+        "--expand-tooltip-top": `${viewport.height * (1 - floatingScale) / 2 + (31 + 24) * floatingScale + 7}px`,
+        "--expand-tooltip-right": `${viewport.width - (viewport.width * (1 - floatingScale) / 2 + viewport.width * floatingScale - 12 * floatingScale)}px`,
+      }
+    : undefined;
+  const expandTooltipId = `expand-tooltip-${String(layer.key || layer.objectId).replace(/[^a-z0-9_-]/gi, "-")}`;
 
   return (
     <div
@@ -46,6 +55,11 @@ export function SpatialLayer({ layer, children, onExpand, onClose, depth = 1 }) 
             onClick={() => onExpand?.(layer.key)}
             data-tooltip="Expand to full view · ]"
             aria-label="Expand embedded object"
+            aria-describedby={expandTooltipId}
+            onPointerEnter={() => setExpandHintVisible(true)}
+            onPointerLeave={() => setExpandHintVisible(false)}
+            onFocus={() => setExpandHintVisible(true)}
+            onBlur={() => setExpandHintVisible(false)}
           >
             <IconArrowsMaximize size={14} stroke={1.7} />
             <span>Expand</span>
@@ -53,6 +67,17 @@ export function SpatialLayer({ layer, children, onExpand, onClose, depth = 1 }) 
         ) : null}
         <div className="object-window-content">{children}</div>
       </section>
+
+      {layer.phase === "floating" && !layer.closing ? (
+        <span
+          id={expandTooltipId}
+          className={`object-window-expand-tooltip ${expandHintVisible ? "is-visible" : ""}`}
+          role="tooltip"
+          style={expandTooltipStyle}
+        >
+          Expand to full view · ]
+        </span>
+      ) : null}
 
       <div
         className="source-echo"
