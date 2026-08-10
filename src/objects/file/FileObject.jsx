@@ -91,7 +91,7 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
       </main>
 
       <footer className="object-statusbar">
-        <AppDock onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
+        <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
         <span className="status-item"><ObjectIcon size={14} stroke={1.55} /> {definition.label}{asset?.size ? ` · ${Math.max(1, Math.round(asset.size / 1024))} KB` : ""}</span>
         <span className="status-divider">·</span>

@@ -114,7 +114,7 @@ export function SheetObject({
       </section>
 
       <footer className="object-statusbar">
-        <AppDock onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
+        <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
         {selectedRangeSize > 1 ? <span className="status-item range-status">{selectedRangeLabel} · {selectedRangeSize} cells</span> : null}
         {object.filters?.length ? <span className="status-item filter-status">{object.filters.length} filter{object.filters.length === 1 ? "" : "s"} active</span> : null}

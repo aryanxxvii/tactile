@@ -4317,3 +4317,72 @@ kbd {
   border-width: 1.5px;
   border-radius: calc(var(--cell-radius) + 2px);
 }
+
+/* Final compact header and dock rhythm. */
+.object-header-main { gap: 3px; }
+.object-title-row { min-height: 30px; gap: 9px; }
+.object-header-parent {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 0 8px 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--paper-elevated);
+  font-size: 9px;
+  cursor: pointer;
+}
+.object-header-parent:hover,
+.object-header-parent:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.object-title-field input {
+  padding-inline: 8px;
+  border-radius: 6px;
+}
+.object-title-field input:hover {
+  padding-inline: 8px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-soft) 42%, transparent);
+}
+.object-title-field input:focus {
+  padding-inline: 8px;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.object-description-field input { padding-inline: 6px; }
+.object-window-expand {
+  top: 31px;
+  right: 12px;
+  height: 24px;
+}
+.app-dock-path {
+  min-width: 0;
+  max-width: min(48vw, 560px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+.app-dock-path-part {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-dock-path-part > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-dock-path-divider {
+  color: var(--line-strong);
+  font-family: var(--font-mono);
+}

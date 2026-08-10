@@ -272,7 +272,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       </main>
 
       <footer className="object-statusbar">
-        <AppDock onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
+        <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
         <span className="status-item">{words} words · {lines} lines · .md</span>
         <span className="status-divider">·</span>

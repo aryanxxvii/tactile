@@ -24,22 +24,13 @@ export function ObjectHeader({
   return (
     <header className="object-header">
       <div className="object-header-main">
-        <nav className="object-breadcrumbs" aria-label="Object path">
+        <div className="object-title-row">
           {canGoBack ? (
-            <button type="button" className="breadcrumb-back" onClick={onBack} title="Return to parent ([)">
-              <IconChevronLeft size={15} stroke={1.65} />
+            <button type="button" className="object-header-parent" onClick={onBack} title="Return to parent ([)">
+              <IconChevronLeft size={14} stroke={1.65} />
               Parent
             </button>
           ) : null}
-          {path.map((item, index) => (
-            <span className="breadcrumb-part" key={`${item.id}-${index}`}>
-              {index > 0 ? <span className="breadcrumb-divider">/</span> : null}
-              <span>{item.title}</span>
-            </span>
-          ))}
-        </nav>
-
-        <div className="object-title-row">
           <span className="object-type-glyph" title={objectType.label} aria-hidden="true">
             <ObjectIcon size={15} stroke={1.55} />
           </span>
