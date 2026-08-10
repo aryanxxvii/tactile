@@ -4168,10 +4168,14 @@ kbd {
   min-height: 24px;
   gap: 8px;
   overflow: visible;
+  position: relative;
+  z-index: 4;
 }
 
 .formula-input-row {
   gap: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .formula-toolbar-label {
@@ -4189,6 +4193,8 @@ kbd {
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
+  position: relative;
+  z-index: 2;
 }
 
 .cell-format-group,
@@ -4607,11 +4613,11 @@ kbd {
   max-width: 220px;
   min-width: max-content;
   padding: 5px 7px;
-  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line-strong));
   border-radius: 5px;
-  color: var(--paper);
-  background: color-mix(in srgb, var(--ink) 94%, var(--accent));
-  box-shadow: 0 5px 14px rgba(41, 35, 29, 0.16);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper-elevated) 96%, white);
+  box-shadow: 0 6px 16px rgba(79, 61, 43, 0.14), inset 0 1px 0 white;
   font-family: var(--font-ui);
   font-size: 9px;
   font-weight: 560;
