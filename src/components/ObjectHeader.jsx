@@ -26,12 +26,12 @@ export function ObjectHeader({
       <div className="object-header-main">
         <div className="object-title-row">
           {canGoBack ? (
-            <button type="button" className="object-header-parent" onClick={onBack} title="Return to parent ([)">
+            <button type="button" className="object-header-parent" onClick={onBack} data-tooltip="Return to parent · [">
               <IconChevronLeft size={14} stroke={1.65} />
               Parent
             </button>
           ) : null}
-          <span className="object-type-glyph" title={objectType.label} aria-hidden="true">
+          <span className="object-type-glyph" aria-hidden="true">
             <ObjectIcon size={15} stroke={1.55} />
           </span>
           <label className="object-title-field">

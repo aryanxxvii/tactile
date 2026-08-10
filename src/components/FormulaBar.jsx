@@ -35,7 +35,7 @@ function AddressPicker({ address, rangeLabel, onChange }) {
 
   return (
     <div className="address-picker" ref={rootRef}>
-      <button className="name-box" type="button" title="Go to tile" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+      <button className="name-box" type="button" data-tooltip="Go to tile" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
         <span>{rangeLabel || address || "A1"}</span>
         <IconChevronDown size={13} stroke={1.6} />
       </button>
@@ -192,7 +192,7 @@ export function FormulaBar({ address, rangeLabel, cell, onChange, onAddressChang
         onChange={(value) => onChange(value, Boolean(cell?.formula))}
       />
       {filterCount ? (
-        <button className="formula-filter-chip" type="button" onClick={onClearFilters} title="Clear active filters">
+        <button className="formula-filter-chip" type="button" onClick={onClearFilters} data-tooltip="Clear active filters">
           <IconFilterOff size={13} stroke={1.65} />
           <span>{filterCount} filter{filterCount === 1 ? "" : "s"}</span>
         </button>

@@ -472,7 +472,6 @@ export function SheetGrid({
             role="button"
             tabIndex={0}
             aria-label="Select entire sheet"
-            title="Select entire sheet"
             onPointerDown={(event) => {
               event.preventDefault();
               const scroller = scrollRef.current;
@@ -506,7 +505,6 @@ export function SheetGrid({
               tabIndex={0}
               aria-colindex={column + 1}
               aria-label={`Select column ${columnLabel(column)}`}
-              title={`Select column ${columnLabel(column)}`}
               data-axis-index={column}
               onPointerDown={(event) => startAxisDrag(event, "column", column)}
               onContextMenu={(event) => {
@@ -546,7 +544,6 @@ export function SheetGrid({
                   type="button"
                   aria-label={`${columnGroup.collapsed ? "Expand" : "Collapse"} columns ${columnLabel(columnGroup.start)} to ${columnLabel(columnGroup.end)}`}
                   aria-expanded={!columnGroup.collapsed}
-                  title={`${columnGroup.collapsed ? "Expand" : "Collapse"} grouped columns`}
                   onClick={(event) => {
                     event.stopPropagation();
                     toggleColumnGroup(columnGroup.id);
@@ -570,7 +567,6 @@ export function SheetGrid({
               tabIndex={0}
               aria-rowindex={row + 1}
               aria-label={`Select row ${row + 1}`}
-              title={`Select row ${row + 1}`}
               data-axis-index={row}
               onPointerDown={(event) => startAxisDrag(event, "row", row)}
               onContextMenu={(event) => {
@@ -602,7 +598,6 @@ export function SheetGrid({
                   type="button"
                   aria-label={`${rowGroup.collapsed ? "Expand" : "Collapse"} rows ${rowGroup.start + 1} to ${rowGroup.end + 1}`}
                   aria-expanded={!rowGroup.collapsed}
-                  title={`${rowGroup.collapsed ? "Expand" : "Collapse"} grouped rows`}
                   onClick={(event) => {
                     event.stopPropagation();
                     toggleRowGroup(rowGroup.id);

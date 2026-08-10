@@ -97,7 +97,6 @@ export function SheetCell({
       tabIndex={selected ? 0 : -1}
       data-object-id={objectId}
       data-cell-address={cell.address}
-      title={cell.embed ? "Click to float · double-click for full view" : undefined}
       onPointerDown={(event) => onSelectionStart?.(event, cell)}
       onPointerEnter={() => onSelectionMove?.(cell)}
       onClick={handleClick}
@@ -153,7 +152,7 @@ export function SheetCell({
           type="button"
           tabIndex={-1}
           aria-label={`Fill from ${cell.address}`}
-          title="Drag to fill"
+          data-tooltip="Drag to fill"
           onPointerDown={(event) => onFillStart?.(event, cell)}
           onClick={(event) => {
             event.preventDefault();

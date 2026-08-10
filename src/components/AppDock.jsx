@@ -26,10 +26,10 @@ export function AppDock({ path = [], onOpenSettings, onUndo, onRedo, canUndo, ca
         </nav>
       ) : null}
       <div className="app-dock-history">
-        <button type="button" onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><IconArrowBackUp size={14} stroke={1.65} /></button>
-        <button type="button" onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Y)" aria-label="Redo"><IconArrowForwardUp size={14} stroke={1.65} /></button>
+        <button type="button" onClick={onUndo} disabled={!canUndo} data-tooltip="Undo · Ctrl+Z" aria-label="Undo"><IconArrowBackUp size={14} stroke={1.65} /></button>
+        <button type="button" onClick={onRedo} disabled={!canRedo} data-tooltip="Redo · Ctrl+Y" aria-label="Redo"><IconArrowForwardUp size={14} stroke={1.65} /></button>
       </div>
-      <button type="button" onClick={(event) => onOpenSettings?.(event.currentTarget)} title="Appearance and settings">
+      <button type="button" onClick={(event) => onOpenSettings?.(event.currentTarget)} data-tooltip="Appearance and settings">
         <IconSettings size={14} stroke={1.65} />
         <span>Settings</span>
       </button>

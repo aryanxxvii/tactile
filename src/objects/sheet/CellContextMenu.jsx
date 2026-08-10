@@ -34,7 +34,6 @@ function MenuItem({ icon: Icon, label, shortcut, disabled, onSelect }) {
       role="menuitem"
       disabled={disabled}
       onClick={onSelect}
-      title={label}
     >
       <Icon size={14} stroke={1.55} aria-hidden="true" />
       <span>{label}</span>

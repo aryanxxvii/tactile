@@ -57,7 +57,7 @@ export function CellFormatMenu({ style = {}, onChange, onConditionalChange, hasC
         aria-label="Format selected cells"
         aria-haspopup="menu"
         aria-expanded={open}
-        title="Format selected cells"
+        data-tooltip="Format selected cells"
         onClick={() => setOpen((current) => !current)}
         onKeyDown={(event) => {
           if (event.key === "ArrowDown" || event.key === "ArrowUp") {

@@ -182,7 +182,7 @@ export function SettingsPanel({
               <aside className="theme-sidebar">
                 <div className="settings-section-title">
                   <span>Themes</span>
-                  <button type="button" onClick={() => themeInputRef.current?.click()} title="Import theme"><IconUpload size={14} /></button>
+                  <button type="button" onClick={() => themeInputRef.current?.click()} data-tooltip="Import theme"><IconUpload size={14} /></button>
                 </div>
                 <div className="theme-list">
                   {themes.map((theme) => (
@@ -216,7 +216,7 @@ export function SettingsPanel({
                   <div className="theme-heading-actions">
                     {!editable ? <button type="button" onClick={() => onCloneTheme(activeTheme)}><IconPlus size={14} /> Customise</button> : null}
                     <button type="button" onClick={() => onExportTheme(activeTheme)}><IconDownload size={14} /> Export</button>
-                    {editable && !deleteConfirm ? <button className="is-danger" type="button" onClick={() => setDeleteConfirm(true)} title="Delete theme"><IconTrash size={14} /></button> : null}
+                    {editable && !deleteConfirm ? <button className="is-danger" type="button" onClick={() => setDeleteConfirm(true)} data-tooltip="Delete theme"><IconTrash size={14} /></button> : null}
                   </div>
                 </div>
 

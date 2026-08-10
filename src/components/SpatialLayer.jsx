@@ -44,7 +44,7 @@ export function SpatialLayer({ layer, children, onExpand, onClose, depth = 1 }) 
             className="object-window-expand"
             type="button"
             onClick={() => onExpand?.(layer.key)}
-            title="Expand to full view (])"
+            data-tooltip="Expand to full view · ]"
             aria-label="Expand embedded object"
           >
             <IconArrowsMaximize size={14} stroke={1.7} />
