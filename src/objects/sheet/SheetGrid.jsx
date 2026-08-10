@@ -63,6 +63,21 @@ export function SheetGrid({
     () => normalizeRange(selectionRange?.anchor || selectedAddress, selectionRange?.focus || selectedAddress),
     [selectedAddress, selectionRange?.anchor, selectionRange?.focus],
   );
+  // A range already has its own visual treatment. The active row/column
+  // context is useful for a single cell (and for explicit axis selections),
+  // but becomes a distracting crosshair as soon as several cells are selected.
+  const selectionHasMultipleCells = Boolean(normalizedSelection)
+    && (normalizedSelection.rowStart !== normalizedSelection.rowEnd
+      || normalizedSelection.columnStart !== normalizedSelection.columnEnd);
+  const isFullRowSelection = Boolean(normalizedSelection)
+    && normalizedSelection.columnStart === 0
+    && normalizedSelection.columnEnd === object.columns - 1
+    && normalizedSelection.rowStart === normalizedSelection.rowEnd;
+  const isFullColumnSelection = Boolean(normalizedSelection)
+    && normalizedSelection.rowStart === 0
+    && normalizedSelection.rowEnd === object.rows - 1
+    && normalizedSelection.columnStart === normalizedSelection.columnEnd;
+  const showActiveAxisContext = !selectionHasMultipleCells || isFullRowSelection || isFullColumnSelection;
   const fillPreviewRange = useMemo(
     () => fillTarget ? normalizeRange(selectedAddress, fillTarget) : null,
     [fillTarget, selectedAddress],
@@ -486,7 +501,7 @@ export function SheetGrid({
             const columnGroup = columnGroupByStart.get(column);
             return (
             <div
-              className={`column-header virtual-sheet-header ${columnGroup ? "has-group" : ""} ${selectedCoordinates.column === column ? "is-active" : ""}`}
+              className={`column-header virtual-sheet-header ${columnGroup ? "has-group" : ""} ${showActiveAxisContext && selectedCoordinates.column === column ? "is-active" : ""}`}
               role="columnheader"
               tabIndex={0}
               aria-colindex={column + 1}
@@ -550,7 +565,7 @@ export function SheetGrid({
             const rowGroup = rowGroupByStart.get(row);
             return (
             <div
-              className={`row-header virtual-sheet-header ${rowGroup ? "has-group" : ""} ${selectedCoordinates.row === row ? "is-active" : ""}`}
+              className={`row-header virtual-sheet-header ${rowGroup ? "has-group" : ""} ${showActiveAxisContext && selectedCoordinates.row === row ? "is-active" : ""}`}
               role="rowheader"
               tabIndex={0}
               aria-rowindex={row + 1}
@@ -635,8 +650,8 @@ export function SheetGrid({
                   selected={selectedAddress === cell.address}
                   inRange={rangeContains(normalizedSelection, row, column)}
                   fillPreview={rangeContains(fillPreviewRange, row, column)}
-                  inSelectedRow={selectedCoordinates.row === row}
-                  inSelectedColumn={selectedCoordinates.column === column}
+                  inSelectedRow={showActiveAxisContext && selectedCoordinates.row === row}
+                  inSelectedColumn={showActiveAxisContext && selectedCoordinates.column === column}
                   editing={editingCellId === id}
                   onSelect={onSelect}
                   onSelectionStart={startSelection}
