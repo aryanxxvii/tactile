@@ -70,3 +70,4 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - An empty focused worksheet tile enters editing on the first printable keypress and seeds that character; Enter/F2 and double-click remain available for explicit edit entry.
 - Floating-window Expand guidance renders outside the clipped, scaled child surface so the Paper tooltip never gets cut off at the pane edge.
 - Embedded tile labels resolve the linked object title live from the workspace; ordinary cells continue to display their entered value, and navigation/source cues use the same resolved label.
+- Object headers have no description UI or reserved description row; descriptions may remain in portable data for compatibility but are never rendered or solicited.
