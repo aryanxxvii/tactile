@@ -4726,3 +4726,78 @@ kbd {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Bottom dock rhythm: every control gets the same vertical centerline and
+   breathing room, while separators describe groups instead of touching the
+   icon glyphs. */
+.object-statusbar {
+  gap: 12px;
+  padding-inline: 14px;
+}
+
+.app-dock {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.app-dock-brand {
+  height: 24px;
+  gap: 7px;
+  padding: 0 14px 0 2px;
+  border-right: 1px solid var(--line);
+  font-size: 8.5px;
+}
+
+.app-dock-mark {
+  width: 16px;
+  height: 16px;
+}
+
+.app-dock-path {
+  max-width: min(34vw, 420px);
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.app-dock-history {
+  height: 24px;
+  gap: 2px;
+  padding-left: 5px;
+  border-left: 1px solid var(--line);
+}
+
+.app-dock button {
+  height: 24px;
+  gap: 6px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+}
+
+.app-dock-history button {
+  width: 30px;
+  padding: 0;
+}
+
+.app-dock > button:last-child {
+  min-width: 88px;
+  margin-left: 6px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+  border-radius: 0 5px 5px 0;
+}
+
+.app-dock button:hover,
+.app-dock button:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--tray) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 55%, transparent);
+}
+
+.active-cell-status {
+  gap: 5px;
+  padding-left: 2px;
+}

@@ -63,4 +63,5 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - The shared object title input must retain focus when editing; revealing the optional description field must never auto-focus it and steal the title keystrokes.
 - Tactile's identity uses a transparent, scalable dotted tactile-field mark in warm rust; keep the same mark in the app dock and favicon, with the banner/README staying quiet and product-oriented.
 - Object headers stay visually quiet: the title is the primary top-left control, the parent action is compact, and the object path belongs in the bottom Tactile dock. Dock paths show `/`-separated object titles and collapse to first-two / ellipsis / last-two after four jumps.
+- The bottom Tactile dock uses a balanced 32px rhythm: the mark/name, path, history, settings, active-cell status, and sheet metadata each have deliberate internal padding and group separators rather than touching icon edges.
 - Floating Expand must align to the child header action baseline, not hover above it; title fields keep stable horizontal padding across rest, hover, and focus.
