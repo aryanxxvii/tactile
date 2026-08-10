@@ -4167,6 +4167,7 @@ kbd {
 .formula-toolbar-row {
   min-height: 24px;
   gap: 8px;
+  overflow: visible;
 }
 
 .formula-input-row {
@@ -4200,6 +4201,7 @@ kbd {
   border: 1px solid color-mix(in srgb, var(--line-strong) 62%, var(--line));
   border-radius: 6px;
   background: color-mix(in srgb, var(--tray) 62%, var(--paper-elevated));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
 .cell-color-group {
@@ -4223,6 +4225,7 @@ kbd {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
 }
 
 .cell-format-button:hover,
@@ -4231,6 +4234,7 @@ kbd {
   outline: 0;
   color: var(--accent);
   background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .cell-color-swatches {
@@ -4250,6 +4254,7 @@ kbd {
   color: var(--muted);
   background: transparent;
   cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
 
 .cell-color-swatch > span {
@@ -4267,6 +4272,10 @@ kbd {
   outline: 0;
   border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
   background: var(--accent-soft);
+}
+
+.cell-color-swatch:hover {
+  transform: translateY(-1px);
 }
 
 .cell-color-swatch.is-clear {
