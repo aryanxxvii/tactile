@@ -3,3 +3,5 @@ dist/
 *.png
 *.xlsx
 audits/
+*.tsbuildinfo
+test-results/

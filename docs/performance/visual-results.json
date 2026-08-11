@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "captured",
+  "capturedOn": "2026-08-11",
+  "source": "Codex In-app Browser against the unmodified Tactile preview",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 1,
+    "colorScheme": "light"
+  },
+  "fixtureFingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4",
+  "states": [
+    { "name": "sheet-base", "file": "tests/visual/baselines/sheet-base.jpg", "verified": true },
+    { "name": "in-out-origin", "file": "tests/visual/baselines/in-out-origin.jpg", "verified": true },
+    { "name": "in-out-floating", "file": "tests/visual/baselines/in-out-floating.jpg", "verified": true },
+    { "name": "in-out-full", "file": "tests/visual/baselines/in-out-full.jpg", "verified": true },
+    { "name": "in-out-nested-floating", "file": "tests/visual/baselines/in-out-nested-floating.jpg", "verified": true },
+    { "name": "in-out-nested-full", "file": "tests/visual/baselines/in-out-nested-full.jpg", "verified": true },
+    { "name": "in-out-closing", "file": "tests/visual/baselines/in-out-closing.jpg", "verified": true },
+    { "name": "in-out-nested-closing", "file": "tests/visual/baselines/in-out-nested-closing.jpg", "verified": true },
+    { "name": "in-out-returned", "file": "tests/visual/baselines/in-out-returned.jpg", "verified": true }
+  ],
+  "limitations": [
+    "The connected browser captured visual states but cannot run the checked-in Playwright trace instrumentation.",
+    "Screenshot files are JPEG exports of browser PNG captures to remain visible despite the repository's ignored *.png pattern."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "format": "jpeg",
+  "extension": ".jpg",
+  "quality": 90,
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 1
+  },
+  "states": [
+    "sheet-base",
+    "in-out-origin",
+    "in-out-floating",
+    "in-out-full",
+    "in-out-nested-floating",
+    "in-out-nested-full",
+    "in-out-closing",
+    "in-out-nested-closing",
+    "in-out-returned"
+  ],
+  "source": "tests/performance/run-browser.mjs",
+  "note": "Baseline images are captured from the unmodified Paper product. Missing browser tooling is recorded as an explicit skip; no placeholder images are accepted."
+}

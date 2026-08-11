@@ -1,0 +1,17 @@
+node_modules
+dist
+tmp
+benchmarks/.generated
+tests/visual/baselines
+test-results
+src/**/*.js
+src/**/*.jsx
+*.png
+*.xlsx
+index.html
+README.md
+src/styles.css
+tests/format.test.mjs
+tests/formulas.test.mjs
+tests/ranges.test.mjs
+tests/structure.test.mjs

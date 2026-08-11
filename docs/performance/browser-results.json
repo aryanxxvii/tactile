@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-11T16:02:57.578Z",
+  "status": "skipped",
+  "environment": {
+    "node": "v24.13.0",
+    "platform": "win32",
+    "arch": "x64",
+    "cpuCount": 12,
+    "memoryBytes": 16477036544,
+    "headless": true,
+    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-55260\\fixture.json",
+    "fixtureGeneratedOnRun": true,
+    "fixtureFingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4"
+  },
+  "fixture": {
+    "valid": true,
+    "checks": {
+      "format": true,
+      "version": true,
+      "objectCount": true,
+      "usedCellCount": true,
+      "rootSheetUsedCellCount": true,
+      "formulaCount": true,
+      "formulaShapes": true,
+      "conditionalFormatCount": true,
+      "nestedEmbedDepth": true,
+      "markdownBytes": true,
+      "assetBytes": true,
+      "mixedGeometry": true,
+      "groups": true,
+      "filters": true,
+      "formattedRanges": true,
+      "embeddedCells": true
+    },
+    "counts": {
+      "objects": 100,
+      "sheets": 6,
+      "usedCells": 250000,
+      "rootUsedCells": 100000,
+      "formulas": 25000,
+      "formulaShapes": {
+        "chains": 5990,
+        "fanOut": 9990,
+        "ranges": 5000,
+        "lookups": 5000,
+        "conditionalAggregates": 5000
+      },
+      "conditionalFormats": 25,
+      "maxEmbedDepth": 5,
+      "markdownBytes": 256000,
+      "assetBytes": 104857600,
+      "assets": 10,
+      "styledCells": 7131,
+      "embeddedCells": 8
+    }
+  },
+  "bundle": {
+    "root": "C:\\dev\\tactile\\dist\\client",
+    "javascript": {
+      "files": [
+        {
+          "file": "assets/index-IF9CiFsC.js",
+          "rawBytes": 471710,
+          "gzipBytes": 140125
+        }
+      ],
+      "rawBytes": 471710,
+      "gzipBytes": 140125
+    },
+    "css": {
+      "files": [
+        {
+          "file": "assets/index-DyaJUpa9.css",
+          "rawBytes": 81918,
+          "gzipBytes": 14505
+        }
+      ],
+      "rawBytes": 81918,
+      "gzipBytes": 14505
+    }
+  },
+  "scenarios": {},
+  "screenshots": [],
+  "limitations": ["A compatible Chromium executable is unavailable in this environment."],
+  "reason": "Playwright Chromium could not launch: browserType.launch: Executable doesn't exist at C:\\Users\\Aryan Wadhawan\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1193\\chrome-win\\headless_shell.exe\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝",
+  "runsRequested": 1,
+  "measurementNote": "Repeat the command three times on pinned reference hardware for certification medians/p95s."
+}

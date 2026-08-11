@@ -1,0 +1,287 @@
+{
+  "version": 1,
+  "id": "ws-compat-golden",
+  "name": "Compatibility Golden Workspace",
+  "rootObjectId": "sheet-home",
+  "createdAt": "2026-08-01T10:00:00.000Z",
+  "updatedAt": "2026-08-02T10:00:00.000Z",
+  "activeThemeId": "theme-paper",
+  "settings": {
+    "reduceMotion": true,
+    "openSingleClick": "floating",
+    "openDoubleClick": "full",
+    "x-settings-plugin": {
+      "snap": "cell"
+    }
+  },
+  "x-workspace-plugin": {
+    "schema": "demo.workspace.v1",
+    "preserve": true
+  },
+  "objects": {
+    "sheet-home": {
+      "id": "sheet-home",
+      "type": "sheet",
+      "title": "Home",
+      "description": "The compatibility fixture home sheet.",
+      "rows": 128,
+      "columns": 32,
+      "rowHeight": 30,
+      "columnWidth": 120,
+      "rowHeights": {
+        "0": 36,
+        "4": 42
+      },
+      "columnWidths": {
+        "0": 160,
+        "3": 108
+      },
+      "rowGroups": [
+        {
+          "id": "rows-main",
+          "start": 1,
+          "end": 3,
+          "collapsed": false
+        }
+      ],
+      "columnGroups": [
+        {
+          "id": "columns-detail",
+          "start": 2,
+          "end": 4,
+          "collapsed": true
+        }
+      ],
+      "conditionalFormats": [
+        {
+          "id": "cf-positive",
+          "range": "H8:H8",
+          "operator": ">",
+          "value": 0,
+          "style": {
+            "textColor": "rust"
+          }
+        }
+      ],
+      "filters": [
+        {
+          "column": 0,
+          "operator": "contains",
+          "value": "Project"
+        }
+      ],
+      "frozenRows": 1,
+      "frozenColumns": 1,
+      "x-object-plugin": {
+        "schema": "demo.sheet-extension.v1",
+        "panel": "milestones"
+      },
+      "cells": {
+        "A1": {
+          "address": "A1",
+          "value": "Project",
+          "role": "heading",
+          "style": {
+            "bold": true,
+            "highlight": "sand",
+            "textColor": "ink",
+            "align": "left"
+          },
+          "validation": {
+            "kind": "list",
+            "values": ["Project", "Archive"],
+            "allowBlank": false
+          },
+          "note": "Canonical project label.",
+          "x-cell-plugin": {
+            "owner": "compatibility-fixture",
+            "ordinal": 1
+          }
+        },
+        "B2": {
+          "address": "B2",
+          "value": "[[tactile:markdown:doc-spec|Native notes]]",
+          "role": "link",
+          "note": "Nested markdown target.",
+          "x-cell-plugin": {
+            "source": "legacy-link"
+          }
+        },
+        "D4": {
+          "address": "D4",
+          "value": "[[tactile:sheet:sheet-nested|Nested plan]]",
+          "role": "link",
+          "x-cell-plugin": {
+            "source": "nested-sheet-link"
+          }
+        },
+        "H8": {
+          "address": "H8",
+          "value": "=SUM(A1:A3)",
+          "formula": "=SUM(A1:A3)",
+          "role": "formula",
+          "style": {
+            "numberFormat": "0.00",
+            "textColor": "rust"
+          },
+          "validation": {
+            "kind": "number",
+            "min": 0
+          },
+          "note": "Formula metadata survives.",
+          "x-cell-plugin": {
+            "formulaEngine": "legacy"
+          }
+        }
+      }
+    },
+    "doc-spec": {
+      "id": "doc-spec",
+      "type": "document",
+      "title": "Native notes",
+      "description": "A nested Markdown object.",
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Compatibility notes"
+        },
+        {
+          "type": "paragraph",
+          "text": "Portable files are local and inspectable.",
+          "x-block-plugin": {
+            "keep": true
+          }
+        }
+      ],
+      "x-object-plugin": {
+        "schema": "demo.document-extension.v1",
+        "keep": true
+      }
+    },
+    "sheet-nested": {
+      "id": "sheet-nested",
+      "type": "sheet",
+      "title": "Nested plan",
+      "description": "A sheet embedded by the home sheet.",
+      "rows": 256,
+      "columns": 64,
+      "frozenRows": 0,
+      "frozenColumns": 0,
+      "x-object-plugin": {
+        "schema": "demo.sheet-extension.v1",
+        "depth": 1
+      },
+      "cells": {
+        "A1": {
+          "address": "A1",
+          "value": "Nested plan",
+          "role": "heading",
+          "style": {
+            "bold": true,
+            "highlight": "clay"
+          },
+          "note": "Nested sheet heading.",
+          "x-cell-plugin": {
+            "depth": 1
+          }
+        },
+        "B2": {
+          "address": "B2",
+          "value": "[[tactile:image:image-ref|Reference image]]",
+          "role": "link",
+          "x-cell-plugin": {
+            "source": "asset-link"
+          }
+        },
+        "C4": {
+          "address": "C4",
+          "value": "[[tactile:sheet:sheet-deep|Deep sheet]]",
+          "role": "link",
+          "x-cell-plugin": {
+            "source": "third-level-link"
+          }
+        }
+      }
+    },
+    "sheet-deep": {
+      "id": "sheet-deep",
+      "type": "sheet",
+      "title": "Deep sheet",
+      "description": "A third-level nested sheet.",
+      "rows": 256,
+      "columns": 64,
+      "x-object-plugin": {
+        "schema": "demo.sheet-extension.v1",
+        "depth": 2
+      },
+      "cells": {
+        "A3": {
+          "address": "A3",
+          "value": "[[tactile:markdown:doc-spec|Native notes]]",
+          "role": "link",
+          "note": "Deep sheet points back to the document.",
+          "x-cell-plugin": {
+            "source": "back-reference"
+          }
+        },
+        "F7": {
+          "address": "F7",
+          "value": "deep value",
+          "role": "body",
+          "x-cell-plugin": {
+            "depth": 2,
+            "kind": "ordinary"
+          }
+        }
+      }
+    },
+    "image-ref": {
+      "id": "image-ref",
+      "type": "image",
+      "title": "Reference image",
+      "description": "A binary object stored outside sheet CSV.",
+      "assetId": "asset-ref",
+      "source": "",
+      "x-object-plugin": {
+        "schema": "demo.image-extension.v1",
+        "altPolicy": "title"
+      }
+    }
+  },
+  "assets": {
+    "asset-ref": {
+      "id": "asset-ref",
+      "fileName": "reference.png",
+      "extension": "png",
+      "mime": "image/png",
+      "size": 4,
+      "path": "assets/asset-ref.png",
+      "dataUrl": "data:image/png;base64,AAECAw==",
+      "x-asset-plugin": {
+        "checksum": "fixture-asset-v1",
+        "retention": "portable"
+      }
+    }
+  },
+  "themes": {
+    "theme-paper": {
+      "id": "theme-paper",
+      "name": "Paper Future",
+      "builtIn": false,
+      "tokens": {
+        "paper": "#fbf7ef",
+        "tray": "#e6dfd4",
+        "ink": "#25231f",
+        "accent": "#a64f35",
+        "futureToken": "#00d4a8",
+        "futureMetrics": {
+          "cornerRadius": 9
+        }
+      },
+      "x-theme-plugin": {
+        "schema": "theme.extension.v1",
+        "density": "compact"
+      }
+    }
+  }
+}
