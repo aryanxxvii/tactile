@@ -4,12 +4,14 @@ import {
   DEFAULT_ROWS,
   createBlankWorkspace,
   createCellRecord,
+  createId,
   createObjectForType,
   generatedObjectTitle,
   inferFileObjectType,
   isCellUsed,
   normalizeWorkspace,
 } from "../model.js";
+import { repairWorkspaceTopology } from "../core/topology.js";
 import { cellAddress, cellId, coordinatesFromCellId } from "../sheet/coordinates.js";
 import {
   adjustAxisGroups,
@@ -24,12 +26,13 @@ function initialWorkspace() {
   return normalizeWorkspace(loadWorkspaceCache() || createBlankWorkspace());
 }
 
-function touch(workspace, objects) {
-  return {
+function touch(workspace, objects, repairTopology = false) {
+  const next = {
     ...workspace,
     updatedAt: new Date().toISOString(),
     objects,
   };
+  return repairTopology ? repairWorkspaceTopology(next) : next;
 }
 
 function shiftCells(object, axis, index) {
@@ -189,7 +192,7 @@ export function useLocalWorkspace() {
       const object = current.objects[objectId];
       if (!object) return current;
       return touch(current, {
-        ...current.objects,
+          ...current.objects,
         [objectId]: { ...object, ...patch },
       });
     }, `object:${objectId}:${Object.keys(patch).sort().join(",")}`);
@@ -211,7 +214,7 @@ export function useLocalWorkspace() {
       return touch(current, {
         ...current.objects,
         [objectId]: { ...object, cells },
-      });
+      }, Object.prototype.hasOwnProperty.call(patch, "embed"));
     }, `cell:${objectId}:${targetCellId}`);
   }, [commitWorkspace]);
 
@@ -234,7 +237,7 @@ export function useLocalWorkspace() {
       return touch(current, {
         ...current.objects,
         [objectId]: { ...object, cells },
-      });
+      }, changes.some(({ patch }) => Object.prototype.hasOwnProperty.call(patch || {}, "embed")));
     }, `${historyKey}:${objectId}`);
   }, [commitWorkspace]);
 
@@ -247,7 +250,7 @@ export function useLocalWorkspace() {
       return touch(current, {
         ...current.objects,
         [objectId]: { ...object, cells },
-      });
+      }, Boolean(object.cells[targetCellId]?.embed));
     }, `clear:${objectId}:${targetCellId}`);
   }, [commitWorkspace]);
 
@@ -267,7 +270,7 @@ export function useLocalWorkspace() {
       return touch(current, {
         ...current.objects,
         [objectId]: { ...object, cells },
-      });
+      }, changed && targetCellIds.some((targetCellId) => Boolean(object.cells[targetCellId]?.embed)));
     }, `clear-range:${objectId}`);
   }, [commitWorkspace]);
 
@@ -278,6 +281,13 @@ export function useLocalWorkspace() {
     const created = createObjectForType(type, {
       title: generatedObjectTitle(type, address),
     });
+    const linkId = createId("link");
+    created.parent = {
+      linkId,
+      parentObjectId,
+      parentCellId,
+      sourceAddress: address,
+    };
     commitWorkspace((current) => {
       const parent = current.objects[parentObjectId];
       if (parent?.type !== "sheet") return current;
@@ -285,7 +295,12 @@ export function useLocalWorkspace() {
         ...(parent.cells[parentCellId] || {}),
         value: created.title,
         formula: "",
-        embed: { objectId: created.id, type: created.type },
+        embed: {
+          objectId: created.id,
+          type: created.type,
+          linkId,
+          relation: "containment",
+        },
       });
       return touch(current, {
         ...current.objects,
@@ -294,7 +309,7 @@ export function useLocalWorkspace() {
           cells: { ...parent.cells, [parentCellId]: cell },
         },
         [created.id]: created,
-      });
+      }, true);
     }, `create:${parentObjectId}:${parentCellId}`);
     return created;
   }, [commitWorkspace]);
@@ -309,6 +324,13 @@ export function useLocalWorkspace() {
     const created = createObjectForType(type, type === "markdown"
       ? { title, content: fileAsset.text || "" }
       : { title, assetId, source: type === "html" ? fileAsset.text || "" : "" });
+    const linkId = createId("link");
+    created.parent = {
+      linkId,
+      parentObjectId,
+      parentCellId,
+      sourceAddress: cellAddress(coordinates.row, coordinates.column),
+    };
     const asset = { ...fileAsset, id: assetId, fileName };
     commitWorkspace((current) => {
       const parent = current.objects[parentObjectId];
@@ -317,7 +339,12 @@ export function useLocalWorkspace() {
         ...(parent.cells[parentCellId] || {}),
         value: created.title,
         formula: "",
-        embed: { objectId: created.id, type: created.type },
+        embed: {
+          objectId: created.id,
+          type: created.type,
+          linkId,
+          relation: "containment",
+        },
       });
       const next = touch(current, {
           ...current.objects,
@@ -348,6 +375,7 @@ export function useLocalWorkspace() {
             type: "markdown",
             title: previous.title,
             description: previous.description || "",
+            parent: previous.parent || null,
             content: fileAsset.text || "",
           }
         : {
@@ -355,6 +383,7 @@ export function useLocalWorkspace() {
             type,
             title: previous.title,
             description: previous.description || "",
+            parent: previous.parent || null,
             assetId,
             source: type === "html" ? fileAsset.text || "" : "",
           };
@@ -399,7 +428,7 @@ export function useLocalWorkspace() {
           filters: axis === "column" ? adjustColumnFilters(object.filters, index, "insert") : object.filters,
           conditionalFormats: adjustConditionalFormats(object.conditionalFormats, axis, index, "insert"),
         },
-      });
+      }, true);
     }, `insert:${objectId}:${axis}:${index}`);
   }, [commitWorkspace]);
 
@@ -423,7 +452,7 @@ export function useLocalWorkspace() {
           filters: axis === "column" ? adjustColumnFilters(object.filters, index, "delete") : object.filters,
           conditionalFormats: adjustConditionalFormats(object.conditionalFormats, axis, index, "delete"),
         },
-      });
+      }, true);
     }, `delete:${objectId}:${axis}:${index}`);
   }, [commitWorkspace]);
 
@@ -435,13 +464,18 @@ export function useLocalWorkspace() {
       return touch(current, {
         ...current.objects,
         [objectId]: reorderSheetAxis(object, axis, from, to),
-      });
+      }, true);
     }, `move:${objectId}:${axis}`);
   }, [commitWorkspace]);
 
-  const setHomeObject = useCallback((objectId) => {
+  const setHomeObject = useCallback((objectId, homePath = []) => {
     commitWorkspace((current) => current.objects[objectId]
-      ? { ...current, homeObjectId: objectId, updatedAt: new Date().toISOString() }
+      ? normalizeWorkspace({
+        ...current,
+        homeObjectId: objectId,
+        homePath: Array.isArray(homePath) ? homePath : [],
+        updatedAt: new Date().toISOString(),
+      })
       : current, `home:${objectId}`);
   }, [commitWorkspace]);
 
@@ -527,6 +561,7 @@ export function useLocalWorkspace() {
 
   return {
     workspace,
+    hydrated,
     saveState,
     replaceWorkspace,
     updateObject,

@@ -1,4 +1,4 @@
-import type { CellAddress, CellId, ObjectId } from "./ids.ts";
+import type { CellAddress, CellId, EmbedLinkId, ObjectId } from "./ids.ts";
 import type { CellRange, WorkspaceSnapshot } from "./domain.ts";
 
 export interface DurableWorkspaceState {
@@ -11,6 +11,7 @@ export interface SelectionState {
 }
 
 export interface LayerSourceState {
+  linkId?: EmbedLinkId;
   parentObjectId: ObjectId;
   sourceCellId: CellId;
   sourceAddress: CellAddress;

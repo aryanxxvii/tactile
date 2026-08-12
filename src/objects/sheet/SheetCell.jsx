@@ -53,6 +53,9 @@ export function SheetCell({
     const sourceElement = event.currentTarget;
     onOpenObject({
       objectId: cell.embed.objectId,
+      linkId: cell.embed.linkId,
+      sourceObjectId: objectId,
+      sourceCellId: cell.id,
       sourceAddress: cell.address,
       sourceLabel: shownValue,
       sourceType: cell.embed.type,
@@ -69,6 +72,9 @@ export function SheetCell({
       openTimerRef.current = null;
       onOpenObject({
         objectId: cell.embed.objectId,
+        linkId: cell.embed.linkId,
+        sourceObjectId: objectId,
+        sourceCellId: cell.id,
         sourceAddress: cell.address,
         sourceLabel: shownValue,
         sourceType: cell.embed.type,

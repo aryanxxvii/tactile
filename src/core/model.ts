@@ -30,6 +30,7 @@ export interface CreateObjectOptions {
   content?: string;
   assetId?: string | null;
   source?: string;
+  parent?: Record<string, unknown> | null;
   [key: string]: unknown;
 }
 
@@ -68,7 +69,9 @@ export function normalizeCell(cell: unknown, fallbackId: string): CellRecord | n
 }
 
 export function createSheetObject(options: CreateSheetOptions = {}): SheetObject {
-  return createSheetObjectRuntime(options) as unknown as SheetObject;
+  return createSheetObjectRuntime(
+    options as unknown as Parameters<typeof createSheetObjectRuntime>[0],
+  ) as unknown as SheetObject;
 }
 
 export function createObjectForType(type: ObjectTypeKey, options: CreateObjectOptions = {}): WorkspaceObject {

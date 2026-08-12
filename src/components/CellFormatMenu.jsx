@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   IconAlignCenter,
   IconAlignLeft,
@@ -12,6 +12,7 @@ import {
   IconTextColor,
   IconTextSize,
 } from "@tabler/icons-react";
+import { PaperPortal } from "./PaperPortal.jsx";
 
 const FILL_COLORS = [
   { value: undefined, label: "No fill", color: "transparent", icon: IconEraser },
@@ -81,21 +82,60 @@ function ColorGroup({ label, icon: GroupIcon, colors, selected, onSelect }) {
 
 function TextSizeGroup({ selected, onSelect }) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(null);
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
   const current = TEXT_SIZES.find((item) => item.value === selected) || TEXT_SIZES[0];
 
   useEffect(() => {
     if (!open) return undefined;
     const closeOutside = (event) => {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
+      if (!rootRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) setOpen(false);
     };
     window.addEventListener("pointerdown", closeOutside);
     return () => window.removeEventListener("pointerdown", closeOutside);
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return undefined;
+    const updatePosition = () => {
+      const anchorBox = triggerRef.current?.getBoundingClientRect();
+      if (!anchorBox) return;
+      const menuBox = menuRef.current?.getBoundingClientRect();
+      const width = menuBox?.width || 164;
+      const height = menuBox?.height || 190;
+      const gap = 6;
+      const gutter = 8;
+      const canFitBelow = anchorBox.bottom + gap + height <= window.innerHeight - gutter;
+      const canFitAbove = anchorBox.top - gap - height >= gutter;
+      const placement = !canFitBelow && canFitAbove ? "above" : "below";
+      const top = placement === "above" ? anchorBox.top - gap - height : anchorBox.bottom + gap;
+      const left = Math.min(
+        Math.max(gutter, anchorBox.left),
+        Math.max(gutter, window.innerWidth - width - gutter),
+      );
+      setPosition({
+        left,
+        top: Math.max(gutter, Math.min(window.innerHeight - gutter - height, top)),
+        placement,
+      });
+    };
+    updatePosition();
+    const frame = window.requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
   return (
     <div className="cell-size-control" ref={rootRef}>
       <button
+        ref={triggerRef}
         className="cell-size-trigger"
         type="button"
         aria-label="Text size"
@@ -107,30 +147,38 @@ function TextSizeGroup({ selected, onSelect }) {
         <IconTextSize size={14} stroke={1.65} aria-hidden="true" />
         <span>{current.preview}</span>
       </button>
-      {open ? (
-        <div className="cell-size-menu" role="listbox" aria-label="Text size">
-          <div className="cell-size-menu-label">Text size</div>
-          {TEXT_SIZES.map((item) => {
-            const isSelected = item.value === selected || (!item.value && !selected);
-            return (
-              <button
-                key={item.label}
-                className={`cell-size-option ${isSelected ? "is-selected" : ""}`}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  onSelect(item.value);
-                  setOpen(false);
-                }}
-              >
-                <span className="cell-size-preview" style={{ fontSize: `${item.value || 11.5}px` }}>Aa</span>
-                <span>{item.label}</span>
-                <code>{item.preview}</code>
-              </button>
-            );
-          })}
-        </div>
+      {open && position ? (
+        <PaperPortal className="tactile-format-layer" themeSource={rootRef.current}>
+          <div
+            ref={menuRef}
+            className={`cell-size-menu is-${position.placement}`}
+            role="listbox"
+            aria-label="Text size"
+            style={{ left: position.left, top: position.top }}
+          >
+            <div className="cell-size-menu-label">Text size</div>
+            {TEXT_SIZES.map((item) => {
+              const isSelected = item.value === selected || (!item.value && !selected);
+              return (
+                <button
+                  key={item.label}
+                  className={`cell-size-option ${isSelected ? "is-selected" : ""}`}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onSelect(item.value);
+                    setOpen(false);
+                  }}
+                >
+                  <span className="cell-size-preview" style={{ fontSize: `${item.value || 11.5}px` }}>Aa</span>
+                  <span>{item.label}</span>
+                  <code>{item.preview}</code>
+                </button>
+              );
+            })}
+          </div>
+        </PaperPortal>
       ) : null}
     </div>
   );

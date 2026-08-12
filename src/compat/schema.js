@@ -161,6 +161,27 @@ export function validatePortableWorkspace(input, options = {}) {
   records.forEach(({ record }) => {
     const type = String(record.type || "");
     if (!type) fail("MALFORMED_OBJECT", `Object ${String(record.id)} is missing a type.`, { objectId: record.id });
+    if (record.parent !== undefined && record.parent !== null) {
+      if (!isPlainRecord(record.parent)) {
+        fail("MALFORMED_REFERENCE", `Object ${String(record.id)} has an invalid parent record.`, {
+          objectId: record.id,
+          kind: "parent",
+        });
+      }
+      if (!record.parent.parentObjectId || !objectsById.has(String(record.parent.parentObjectId))) {
+        fail("DANGLING_REFERENCE", `Object ${String(record.id)} references a missing parent object.`, {
+          objectId: record.id,
+          parentObjectId: record.parent.parentObjectId,
+          kind: "parent",
+        });
+      }
+      if (record.parent.linkId !== undefined && typeof record.parent.linkId !== "string") {
+        fail("MALFORMED_REFERENCE", `Object ${String(record.id)} has an invalid parent link id.`, {
+          objectId: record.id,
+          kind: "parent",
+        });
+      }
+    }
     if (type !== "sheet") {
       if (options.checkAssets !== false && record.assetId && !assetsById.has(String(record.assetId))) {
         fail("DANGLING_REFERENCE", `Object ${String(record.id)} references missing asset ${String(record.assetId)}.`, {
@@ -196,6 +217,25 @@ export function validatePortableWorkspace(input, options = {}) {
           objectId: record.id,
           cellId: key,
         });
+      }
+      if (cell.embed && typeof cell.embed === "object") {
+        if (cell.embed.linkId !== undefined && typeof cell.embed.linkId !== "string") {
+          fail("MALFORMED_REFERENCE", `Cell ${key} in ${String(record.id)} has an invalid link id.`, {
+            objectId: record.id,
+            cellId: key,
+            kind: "linkId",
+          });
+        }
+        if (
+          cell.embed.relation !== undefined
+          && !["containment", "alias"].includes(String(cell.embed.relation))
+        ) {
+          fail("MALFORMED_REFERENCE", `Cell ${key} in ${String(record.id)} has an invalid relation.`, {
+            objectId: record.id,
+            cellId: key,
+            kind: "relation",
+          });
+        }
       }
       if (reference && !objectsById.has(String(reference))) {
         fail("DANGLING_REFERENCE", `Cell ${key} in ${String(record.id)} references missing object ${String(reference)}.`, {

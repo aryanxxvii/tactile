@@ -3,6 +3,9 @@ import {
   cellId,
   coordinatesFromCellId,
 } from "./sheet/coordinates.js";
+import {
+  repairWorkspaceTopology,
+} from "./core/topology.js";
 
 export const WORKSPACE_VERSION = 4;
 export const DEFAULT_ROWS = 256;
@@ -60,21 +63,41 @@ export function isCellUsed(cell) {
   );
 }
 
+function parseLegacyEmbeddedLink(value) {
+  if (typeof value !== "string" || !value.startsWith("[[tactile:") || !value.endsWith("]]")) return null;
+  const body = value.slice(10, -2);
+  const separator = body.indexOf(":");
+  const pipe = body.indexOf("|", separator + 1);
+  if (separator < 1 || pipe < separator + 2) return null;
+  return {
+    type: body.slice(0, separator),
+    objectId: body.slice(separator + 1, pipe),
+    title: body.slice(pipe + 1).replace(/\\([\\|\]])/g, "$1"),
+  };
+}
+
 export function normalizeCell(cell, fallbackId) {
   const coordinates = Number.isInteger(cell?.row) && Number.isInteger(cell?.column)
     ? { row: cell.row, column: cell.column }
     : coordinatesFromCellId(cell?.id || fallbackId);
   if (!coordinates) return null;
+  const parsedEmbed = cell?.embed?.objectId
+    ? cell.embed
+    : parseLegacyEmbeddedLink(cell?.embed) || parseLegacyEmbeddedLink(cell?.value);
   return createCellRecord(coordinates.row, coordinates.column, {
     ...cell,
     id: cellId(coordinates.row, coordinates.column),
     address: cellAddress(coordinates.row, coordinates.column),
-    value: typeof cell?.value === "string" ? cell.value : String(cell?.value ?? ""),
+    value: parsedEmbed?.title
+      || (typeof cell?.value === "string" ? cell.value : String(cell?.value ?? "")),
     formula: typeof cell?.formula === "string" ? cell.formula : "",
-    embed: cell?.embed?.objectId
+    embed: parsedEmbed?.objectId
       ? {
-          objectId: String(cell.embed.objectId),
-          type: String(cell.embed.type || "markdown"),
+          ...parsedEmbed,
+          objectId: String(parsedEmbed.objectId),
+          type: String(parsedEmbed.type || "markdown"),
+          ...(parsedEmbed.linkId ? { linkId: String(parsedEmbed.linkId) } : {}),
+          ...(parsedEmbed.relation ? { relation: String(parsedEmbed.relation) } : {}),
         }
       : null,
   });
@@ -91,6 +114,7 @@ export function createSheetObject({
   columnWidth,
   rowHeights = {},
   columnWidths = {},
+  parent = null,
 } = {}) {
   const normalizedRowHeights = Object.fromEntries(Object.entries(rowHeights || {})
     .filter(([index, value]) => Number.isInteger(Number(index)) && Number.isFinite(Number(value)))
@@ -103,6 +127,7 @@ export function createSheetObject({
     type: "sheet",
     title: title || generatedObjectTitle("sheet"),
     description,
+    parent: parent && typeof parent === "object" ? { ...parent } : null,
     rows: Math.max(DEFAULT_ROWS, rows),
     columns: Math.max(DEFAULT_COLUMNS, columns),
     cells,
@@ -124,12 +149,14 @@ export function createMarkdownObject({
   title,
   description = "",
   content = "",
+  parent = null,
 } = {}) {
   return {
     id,
     type: "markdown",
     title: title || generatedObjectTitle("markdown"),
     description,
+    parent: parent && typeof parent === "object" ? { ...parent } : null,
     content,
   };
 }
@@ -138,10 +165,12 @@ export function createObjectForType(type, options = {}) {
   if (type === "sheet") return createSheetObject(options);
   if (type === "markdown" || type === "document") return createMarkdownObject(options);
   return {
+    ...options,
     id: options.id || createId(type),
     type,
     title: options.title || generatedObjectTitle(type),
     description: options.description || "",
+    parent: options.parent && typeof options.parent === "object" ? { ...options.parent } : null,
     assetId: options.assetId || null,
     source: options.source || "",
   };
@@ -170,6 +199,7 @@ export function createBlankWorkspace({
     id,
     name,
     homeObjectId: home.id,
+    homePath: [],
     createdAt: now,
     updatedAt: now,
     objects: { [home.id]: home },
@@ -180,6 +210,8 @@ export function createBlankWorkspace({
       reduceMotion: false,
       openSingleClick: "floating",
       openDoubleClick: "full",
+      filesPinned: false,
+      filesWidth: 360,
     },
   };
 }
@@ -213,6 +245,7 @@ function normalizeObject(object, fallbackId) {
         id: object.id || fallbackId,
         title: object.title,
         description: object.description || "",
+        parent: object.parent,
         rows: object.rows,
         columns: object.columns,
         cells,
@@ -222,6 +255,7 @@ function normalizeObject(object, fallbackId) {
         columnWidths: object.columnWidths,
       });
     return {
+      ...object,
       ...sheet,
       rowGroups: normalizeAxisGroups(object.rowGroups, "row-group", sheet.rows - 1),
       columnGroups: normalizeAxisGroups(object.columnGroups, "column-group", sheet.columns - 1),
@@ -239,12 +273,16 @@ function normalizeObject(object, fallbackId) {
           return block.text || "";
         }).join("\n\n")
       : "";
-    return createMarkdownObject({
+    return {
+      ...object,
+      ...createMarkdownObject({
       id: object.id || fallbackId,
       title: object.title,
       description: object.description || "",
+      parent: object.parent,
       content: typeof object.content === "string" ? object.content : legacyContent,
-    });
+      }),
+    };
   }
   return createObjectForType(type || "markdown", {
     ...object,
@@ -268,12 +306,23 @@ export function normalizeWorkspace(input) {
   }
 
   const now = new Date().toISOString();
-  return {
+  const homePath = Array.isArray(input.homePath)
+    ? input.homePath.map((entry) => ({
+      objectId: String(entry?.objectId || ""),
+      sourceObjectId: String(entry?.sourceObjectId || ""),
+      ...(entry?.sourceCellId ? { sourceCellId: String(entry.sourceCellId) } : {}),
+      sourceAddress: String(entry?.sourceAddress || ""),
+      ...(entry?.linkId ? { linkId: String(entry.linkId) } : {}),
+    })).filter((entry) => entry.objectId && entry.sourceObjectId && entry.sourceAddress)
+    : [];
+  const workspace = {
+    ...input,
     format: "tactile",
     version: WORKSPACE_VERSION,
     id: input.id || createId("workspace"),
     name: input.name || "Tactile",
     homeObjectId,
+    homePath,
     createdAt: input.createdAt || now,
     updatedAt: input.updatedAt || now,
     objects,
@@ -287,6 +336,16 @@ export function normalizeWorkspace(input) {
       ...(input.settings || {}),
     },
   };
+  const hasDurableTopology = Object.values(objects).some((object) => (
+    object?.parent
+    || Object.values(object?.cells || {}).some((cell) => Boolean(cell?.embed?.linkId))
+  ));
+  return repairWorkspaceTopology(workspace, {
+    // Legacy snapshots used homePath as their only route hint. Consume it
+    // once during migration; normalized workspaces keep Home independent from
+    // the canonical Files hierarchy thereafter.
+    preferredPath: hasDurableTopology ? [] : homePath,
+  });
 }
 
 export function createEmbeddedObject(workspace, {
@@ -302,16 +361,28 @@ export function createEmbeddedObject(workspace, {
   const object = createObjectForType(type, {
     title: generatedObjectTitle(type, address),
   });
+  const linkId = createId("link");
   const cell = createCellRecord(coordinates.row, coordinates.column, {
     ...(parent.cells[parentCellId] || {}),
     value: object.title,
     formula: "",
-    embed: { objectId: object.id, type: object.type },
+    embed: {
+      objectId: object.id,
+      type: object.type,
+      linkId,
+      relation: "containment",
+    },
   });
+  object.parent = {
+    linkId,
+    parentObjectId,
+    parentCellId: cell.id,
+    sourceAddress: cell.address,
+  };
   const now = new Date().toISOString();
   return {
     object,
-    workspace: {
+    workspace: repairWorkspaceTopology({
       ...workspace,
       updatedAt: now,
       objects: {
@@ -322,7 +393,7 @@ export function createEmbeddedObject(workspace, {
         },
         [object.id]: object,
       },
-    },
+    }),
   };
 }
 

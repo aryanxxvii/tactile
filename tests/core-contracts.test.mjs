@@ -12,6 +12,7 @@ test("core model facade preserves the blank workspace contract", () => {
 
   assert.equal(workspace.id, "workspace-test");
   assert.equal(workspace.homeObjectId, "home");
+  assert.deepEqual(workspace.homePath, []);
   assert.equal(workspace.objects.home.type, "sheet");
   assert.equal(workspace.objects.home.rows, 256);
   assert.equal(workspace.objects.home.columns, 64);

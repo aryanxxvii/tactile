@@ -3,6 +3,7 @@ import type {
   CellAddress,
   CellId,
   ColumnIndex,
+  EmbedLinkId,
   ObjectId,
   ObjectTypeKey,
   RowIndex,
@@ -35,8 +36,19 @@ export interface CellValidation {
 }
 
 export interface EmbeddedObjectReference {
+  [key: string]: unknown;
+  linkId: EmbedLinkId;
   objectId: ObjectId;
+  relation: "containment" | "alias";
   type: ObjectTypeKey;
+}
+
+export interface ObjectParentLink {
+  [key: string]: unknown;
+  linkId: EmbedLinkId;
+  parentObjectId: ObjectId;
+  parentCellId: CellId;
+  sourceAddress: CellAddress;
 }
 
 export interface CellRecord {
@@ -84,7 +96,9 @@ export interface ConditionalFormatRule {
 }
 
 export interface ObjectRecordBase<Type extends ObjectTypeKey = ObjectTypeKey> {
+  [key: string]: unknown;
   id: ObjectId;
+  parent: ObjectParentLink | null;
   type: Type;
   title: string;
   description: string;
@@ -145,7 +159,30 @@ export interface WorkspaceSettings {
   reduceMotion: boolean;
   openSingleClick: "floating" | "full";
   openDoubleClick: "floating" | "full";
+  filesPinned?: boolean;
+  filesWidth?: number;
   [key: string]: unknown;
+}
+
+export interface HomePathEntry {
+  linkId?: EmbedLinkId;
+  objectId: ObjectId;
+  sourceCellId?: CellId;
+  sourceObjectId: ObjectId;
+  sourceAddress: CellAddress;
+}
+
+export interface NavigationRouteSegment extends HomePathEntry {
+  childObjectId?: ObjectId;
+  mode: "floating" | "full";
+}
+
+export interface NavigationRoute {
+  format: "tactile-route";
+  version: number;
+  workspaceId: WorkspaceId;
+  rootObjectId: ObjectId;
+  segments: NavigationRouteSegment[];
 }
 
 export interface WorkspaceMeta {
@@ -154,6 +191,7 @@ export interface WorkspaceMeta {
   id: WorkspaceId;
   name: string;
   homeObjectId: ObjectId;
+  homePath: HomePathEntry[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
   activeThemeId: ThemeId;

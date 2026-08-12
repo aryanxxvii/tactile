@@ -1,7 +1,52 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cellAddress } from "../../../sheet/coordinates.js";
-import { fillChanges } from "../../../sheet/ranges.js";
+import { fillChanges, fillRange } from "../../../sheet/ranges.js";
 import { rangeValues } from "./useSheetGridProjection.js";
+
+function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, coordinate) {
+  if (!Number.isFinite(coordinate) || coordinate < 0 || !indexMap.length) return null;
+  for (let position = 0; position < indexMap.length; position += 1) {
+    const start = offsetForPosition(position);
+    const end = start + sizeForPosition(position);
+    if (coordinate < end || (position === indexMap.length - 1 && coordinate <= end)) return position;
+  }
+  return null;
+}
+
+function domCellAddressAtPoint(event, objectId) {
+  if (!Number.isFinite(event?.clientX) || !Number.isFinite(event?.clientY)) return null;
+  return document
+    .elementsFromPoint(event.clientX, event.clientY)
+    .map((element) => element.closest?.(".sheet-cell"))
+    .find((cell) => cell?.dataset.objectId === objectId)
+    ?.dataset.cellAddress || null;
+}
+
+function captureGesturePointer(gesture, event) {
+  if (!gesture || gesture.captured || gesture.pointerId == null || event.pointerId !== gesture.pointerId) return;
+  const distance = Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY);
+  if (distance < 4) return;
+  try {
+    gesture.captureTarget?.setPointerCapture?.(gesture.pointerId);
+    gesture.captured = true;
+  } catch {
+    // Geometry hit-testing and the window listeners still complete the gesture.
+  }
+}
+
+function focusSelectedGestureCell(objectId, address, attempt = 0) {
+  window.requestAnimationFrame(() => {
+    if (document.activeElement?.matches(".cell-editor")) return;
+    const nextCell = document.querySelector(
+      `[data-object-id="${objectId}"][data-cell-address="${address}"]`,
+    );
+    if (nextCell?.getAttribute("aria-selected") !== "true") {
+      if (attempt < 8) focusSelectedGestureCell(objectId, address, attempt + 1);
+      return;
+    }
+    nextCell.focus({ preventScroll: true });
+  });
+}
 
 export function useSheetGridGestures({
   object,
@@ -37,6 +82,20 @@ export function useSheetGridGestures({
   const resizeRef = useRef(null);
   const axisDragRef = useRef(null);
   const selectionScrollRef = useRef(null);
+  const gestureCallbacksRef = useRef(null);
+  const gestureGeometryRef = useRef(null);
+  const moveSelectionGestureRef = useRef(null);
+
+  gestureGeometryRef.current = {
+    scrollRef,
+    metrics,
+    rowIndexMap,
+    columnIndexMap,
+    columnOffsetForPosition,
+    columnSizeForPosition,
+    rowOffsetForPosition,
+    rowSizeForPosition,
+  };
 
   useEffect(() => {
     if (Number.isInteger(rowPositionForIndex(selectedCoordinates.row))) return;
@@ -82,6 +141,7 @@ export function useSheetGridGestures({
     }
     if (restoreGridFocus) {
       window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        if (document.activeElement?.matches(".cell-editor")) return;
         const nextCell = document.querySelector(
           `[data-object-id="${object.id}"][data-cell-address="${selectedAddress}"]`,
         );
@@ -90,36 +150,86 @@ export function useSheetGridGestures({
     }
   }, [columnOffsetForPosition, columnPositionForIndex, columnSizeForPosition, editingCellId, metrics, object.id, rowOffsetForPosition, rowPositionForIndex, rowSizeForPosition, scrollRef, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
 
+  const cellAddressAtPoint = useCallback((event) => {
+    const geometry = gestureGeometryRef.current;
+    const scroller = geometry?.scrollRef?.current;
+    if (!scroller || !Number.isFinite(event?.clientX) || !Number.isFinite(event?.clientY)) return null;
+    const bounds = scroller.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return null;
+    const layoutWidth = scroller.clientWidth || bounds.width;
+    const layoutHeight = scroller.clientHeight || bounds.height;
+    const scaleX = layoutWidth > 0 ? bounds.width / layoutWidth : 1;
+    const scaleY = layoutHeight > 0 ? bounds.height / layoutHeight : 1;
+    const localX = (event.clientX - bounds.left) / (scaleX || 1) + scroller.scrollLeft;
+    const localY = (event.clientY - bounds.top) / (scaleY || 1) + scroller.scrollTop;
+    const columnPosition = axisPositionAtCoordinate(
+      geometry.columnIndexMap,
+      geometry.columnOffsetForPosition,
+      geometry.columnSizeForPosition,
+      localX - geometry.metrics.rowHeaderWidth,
+    );
+    const rowPosition = axisPositionAtCoordinate(
+      geometry.rowIndexMap,
+      geometry.rowOffsetForPosition,
+      geometry.rowSizeForPosition,
+      localY - geometry.metrics.columnHeaderHeight,
+    );
+    if (!Number.isInteger(columnPosition) || !Number.isInteger(rowPosition)) return null;
+    return cellAddress(
+      geometry.rowIndexMap[rowPosition],
+      geometry.columnIndexMap[columnPosition],
+    );
+  }, []);
+
+  gestureCallbacksRef.current = { object, onCellsChange, onSelectRange, setFillTarget };
+
   useEffect(() => {
-    const finishPointerGesture = () => {
+    const finishPointerGesture = (event) => {
       const selectionDrag = selectionDragRef.current;
-      selectionDragRef.current = null;
       const fill = fillDragRef.current;
+      const activeGesture = selectionDrag || fill;
+      if (!activeGesture) return;
+      if (activeGesture.pointerId != null && event?.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
+      if (selectionDrag && event?.type === "pointerup") {
+        const callbacks = gestureCallbacksRef.current;
+        const address = cellAddressAtPoint(event)
+          || domCellAddressAtPoint(event, callbacks?.object?.id);
+        if (address && address !== selectionDrag.focus) {
+          selectionDrag.focus = address;
+          callbacks?.onSelectRange?.(selectionDrag.anchor, address);
+        }
+      }
+      const releaseTarget = activeGesture.captureTarget;
+      if (activeGesture.captured && releaseTarget && activeGesture.pointerId != null) {
+        try {
+          releaseTarget.releasePointerCapture?.(activeGesture.pointerId);
+        } catch {
+          // The browser may release capture before the window-level cleanup runs.
+        }
+      }
+      selectionDragRef.current = null;
       const target = fillTargetRef.current;
       fillDragRef.current = null;
       fillTargetRef.current = null;
-      setFillTarget(null);
+      const callbacks = gestureCallbacksRef.current;
+      callbacks?.setFillTarget(null);
       if (fill && target && target !== fill.sourceAddress) {
-        const changes = fillChanges(object, fill.sourceAddress, target);
-        onCellsChange?.(changes, "fill");
-        onSelectRange?.(fill.sourceAddress, target);
+        const changes = fillChanges(callbacks.object, fill.sourceAddress, target, fill.sourceRange);
+        callbacks.onCellsChange?.(changes, "fill");
+        const filledRange = fillRange(fill.sourceRange, target);
+        callbacks.onSelectRange?.(filledRange?.anchor || fill.sourceAddress, filledRange?.focus || target);
       }
-      if (selectionDrag?.focus) {
-        window.requestAnimationFrame(() => {
-          const nextCell = document.querySelector(
-            `[data-object-id="${object.id}"][data-cell-address="${selectionDrag.focus}"]`,
-          );
-          nextCell?.focus({ preventScroll: true });
-        });
+      if (selectionDrag?.focus && selectionDrag.focus !== selectionDrag.startAddress) {
+        focusSelectedGestureCell(callbacks?.object?.id, selectionDrag.focus);
       }
     };
-    window.addEventListener("pointerup", finishPointerGesture);
-    window.addEventListener("pointercancel", finishPointerGesture);
+    window.addEventListener("pointerup", finishPointerGesture, true);
+    window.addEventListener("pointercancel", finishPointerGesture, true);
     return () => {
-      window.removeEventListener("pointerup", finishPointerGesture);
-      window.removeEventListener("pointercancel", finishPointerGesture);
+      window.removeEventListener("pointerup", finishPointerGesture, true);
+      window.removeEventListener("pointercancel", finishPointerGesture, true);
     };
-  }, [object, onCellsChange, onSelectRange]);
+  }, [cellAddressAtPoint]);
 
   useEffect(() => {
     const moveResize = (event) => {
@@ -157,8 +267,20 @@ export function useSheetGridGestures({
       : cell.address;
     if (event.shiftKey) onSelectRange?.(anchor, cell.address);
     else onSelect(cell.address);
-    if (!cell.embed) selectionDragRef.current = { anchor, focus: cell.address };
-  }, [editingCellId, onSelect, onSelectRange, selectedAddress, selectionRange?.anchor]);
+    if (!cell.embed) {
+      const captureTarget = scrollRef.current || event.currentTarget;
+      selectionDragRef.current = {
+        anchor,
+        startAddress: cell.address,
+        focus: cell.address,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        captureTarget,
+        captured: false,
+      };
+    }
+  }, [editingCellId, onSelect, onSelectRange, scrollRef, selectedAddress, selectionRange?.anchor]);
 
   const moveSelectionGesture = useCallback((cell) => {
     if (fillDragRef.current) {
@@ -171,6 +293,23 @@ export function useSheetGridGestures({
     drag.focus = cell.address;
     onSelectRange?.(drag.anchor, cell.address);
   }, [onSelectRange]);
+
+  moveSelectionGestureRef.current = moveSelectionGesture;
+
+  useEffect(() => {
+    const moveSelectionFromPointer = (event) => {
+      const activeGesture = selectionDragRef.current || fillDragRef.current;
+      if (!activeGesture) return;
+      if (activeGesture.pointerId != null && event.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
+      captureGesturePointer(activeGesture, event);
+      const callbacks = gestureCallbacksRef.current;
+      const address = cellAddressAtPoint(event)
+        || domCellAddressAtPoint(event, callbacks?.object?.id);
+      if (address) moveSelectionGestureRef.current?.({ address });
+    };
+    window.addEventListener("pointermove", moveSelectionFromPointer, true);
+    return () => window.removeEventListener("pointermove", moveSelectionFromPointer, true);
+  }, [cellAddressAtPoint]);
 
   const startCellEditing = useCallback((cellId, initialValue = "") => {
     setEditingCellId(cellId);
@@ -186,10 +325,20 @@ export function useSheetGridGestures({
   const startFill = useCallback((event, cell) => {
     event.preventDefault();
     event.stopPropagation();
-    fillDragRef.current = { sourceAddress: cell.address };
+    const captureTarget = scrollRef.current || event.currentTarget;
+    if (event.pointerId != null) captureTarget.setPointerCapture?.(event.pointerId);
+    fillDragRef.current = {
+      sourceAddress: cell.address,
+      sourceRange: selectionRange || { anchor: cell.address, focus: cell.address },
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      captureTarget,
+      captured: event.pointerId != null,
+    };
     fillTargetRef.current = cell.address;
     setFillTarget(cell.address);
-  }, []);
+  }, [scrollRef, selectionRange]);
 
   const axisResizeTargets = useCallback((axis, index) => {
     if (!normalizedSelection) return [index];

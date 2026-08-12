@@ -6,6 +6,7 @@ export * from "./patches.ts";
 export * from "./engine.ts";
 export * from "./persistence.ts";
 export * from "./model.ts";
+export * from "./topology.js";
 export * from "./coordinates.ts";
 export * from "./ranges.ts";
 export * from "./structure.ts";

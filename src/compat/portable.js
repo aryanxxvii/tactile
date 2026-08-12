@@ -27,6 +27,7 @@ const CORE_WORKSPACE_INDEX_FIELDS = new Set([
   "id",
   "name",
   "homeObjectId",
+  "homePath",
   "createdAt",
   "updatedAt",
   "activeThemeId",
@@ -40,6 +41,9 @@ const CORE_OBJECT_FIELDS = new Set([
   "type",
   "title",
   "description",
+  "iconEmoji",
+  "iconColor",
+  "parent",
   "content",
   "blocks",
   "rows",
@@ -113,6 +117,7 @@ function cellMetadataForPortableSheet(sheet) {
   const cells = {};
   Object.values(sheet?.cells || {}).forEach((cell) => {
     const metadata = unknownFields(cell, CORE_CELL_FIELDS);
+    if (cell.embed?.linkId || cell.embed?.relation) metadata.embed = clonePortableValue(cell.embed);
     if (Object.keys(metadata).length) {
       cells[cell.address || cellAddress(cell.row, cell.column)] = clonePortableValue(metadata);
     }
@@ -160,6 +165,7 @@ export function buildPortableV4Package(workspaceInput, options = {}) {
     id: workspace.id,
     name: workspace.name,
     homeObjectId: workspace.homeObjectId,
+    homePath: workspace.homePath,
     createdAt: workspace.createdAt,
     updatedAt: workspace.updatedAt,
     activeThemeId: workspace.activeThemeId,

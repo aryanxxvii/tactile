@@ -61,18 +61,65 @@ function clipboardValue(cell) {
   return cell?.formula || cell?.value || "";
 }
 
-function fillSeriesValue(value, steps) {
+function cellAt(sheet, row, column) {
+  return sheet?.cells?.[cellId(row, column)]
+    || sheet?.cells?.[`${row}:${column}`]
+    || {};
+}
+
+function parseFillSeriesValue(value) {
   const source = String(value ?? "");
-  if (!source || !Number.isFinite(Number(source))) {
-    const match = /^(.*?)(-?\d+(?:\.\d+)?)$/.exec(source);
-    if (!match) return source;
-    const number = Number(match[2]);
-    const next = number + steps;
-    return `${match[1]}${Number.isInteger(number) ? Math.round(next) : next}`;
-  }
-  const number = Number(source);
-  const next = number + steps;
-  return Number.isInteger(number) ? String(Math.round(next)) : String(next);
+  const match = /^(.*?)(-?\d+(?:\.\d+)?)$/.exec(source);
+  if (!match) return null;
+  const number = Number(match[2]);
+  if (!Number.isFinite(number)) return null;
+  return { prefix: match[1], number };
+}
+
+function inferFillSeries(cells) {
+  if (cells.some((cell) => cell?.formula)) return null;
+  const values = cells.map((cell) => parseFillSeriesValue(cell?.value));
+  if (values.some((value) => !value)) return null;
+  const prefix = values[0].prefix;
+  if (values.some((value) => value.prefix !== prefix)) return null;
+  if (values.length === 1) return { prefix, first: values[0].number, step: 1 };
+  const step = values[1].number - values[0].number;
+  if (step === 0 || !values.slice(2).every((value, index) => (
+    value.number - values[index + 1].number === step
+  ))) return null;
+  return { prefix, first: values[0].number, step };
+}
+
+function fillSeriesValueAt(series, index) {
+  const number = series.first + (series.step * index);
+  const formatted = Number.isInteger(series.first) && Number.isInteger(series.step)
+    ? String(Math.round(number))
+    : String(number);
+  return `${series.prefix}${formatted}`;
+}
+
+function modulo(value, divisor) {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+export function fillRange(sourceRange, targetAddress) {
+  const source = normalizeRange(sourceRange?.anchor, sourceRange?.focus);
+  const target = coordinatesFromAddress(targetAddress);
+  if (!source || !target) return null;
+  return {
+    anchor: cellAddress(
+      Math.min(source.rowStart, target.row),
+      Math.min(source.columnStart, target.column),
+    ),
+    focus: cellAddress(
+      Math.max(source.rowEnd, target.row),
+      Math.max(source.columnEnd, target.column),
+    ),
+    rowStart: Math.min(source.rowStart, target.row),
+    rowEnd: Math.max(source.rowEnd, target.row),
+    columnStart: Math.min(source.columnStart, target.column),
+    columnEnd: Math.max(source.columnEnd, target.column),
+  };
 }
 
 export function serializeRange(sheet, range) {
@@ -132,27 +179,83 @@ export function shiftFormulaReferences(formula, rowDelta, columnDelta) {
   });
 }
 
-export function fillChanges(sheet, sourceAddress, targetAddress) {
+export function fillChanges(sheet, sourceAddress, targetAddress, sourceRange = null) {
   const source = coordinatesFromAddress(sourceAddress);
   const target = coordinatesFromAddress(targetAddress);
   if (!source || !target) return [];
-  const sourceCell = sheet.cells?.[cellId(source.row, source.column)]
-    || sheet.cells?.[`${source.row}:${source.column}`]
-    || {};
-  const range = normalizeRange(sourceAddress, targetAddress);
+  const sourceBounds = normalizeRange(
+    sourceRange?.anchor || sourceAddress,
+    sourceRange?.focus || sourceAddress,
+  );
+  const range = fillRange(sourceBounds, targetAddress);
+  if (!sourceBounds || !range) return [];
+  const sourceHeight = sourceBounds.rowEnd - sourceBounds.rowStart + 1;
+  const sourceWidth = sourceBounds.columnEnd - sourceBounds.columnStart + 1;
+  const extendsVertical = target.row < sourceBounds.rowStart || target.row > sourceBounds.rowEnd;
+  const extendsHorizontal = target.column < sourceBounds.columnStart || target.column > sourceBounds.columnEnd;
+  const verticalDistance = target.row < sourceBounds.rowStart
+    ? sourceBounds.rowStart - target.row
+    : Math.max(0, target.row - sourceBounds.rowEnd);
+  const horizontalDistance = target.column < sourceBounds.columnStart
+    ? sourceBounds.columnStart - target.column
+    : Math.max(0, target.column - sourceBounds.columnEnd);
+  const fillAxis = extendsVertical && (!extendsHorizontal || verticalDistance >= horizontalDistance)
+    ? "row"
+    : "column";
+  const verticalSeries = fillAxis === "row" && (sourceWidth === 1 || sourceHeight > 1)
+    ? Array.from({ length: sourceWidth }, (_, columnOffset) => inferFillSeries(
+      Array.from({ length: sourceHeight }, (_, rowOffset) => cellAt(
+        sheet,
+        sourceBounds.rowStart + rowOffset,
+        sourceBounds.columnStart + columnOffset,
+      )),
+    ))
+    : null;
+  const horizontalSeries = fillAxis === "column" && (sourceHeight === 1 || sourceWidth > 1)
+    ? Array.from({ length: sourceHeight }, (_, rowOffset) => inferFillSeries(
+      Array.from({ length: sourceWidth }, (_, columnOffset) => cellAt(
+        sheet,
+        sourceBounds.rowStart + rowOffset,
+        sourceBounds.columnStart + columnOffset,
+      )),
+    ))
+    : null;
   const changes = [];
   for (let row = range.rowStart; row <= range.rowEnd; row += 1) {
     for (let column = range.columnStart; column <= range.columnEnd; column += 1) {
-      if (row === source.row && column === source.column) continue;
+      if (
+        row >= sourceBounds.rowStart
+        && row <= sourceBounds.rowEnd
+        && column >= sourceBounds.columnStart
+        && column <= sourceBounds.columnEnd
+      ) continue;
+      const sourceRow = sourceBounds.rowStart + modulo(row - sourceBounds.rowStart, sourceHeight);
+      const sourceColumn = sourceBounds.columnStart + modulo(column - sourceBounds.columnStart, sourceWidth);
+      const sourceCell = cellAt(sheet, sourceRow, sourceColumn);
+      const series = fillAxis === "row"
+        ? verticalSeries?.[column - sourceBounds.columnStart]
+        : horizontalSeries?.[row - sourceBounds.rowStart];
+      const canUseSeries = Boolean(series)
+        && ((fillAxis === "row" && column >= sourceBounds.columnStart && column <= sourceBounds.columnEnd)
+          || (fillAxis === "column" && row >= sourceBounds.rowStart && row <= sourceBounds.rowEnd));
+      const seriesIndex = fillAxis === "row"
+        ? row - sourceBounds.rowStart
+        : column - sourceBounds.columnStart;
       const formula = sourceCell.formula
-        ? shiftFormulaReferences(sourceCell.formula, row - source.row, column - source.column)
+        ? shiftFormulaReferences(sourceCell.formula, row - sourceRow, column - sourceColumn)
         : "";
-      const steps = Math.max(0, row - source.row) + Math.max(0, column - source.column);
       changes.push({
         cellId: cellId(row, column),
         patch: formula
           ? { formula, value: "", embed: null, style: sourceCell.style }
-          : { value: fillSeriesValue(sourceCell.value || "", steps), formula: "", embed: null, style: sourceCell.style },
+          : {
+            value: canUseSeries
+              ? fillSeriesValueAt(series, seriesIndex)
+              : sourceCell.value ?? "",
+            formula: "",
+            embed: null,
+            style: sourceCell.style,
+          },
       });
     }
   }

@@ -1,11 +1,15 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AppDock } from "./components/AppDock.jsx";
+import { FilesPanel } from "./components/FilesPanel.jsx";
 import { SettingsPanel } from "./components/SettingsPanel.jsx";
 import { SpatialLayer } from "./components/SpatialLayer.jsx";
+import { TooltipLayer } from "./components/TooltipLayer.jsx";
 import { useLocalWorkspace } from "./hooks/useLocalWorkspace.js";
 import { ObjectSurface } from "./shell/ObjectSurface.jsx";
-import { useInOut } from "./shell/inOut.js";
+import { layerHistoryEntry, MAX_VISIBLE_LAYERS, useInOut } from "./shell/inOut.js";
 import { useSelectionCommands } from "./shell/selectionCommands.js";
 import { useShellState } from "./shell/useShellState.js";
+import { buildFilesIndex } from "./shell/filesIndex.js";
 import { useWorkspaceCommands } from "./shell/workspaceCommands.js";
 import {
   cloneTheme,
@@ -17,7 +21,8 @@ import {
 export function App() {
   const workspaceState = useLocalWorkspace();
   const {
-    workspace,
+      workspace,
+      hydrated,
     saveState,
     replaceWorkspace,
     updateObject,
@@ -43,8 +48,28 @@ export function App() {
     canRedo,
   } = workspaceState;
   const workspaceRootId = workspace.homeObjectId;
-  const inOut = useInOut({ workspace, workspaceRootId });
-  const shell = useShellState({ schedule: inOut.schedule });
+  const inOut = useInOut({ workspace, workspaceRootId, workspaceHydrated: hydrated });
+  const shell = useShellState({
+    schedule: inOut.schedule,
+    settings: workspace.settings,
+    onUpdateSettings: updateSettings,
+    workspaceHydrated: hydrated,
+  });
+  const [viewport, setViewport] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
+  useEffect(() => {
+    const handleResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  const filesIndexRef = useRef(null);
+  const filesIndex = useMemo(() => {
+    const next = buildFilesIndex(workspace, filesIndexRef.current);
+    filesIndexRef.current = next;
+    return next;
+  }, [workspace]);
   const selection = useSelectionCommands({
     workspace,
     layers: inOut.layers,
@@ -79,27 +104,57 @@ export function App() {
   });
 
   useEffect(() => {
-    const handleKeyDown = (event) => selection.handleKeyboard(
-      event,
-      shell.settingsOpen,
-      shell.closeSettings,
-      inOut.closeTopLayer,
-      inOut.expandTopLayer,
-    );
+    const handleKeyDown = (event) => {
+      const command = event.ctrlKey || event.metaKey;
+      if (command && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        if (shell.filesOpen) shell.closeFiles();
+        else shell.openFiles(event.target);
+        return;
+      }
+      if (shell.filesOpen) return;
+      selection.handleKeyboard(
+        event,
+        shell.settingsOpen,
+        shell.closeSettings,
+        inOut.closeTopLayer,
+        inOut.expandTopLayer,
+      );
+    };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [inOut.closeTopLayer, inOut.expandTopLayer, selection.handleKeyboard, shell.closeSettings, shell.settingsOpen]);
+  }, [inOut.closeTopLayer, inOut.expandTopLayer, selection.handleKeyboard, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.openFiles, shell.settingsOpen]);
 
-  const objectPaths = useMemo(() => inOut.layers.map((_, index) => [
-    { id: workspace.id, title: workspace.name },
-    ...inOut.layers.slice(0, index + 1).map((layer) => ({
+  const objectPaths = useMemo(() => inOut.layers.map((_, index) => {
+    const rootLayer = inOut.layers[0];
+    const includeRoot = rootLayer?.objectId && rootLayer.objectId !== workspaceRootId;
+    const rootObjectId = rootLayer?.objectId || workspaceRootId;
+    const routeForIndex = (targetIndex) => ({
+      rootObjectId,
+      segments: inOut.layers.slice(1, targetIndex + 1).map((layer) => ({
+        ...layerHistoryEntry(layer),
+        mode: "full",
+      })),
+    });
+    return [
+      { id: workspace.id, title: workspace.name, route: routeForIndex(-1) },
+      ...(includeRoot ? [{
+        id: rootLayer.objectId,
+        title: workspace.objects[rootLayer.objectId]?.title || "Untitled",
+        route: routeForIndex(0),
+      }] : []),
+      ...inOut.layers.slice(1, index + 1).map((layer) => ({
       id: layer.objectId,
       title: workspace.objects[layer.objectId]?.title || "Untitled",
-    })),
-  ]), [inOut.layers, workspace]);
+      route: routeForIndex(inOut.layers.indexOf(layer)),
+      })),
+    ];
+  }), [inOut.layers, workspace, workspaceRootId]);
 
   const currentObject = workspace.objects[inOut.layers[inOut.layers.length - 1]?.objectId || workspaceRootId];
   const currentObjectTitle = currentObject?.title || workspace.name || "Home";
+  const activeObjectId = currentObject?.id || workspaceRootId;
+  const activeDockPath = objectPaths.at(-1) || [{ id: workspace.id, title: workspace.name }];
 
   useEffect(() => {
     document.title = `Tactile — ${currentObjectTitle}`;
@@ -110,10 +165,21 @@ export function App() {
     [workspace.activeThemeId, workspace.themes],
   );
   const sheetMetrics = useMemo(() => themeSheetMetrics(activeTheme), [activeTheme]);
+  const visibleLayerStart = Math.max(0, inOut.layers.length - MAX_VISIBLE_LAYERS);
+  const visibleLayers = inOut.layers.slice(visibleLayerStart);
+  const topLayer = inOut.layers.at(-1);
+  const floatingLayerActive = topLayer?.phase === "floating";
+  const parentLayerSuspended = visibleLayers.length > 1;
+  const parentContextVisible = parentLayerSuspended && topLayer?.phase !== "full";
+  const filesSidebarWidth = shell.filesPinned && shell.filesOpen && viewport.width > 620
+    ? Math.min(shell.filesWidth, Math.max(0, viewport.width - 24))
+    : 0;
 
   const renderObject = (layer, index) => {
     const object = workspace.objects[layer.objectId];
     if (!object) return null;
+    const isTopLayer = index > 0 && index === inOut.layers.length - 1;
+    const isVisibleParentLayer = parentContextVisible && index === inOut.layers.length - 2;
     const selectedAddress = selection.selectedByObject[object.id] || "A1";
     const selectionRange = selection.rangeByObject[object.id] || { anchor: selectedAddress, focus: selectedAddress };
     const sharedProps = {
@@ -142,14 +208,16 @@ export function App() {
         homeObjectId: workspace.homeObjectId,
         exportState: shell.exportState,
         onSetHome: (objectId) => {
-          setHomeObject(objectId);
-          shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now home`);
+          setHomeObject(objectId, inOut.homePathForObject(objectId));
+          shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now the start object`);
         },
         onExport: commands.exportWorkspace,
         onImport: commands.importWorkspace,
       },
       onBack: inOut.closeTopLayer,
-      canGoBack: index > 0,
+      canGoBack: isTopLayer
+        || (isVisibleParentLayer && index > 0)
+        || (index === 0 && Boolean(object.parent?.parentObjectId)),
       onOpenSettings: shell.openSettings,
       onUndo: undo,
       onRedo: redo,
@@ -162,12 +230,20 @@ export function App() {
 
   return (
     <div
-      className="tactile-app"
+      className={`tactile-app ${shell.filesPinned && shell.filesOpen ? "files-is-pinned" : ""} ${floatingLayerActive ? "has-floating-layer" : ""}`}
       data-paper-scheme
+      data-files-pinned={shell.filesPinned ? "true" : undefined}
+      data-files-resizing={shell.filesResizing ? "true" : undefined}
       data-reduce-motion={workspace.settings.reduceMotion ? "true" : "false"}
-      style={themeStyle(activeTheme)}
+      style={{ ...themeStyle(activeTheme), "--files-sidebar-width": `${shell.filesWidth}px` }}
     >
-      <div className="workspace-shell" inert={shell.settingsOpen} aria-hidden={shell.settingsOpen ? "true" : undefined}>
+      <div
+        className="workspace-shell"
+        data-logical-layer-count={inOut.layers.length}
+        data-rendered-layer-count={visibleLayers.length}
+        inert={shell.settingsOpen || (shell.filesOpen && !shell.filesPinned)}
+        aria-hidden={shell.settingsOpen || (shell.filesOpen && !shell.filesPinned) ? "true" : undefined}
+      >
         <input
           ref={shell.importInputRef}
           className="native-file-input"
@@ -177,20 +253,61 @@ export function App() {
           tabIndex={-1}
           aria-hidden="true"
         />
-        <div className="base-object-layer">{renderObject(inOut.layers[0], 0)}</div>
+        <div
+          className="base-object-layer"
+          inert={parentLayerSuspended}
+          data-under-floating-layer={parentContextVisible ? "true" : undefined}
+        >
+          {renderObject(visibleLayers[0], visibleLayerStart)}
+        </div>
 
-        {inOut.layers.slice(1).map((layer, childIndex) => (
+        {visibleLayers.slice(1).map((layer, childIndex) => (
           <SpatialLayer
             layer={layer}
             depth={childIndex + 1}
+            viewportInsetLeft={filesSidebarWidth}
             key={layer.key}
             onExpand={inOut.expandLayer}
             onClose={inOut.closeTopLayer}
           >
-            {renderObject(layer, childIndex + 1)}
+            {renderObject(layer, visibleLayerStart + childIndex + 1)}
           </SpatialLayer>
         ))}
       </div>
+
+      <div className="app-bottom-bar" aria-label="Tactile bottom bar">
+        <AppDock
+          path={activeDockPath}
+          onNavigatePath={(item) => inOut.navigateToRoute(item.route, { mode: "full" })}
+          filesOpen={shell.filesOpen}
+          onOpenFiles={shell.toggleFiles}
+          onOpenSettings={shell.openSettings}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
+      </div>
+
+      {shell.filesOpen ? (
+        <FilesPanel
+          index={filesIndex}
+          activeObjectId={activeObjectId}
+          pinned={shell.filesPinned}
+          width={shell.filesWidth}
+          onOpenRoute={(route) => inOut.navigateToRoute(route, { mode: "full", immediate: true })}
+          onUpdateObject={updateObject}
+          onSetHome={(objectId, route) => {
+            setHomeObject(objectId, route?.segments || inOut.homePathForObject(objectId));
+            shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now the start object`);
+          }}
+          onNotice={shell.showNotice}
+          onTogglePinned={shell.toggleFilesPinned}
+          onResize={shell.updateFilesWidth}
+          onResizeStateChange={shell.setFilesResizing}
+          onClose={shell.closeFiles}
+        />
+      ) : null}
 
       {shell.settingsOpen ? (
         <SettingsPanel
@@ -211,6 +328,7 @@ export function App() {
       ) : null}
 
       {shell.notice ? <div className="app-notice" role="status">{shell.notice}</div> : null}
+      <TooltipLayer />
     </div>
   );
 }

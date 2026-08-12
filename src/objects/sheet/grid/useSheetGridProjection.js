@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { evaluateSheetFormulas } from "../../../sheet/formulas.js";
 import { cellId, coordinatesFromAddress } from "../../../sheet/coordinates.js";
-import { normalizeRange } from "../../../sheet/ranges.js";
+import { fillRange, normalizeRange } from "../../../sheet/ranges.js";
 import { useVirtualSheet } from "../useVirtualSheet.js";
 
 export function rangeValues(start, end) {
@@ -25,10 +25,16 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
     && normalizedSelection.rowStart === 0
     && normalizedSelection.rowEnd === object.rows - 1
     && normalizedSelection.columnStart === normalizedSelection.columnEnd;
-  const showActiveAxisContext = isFullRowSelection || isFullColumnSelection;
+  const showActiveRowContext = isFullRowSelection;
+  const showActiveColumnContext = isFullColumnSelection;
   const fillPreviewRange = useMemo(
-    () => fillTarget ? normalizeRange(selectedAddress, fillTarget) : null,
-    [fillTarget, selectedAddress],
+    () => fillTarget
+      ? fillRange(
+        selectionRange || { anchor: selectedAddress, focus: selectedAddress },
+        fillTarget,
+      )
+      : null,
+    [fillTarget, selectedAddress, selectionRange],
   );
   const formulaValues = useMemo(() => evaluateSheetFormulas(object), [object]);
   const rowGroups = Array.isArray(object.rowGroups) ? object.rowGroups : [];
@@ -76,9 +82,11 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
       columnWidth: object.columnWidth || sheetMetrics?.columnWidth,
       rowHeights: object.rowHeights,
       columnWidths: object.columnWidths,
+      viewStateKey: object.id,
     },
     visibleRowIndexMap,
     visibleColumnIndexMap,
+    object.id,
   );
   const visibleRows = useMemo(
     () => rangeValues(virtualSheet.range.rowStart, virtualSheet.range.rowEnd).map((position) => ({
@@ -98,7 +106,8 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
   return {
     selectedCoordinates,
     normalizedSelection,
-    showActiveAxisContext,
+    showActiveRowContext,
+    showActiveColumnContext,
     fillPreviewRange,
     formulaValues,
     rowGroups,

@@ -1,5 +1,4 @@
 import { IconBrackets, IconTable } from "@tabler/icons-react";
-import { AppDock } from "../../components/AppDock.jsx";
 import { FormulaBar } from "../../components/FormulaBar.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { createId, materializeCell } from "../../model.js";
@@ -29,11 +28,6 @@ export function SheetObject({
   workspaceActions,
   sheetMetrics,
   onCreateFile,
-  onOpenSettings,
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo,
 }) {
   const selectedCoordinates = coordinatesFromAddress(selectedAddress) || { row: 0, column: 0 };
   const selectedCell = materializeCell(object, selectedCoordinates.row, selectedCoordinates.column);
@@ -119,14 +113,13 @@ export function SheetObject({
       </section>
 
       <footer className="object-statusbar">
-        <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
         <span className="status-item active-cell-status">
           <span className="status-caption">{selectedRangeSize > 1 ? "Range" : "Active"}</span>
           <code>{selectedRangeSize > 1 ? selectedRangeLabel : selectedCell?.address || "A1"}</code>
           {selectedRangeSize === 1 && selectedCellValue ? <span className="active-cell-value">· {selectedCellValue}</span> : null}
         </span>
-        {selectedRangeSize > 1 ? <span className="status-item range-status">{selectedRangeLabel} · {selectedRangeSize} cells</span> : null}
+        {selectedRangeSize > 1 ? <span className="status-item range-status">· {selectedRangeSize} cells</span> : null}
         {object.filters?.length ? <span className="status-item filter-status">{object.filters.length} filter{object.filters.length === 1 ? "" : "s"} active</span> : null}
         {object.rowGroups?.length ? <span className="status-item">{object.rowGroups.length} row group{object.rowGroups.length === 1 ? "" : "s"}</span> : null}
         {object.columnGroups?.length ? <span className="status-item">{object.columnGroups.length} column group{object.columnGroups.length === 1 ? "" : "s"}</span> : null}

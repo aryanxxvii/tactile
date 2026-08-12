@@ -45,6 +45,7 @@ function sheetMetadata(object) {
     if (cell.style) metadata.style = cell.style;
     if (cell.note) metadata.note = cell.note;
     if (cell.validation) metadata.validation = cell.validation;
+    if (cell.embed?.linkId || cell.embed?.relation) metadata.embed = { ...cell.embed };
     if (Object.keys(metadata).length) cellMetadata[cell.address] = metadata;
   });
   return {
@@ -76,6 +77,9 @@ export function buildPortablePackage(workspaceInput) {
       type: object.type,
       title: object.title,
       description: object.description || "",
+      parent: object.parent || null,
+      ...(object.iconEmoji ? { iconEmoji: object.iconEmoji } : {}),
+      ...(object.iconColor ? { iconColor: object.iconColor } : {}),
     };
 
     if (object.type === "sheet") {
@@ -110,6 +114,7 @@ export function buildPortablePackage(workspaceInput) {
     id: workspace.id,
     name: workspace.name,
     homeObjectId: workspace.homeObjectId,
+    homePath: workspace.homePath,
     createdAt: workspace.createdAt,
     updatedAt: workspace.updatedAt,
     activeThemeId: workspace.activeThemeId,
@@ -222,6 +227,9 @@ export async function workspaceFromZip(input) {
         type: "sheet",
         title: record.title,
         description: record.description || "",
+        parent: record.parent || null,
+        iconEmoji: record.iconEmoji || "",
+        iconColor: record.iconColor || "",
         rows: Math.max(DEFAULT_ROWS, metadata.rows || 0),
         columns: Math.max(DEFAULT_COLUMNS, metadata.columns || 0),
         rowHeight: metadata.rowHeight,
@@ -242,6 +250,9 @@ export async function workspaceFromZip(input) {
         type: "markdown",
         title: record.title,
         description: record.description || "",
+        parent: record.parent || null,
+        iconEmoji: record.iconEmoji || "",
+        iconColor: record.iconColor || "",
         content: record.file && zip.file(record.file) ? await zip.file(record.file).async("text") : "",
       };
     } else {
@@ -263,6 +274,9 @@ export async function workspaceFromZip(input) {
         type: record.type,
         title: record.title,
         description: record.description || "",
+        parent: record.parent || null,
+        iconEmoji: record.iconEmoji || "",
+        iconColor: record.iconColor || "",
         assetId: file ? assetId : null,
         source: record.source || "",
       };

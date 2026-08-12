@@ -56,7 +56,9 @@ export function useSelectionCommands({
     if (!sourceElement) return;
     openObject({
       objectId: cell.embed.objectId,
+      linkId: cell.embed.linkId,
       sourceObjectId: activeObject.id,
+      sourceCellId: cell.id,
       sourceAddress: cell.address,
       sourceLabel: workspace.objects[cell.embed.objectId]?.title || cell.value || "Embedded object",
       sourceType: cell.embed.type,

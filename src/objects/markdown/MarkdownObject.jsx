@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   IconBlockquote,
   IconBold,
@@ -8,7 +8,6 @@ import {
   IconCode,
   IconColumns2,
   IconEye,
-  IconFileText,
   IconH1,
   IconHighlight,
   IconItalic,
@@ -23,8 +22,8 @@ import {
   IconTable,
   IconUnderline,
 } from "@tabler/icons-react";
-import { AppDock } from "../../components/AppDock.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
+import { PaperPortal } from "../../components/PaperPortal.jsx";
 import { renderMarkdownBlocks } from "./markdownRender.jsx";
 
 const TEXT_COLORS = [
@@ -45,20 +44,59 @@ const HIGHLIGHT_COLORS = [
 
 function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(null);
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
     const close = (event) => {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
+      if (!rootRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) setOpen(false);
     };
     window.addEventListener("pointerdown", close);
     return () => window.removeEventListener("pointerdown", close);
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return undefined;
+    const updatePosition = () => {
+      const anchorBox = triggerRef.current?.getBoundingClientRect();
+      if (!anchorBox) return;
+      const menuBox = menuRef.current?.getBoundingClientRect();
+      const width = menuBox?.width || 154;
+      const height = menuBox?.height || 108;
+      const gap = 6;
+      const gutter = 8;
+      const canFitBelow = anchorBox.bottom + gap + height <= window.innerHeight - gutter;
+      const canFitAbove = anchorBox.top - gap - height >= gutter;
+      const placement = !canFitBelow && canFitAbove ? "above" : "below";
+      const top = placement === "above" ? anchorBox.top - gap - height : anchorBox.bottom + gap;
+      const left = Math.min(
+        Math.max(gutter, anchorBox.left),
+        Math.max(gutter, window.innerWidth - width - gutter),
+      );
+      setPosition({
+        left,
+        top: Math.max(gutter, Math.min(window.innerHeight - gutter - height, top)),
+        placement,
+      });
+    };
+    updatePosition();
+    const frame = window.requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
   return (
     <div className="markdown-color-control" ref={rootRef}>
       <button
+        ref={triggerRef}
         className={open ? "is-active" : ""}
         type="button"
         aria-label={label}
@@ -70,33 +108,41 @@ function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
         <Icon size={15} stroke={1.7} />
         <IconChevronDown className="markdown-color-chevron" size={9} stroke={1.8} />
       </button>
-      {open ? (
-        <div className="markdown-color-menu" role="menu" aria-label={label}>
-          <div className="markdown-color-menu-title">{label}</div>
-          <div className="markdown-color-grid">
-            {colors.map((color) => (
-              <button
-                type="button"
-                role="menuitem"
-                key={color.value}
-                aria-label={`${label}: ${color.name}`}
-                data-tooltip={color.name}
-                onClick={() => {
-                  onSelect(color.value);
-                  setOpen(false);
-                }}
-              >
-                <span style={{ backgroundColor: color.value }} />
-              </button>
-            ))}
+      {open && position ? (
+        <PaperPortal className="tactile-format-layer" themeSource={rootRef.current}>
+          <div
+            ref={menuRef}
+            className={`markdown-color-menu is-${position.placement}`}
+            role="menu"
+            aria-label={label}
+            style={{ left: position.left, top: position.top }}
+          >
+            <div className="markdown-color-menu-title">{label}</div>
+            <div className="markdown-color-grid">
+              {colors.map((color) => (
+                <button
+                  type="button"
+                  role="menuitem"
+                  key={color.value}
+                  aria-label={`${label}: ${color.name}`}
+                  data-tooltip={color.name}
+                  onClick={() => {
+                    onSelect(color.value);
+                    setOpen(false);
+                  }}
+                >
+                  <span style={{ backgroundColor: color.value }} />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </PaperPortal>
       ) : null}
     </div>
   );
 }
 
-export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onOpenSettings, onUndo, onRedo, canUndo, canRedo }) {
+export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions }) {
   const [mode, setMode] = useState("write");
   const editorRef = useRef(null);
   const content = object.content || "";
@@ -223,6 +269,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
 
       <main className={mode === "split" ? "markdown-workspace is-split" : "markdown-workspace"}>
         <div className="markdown-toolbar" aria-label="Text commands">
+          <div className="markdown-toolbar-inner">
           <div className="markdown-mode-switch">
             <button className={mode === "write" ? "is-active" : ""} type="button" onClick={() => setMode("write")}>
               <IconPencil size={14} stroke={1.6} /> Write
@@ -263,7 +310,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
           <button type="button" data-tooltip="Insert table" onClick={() => insertAtSelection("| Column | Column |\n| --- | --- |\n| Value | Value |\n")}><IconTable size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Insert image" onClick={() => insertAtSelection("![Alt text](https://)" )}><IconPhoto size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Divider" onClick={() => insertBlock("---\n")}><IconMinus size={15} stroke={1.7} /></button>
-          <span className="markdown-file-kind"><IconFileText size={14} stroke={1.55} /> Markdown · separate local file</span>
+          </div>
         </div>
 
         {mode === "write" ? editor() : null}
@@ -272,7 +319,6 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       </main>
 
       <footer className="object-statusbar">
-        <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
         <span className="status-item">{words} words · {lines} lines · .md</span>
         <span className="status-divider">·</span>

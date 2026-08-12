@@ -19,6 +19,8 @@ const baseTokens = {
   focusRing: "#a94530",
   positive: "#4f6b55",
   negative: "#9b4032",
+  selectionBackground: "rgba(179, 77, 53, 0.18)",
+  selectionForeground: "#181816",
   cellRadius: 5,
   cellGap: 1,
   cellHeight: 30,
@@ -65,6 +67,8 @@ export const BUILT_IN_THEMES = [
       accent: "#476d82",
       accentSoft: "rgba(71,109,130,.17)",
       focusRing: "#3e657a",
+      selectionBackground: "rgba(71,109,130,.17)",
+      selectionForeground: "#192022",
     },
   },
   {
@@ -89,6 +93,8 @@ export const BUILT_IN_THEMES = [
       accent: "#69734b",
       accentSoft: "rgba(105,115,75,.18)",
       focusRing: "#5d6841",
+      selectionBackground: "rgba(105,115,75,.18)",
+      selectionForeground: "#202019",
     },
   },
   {
@@ -113,12 +119,16 @@ export const BUILT_IN_THEMES = [
       accent: "#7d5264",
       accentSoft: "rgba(125,82,100,.18)",
       focusRing: "#704659",
+      selectionBackground: "rgba(125,82,100,.18)",
+      selectionForeground: "#211c1e",
     },
   },
 ];
 
 export function normalizeTheme(theme) {
   if (!theme || typeof theme !== "object") throw new Error("This is not a Tactile theme.");
+  const providedTokens = theme.tokens && typeof theme.tokens === "object" ? theme.tokens : {};
+  const tokens = { ...baseTokens, ...providedTokens };
   return {
     ...theme,
     id: String(theme.id || createId("theme")),
@@ -127,8 +137,9 @@ export function normalizeTheme(theme) {
     version: Number(theme.version || THEME_VERSION),
     builtIn: false,
     tokens: {
-      ...baseTokens,
-      ...(theme.tokens || {}),
+      ...tokens,
+      selectionBackground: providedTokens.selectionBackground ?? tokens.accentSoft,
+      selectionForeground: providedTokens.selectionForeground ?? tokens.ink,
     },
   };
 }
@@ -155,6 +166,8 @@ export function cloneTheme(theme) {
 
 export function themeStyle(theme) {
   const tokens = { ...baseTokens, ...(theme?.tokens || {}) };
+  const selectionBackground = tokens.selectionBackground || tokens.accentSoft;
+  const selectionForeground = tokens.selectionForeground || tokens.ink;
   return {
     "--app-background": tokens.appBackground,
     "--paper": tokens.paper,
@@ -169,6 +182,8 @@ export function themeStyle(theme) {
     "--line-strong": tokens.lineStrong,
     "--accent": tokens.accent,
     "--accent-soft": tokens.accentSoft,
+    "--selection-background": selectionBackground,
+    "--selection-foreground": selectionForeground,
     "--focus-ring": tokens.focusRing,
     "--positive": tokens.positive,
     "--negative": tokens.negative,

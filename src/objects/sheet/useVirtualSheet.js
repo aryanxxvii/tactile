@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 export const SHEET_METRICS = {
   rowHeight: 31,
@@ -7,6 +8,18 @@ export const SHEET_METRICS = {
   columnHeaderHeight: 25,
   overscan: 3,
 };
+
+const SUSPENDED_SHEET_VIEW = new Map();
+
+function rememberSheetViewport(viewStateKey, viewport) {
+  if (!viewStateKey || !viewport) return;
+  SUSPENDED_SHEET_VIEW.set(viewStateKey, {
+    width: viewport.width,
+    height: viewport.height,
+    scrollLeft: viewport.scrollLeft,
+    scrollTop: viewport.scrollTop,
+  });
+}
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -38,7 +51,42 @@ function firstVisiblePosition(offsets, coordinate) {
   return low;
 }
 
-export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap, customColumnIndexMap) {
+function buildRange(rowGeometry, columnGeometry, rowCount, columnCount, metrics, viewport, overscan) {
+  const { rowHeaderWidth, columnHeaderHeight } = metrics;
+  const rowMax = Math.max(0, rowCount - 1);
+  const columnMax = Math.max(0, columnCount - 1);
+  return {
+    rowStart: clamp(
+      firstVisiblePosition(rowGeometry.offsets, viewport.scrollTop - columnHeaderHeight) - overscan,
+      0,
+      rowMax,
+    ),
+    rowEnd: clamp(
+      firstVisiblePosition(rowGeometry.offsets, viewport.scrollTop + viewport.height - columnHeaderHeight) + overscan,
+      0,
+      rowMax,
+    ),
+    columnStart: clamp(
+      firstVisiblePosition(columnGeometry.offsets, viewport.scrollLeft - rowHeaderWidth) - overscan,
+      0,
+      columnMax,
+    ),
+    columnEnd: clamp(
+      firstVisiblePosition(columnGeometry.offsets, viewport.scrollLeft + viewport.width - rowHeaderWidth) + overscan,
+      0,
+      columnMax,
+    ),
+  };
+}
+
+function rangeContains(range, visibleRange) {
+  return visibleRange.rowStart >= range.rowStart
+    && visibleRange.rowEnd <= range.rowEnd
+    && visibleRange.columnStart >= range.columnStart
+    && visibleRange.columnEnd <= range.columnEnd;
+}
+
+export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap, customColumnIndexMap, viewStateKey = "") {
   const metrics = useMemo(() => ({
     ...SHEET_METRICS,
     rowHeight: customMetrics?.rowHeight ?? SHEET_METRICS.rowHeight,
@@ -83,11 +131,18 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   );
   const scrollRef = useRef(null);
   const frameRef = useRef(null);
-  const [viewport, setViewport] = useState({
-    width: 900,
-    height: 500,
-    scrollLeft: 0,
-    scrollTop: 0,
+  const [viewport, setViewport] = useState(() => {
+    const saved = viewStateKey ? SUSPENDED_SHEET_VIEW.get(viewStateKey) : null;
+    return {
+      // A sheet can move between the base layer and a floating layer while
+      // In & Out closes. Reuse its last measured viewport so the first paint
+      // after that move keeps the same virtual row window instead of briefly
+      // rendering only the default 500px fallback.
+      width: saved?.width || 900,
+      height: saved?.height || 500,
+      scrollLeft: saved?.scrollLeft || 0,
+      scrollTop: saved?.scrollTop || 0,
+    };
   });
 
   const readViewport = useCallback(() => {
@@ -100,6 +155,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
         scrollLeft: element.scrollLeft,
         scrollTop: element.scrollTop,
       };
+      rememberSheetViewport(viewStateKey, next);
       return current.width === next.width
         && current.height === next.height
         && current.scrollLeft === next.scrollLeft
@@ -107,20 +163,52 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
         ? current
         : next;
     });
-  }, []);
+  }, [viewStateKey]);
 
   useEffect(() => {
     readViewport();
     const element = scrollRef.current;
     if (!element) return undefined;
+    const saved = viewStateKey ? SUSPENDED_SHEET_VIEW.get(viewStateKey) : null;
+    if (saved) {
+      element.scrollLeft = saved.scrollLeft || 0;
+      element.scrollTop = saved.scrollTop || 0;
+      element.style.setProperty("--sheet-scroll-x", `${element.scrollLeft}px`);
+      element.style.setProperty("--sheet-scroll-y", `${element.scrollTop}px`);
+      readViewport();
+    }
     const observer = new ResizeObserver(readViewport);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [readViewport]);
+  }, [readViewport, viewStateKey]);
+
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return undefined;
+    const syncScrollPosition = () => {
+      element.style.setProperty("--sheet-scroll-x", `${element.scrollLeft}px`);
+      element.style.setProperty("--sheet-scroll-y", `${element.scrollTop}px`);
+    };
+    syncScrollPosition();
+    element.addEventListener("scroll", syncScrollPosition, { passive: true });
+    return () => element.removeEventListener("scroll", syncScrollPosition);
+  }, []);
 
   useEffect(() => () => {
     if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
   }, []);
+
+  const range = useMemo(() => {
+    return buildRange(
+      rowGeometry,
+      columnGeometry,
+      rowIndexMap.length,
+      columnIndexMap.length,
+      metrics,
+      viewport,
+      metrics.overscan,
+    );
+  }, [columnGeometry.offsets, columnIndexMap.length, metrics, rowGeometry.offsets, rowIndexMap.length, viewport]);
 
   const onScroll = useCallback((event) => {
     const element = event?.currentTarget || scrollRef.current;
@@ -130,42 +218,51 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       element.style.setProperty("--sheet-scroll-x", `${element.scrollLeft}px`);
       element.style.setProperty("--sheet-scroll-y", `${element.scrollTop}px`);
     }
+    const nextViewport = element
+      ? {
+        width: element.clientWidth,
+        height: element.clientHeight,
+        scrollLeft: element.scrollLeft,
+        scrollTop: element.scrollTop,
+      }
+      : null;
+    const nextVisibleRange = nextViewport
+      ? buildRange(
+        rowGeometry,
+        columnGeometry,
+        rowIndexMap.length,
+        columnIndexMap.length,
+        metrics,
+        nextViewport,
+        0,
+      )
+      : null;
+    // A normal scroll remains compositor-friendly: CSS rails move immediately
+    // and the bounded React window updates on the next scheduled commit. Only
+    // flush when a jump would leave the current window unable to cover the
+    // viewport, preventing a blank frame without rendering per-pixel work.
+    if (nextVisibleRange && !rangeContains(range, nextVisibleRange)) {
+      flushSync(() => readViewport());
+    }
     if (frameRef.current) return;
     frameRef.current = window.requestAnimationFrame(() => {
       frameRef.current = null;
       const current = scrollRef.current;
       if (current) {
+        readViewport();
         current.style.setProperty("--sheet-scroll-x", `${current.scrollLeft}px`);
         current.style.setProperty("--sheet-scroll-y", `${current.scrollTop}px`);
+        if (viewStateKey) {
+          rememberSheetViewport(viewStateKey, {
+            width: current.clientWidth,
+            height: current.clientHeight,
+            scrollLeft: current.scrollLeft,
+            scrollTop: current.scrollTop,
+          });
+        }
       }
-      readViewport();
     });
-  }, [readViewport]);
-
-  const range = useMemo(() => {
-    const { rowHeaderWidth, columnHeaderHeight, overscan } = metrics;
-    const rowStart = clamp(
-      firstVisiblePosition(rowGeometry.offsets, viewport.scrollTop - columnHeaderHeight) - overscan,
-      0,
-      Math.max(0, rowIndexMap.length - 1),
-    );
-    const rowEnd = clamp(
-      firstVisiblePosition(rowGeometry.offsets, viewport.scrollTop + viewport.height - columnHeaderHeight) + overscan,
-      0,
-      Math.max(0, rowIndexMap.length - 1),
-    );
-    const columnStart = clamp(
-      firstVisiblePosition(columnGeometry.offsets, viewport.scrollLeft - rowHeaderWidth) - overscan,
-      0,
-      Math.max(0, columnIndexMap.length - 1),
-    );
-    const columnEnd = clamp(
-      firstVisiblePosition(columnGeometry.offsets, viewport.scrollLeft + viewport.width - rowHeaderWidth) + overscan,
-      0,
-      Math.max(0, columnIndexMap.length - 1),
-    );
-    return { rowStart, rowEnd, columnStart, columnEnd };
-  }, [columnGeometry.offsets, columnIndexMap.length, metrics, rowGeometry.offsets, rowIndexMap.length, viewport]);
+  }, [columnGeometry, columnIndexMap.length, metrics, range, readViewport, rowGeometry, rowIndexMap.length, viewStateKey]);
 
   const canvasSize = useMemo(() => ({
     width: metrics.rowHeaderWidth + columnGeometry.total,

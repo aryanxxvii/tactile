@@ -10,6 +10,22 @@
   box-sizing: border-box;
 }
 
+/* Text selection follows the active Paper theme everywhere, including
+   ordinary document copy and controls that are not editors. Worksheet cell
+   and range selection remain element-level surfaces and keep their own
+   deliberate tint and active outline. */
+::selection,
+*::selection {
+  color: var(--selection-foreground, var(--ink, #181816)) !important;
+  background: var(--selection-background, var(--accent-soft, rgba(179, 77, 53, 0.18))) !important;
+}
+
+::-moz-selection,
+*::-moz-selection {
+  color: var(--selection-foreground, var(--ink, #181816)) !important;
+  background: var(--selection-background, var(--accent-soft, rgba(179, 77, 53, 0.18))) !important;
+}
+
 html,
 body,
 #root {
@@ -82,6 +98,8 @@ input:focus-visible,
   --focus-ring: #a94530;
   --positive: #4f6b55;
   --negative: #9b4032;
+  --selection-background: var(--accent-soft);
+  --selection-foreground: var(--ink);
   --cell-radius: 5px;
   --cell-gap: 1px;
   --cell-height: 30px;
@@ -112,6 +130,42 @@ input:focus-visible,
 .base-object-layer {
   position: absolute;
   inset: 0;
+}
+
+.base-object-layer[data-under-floating-layer="true"] {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Portaled Paper surfaces live outside the themed app root. Keep the layer
+   inert while allowing its mounted surface to receive pointer events, and
+   place it above the bottom dock without changing the dock's own stacking. */
+.tactile-overlay-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  overflow: visible;
+  contain: none;
+  isolation: isolate;
+  pointer-events: none;
+  --paper: #fbfaf6;
+  --paper-elevated: #fffefa;
+  --tray: #e9e5dd;
+  --ink: #181816;
+  --muted: #6f6b64;
+  --faint: #9a958d;
+  --line: #d8d3ca;
+  --line-strong: #c7c0b5;
+  --accent: #b34d35;
+  --accent-soft: rgba(179, 77, 53, 0.18);
+  --selection-background: var(--accent-soft);
+  --selection-foreground: var(--ink);
+  --font-ui: "Public Sans Variable", "Segoe UI Variable", Arial, sans-serif;
+  --font-mono: "Lilex Variable", "Cascadia Mono", Consolas, monospace;
+}
+
+.tactile-context-menu-layer {
+  z-index: 340;
 }
 
 .object-surface {
@@ -337,6 +391,7 @@ input:focus-visible,
   background: color-mix(in srgb, var(--paper-elevated) 96%, transparent);
   box-shadow: 0 18px 42px rgba(49, 41, 32, 0.19), inset 0 1px 0 white;
   backdrop-filter: blur(16px);
+  animation: tactile-menu-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .workspace-menu-label {
@@ -362,6 +417,7 @@ input:focus-visible,
   background: transparent;
   font-size: 9.5px;
   cursor: pointer;
+  transition: color 130ms ease, background-color 130ms ease, border-color 130ms ease, box-shadow 130ms ease;
 }
 
 .workspace-menu-item small {
@@ -599,7 +655,7 @@ input:focus-visible,
   border: 1px solid var(--line-strong);
   border-radius: 9px;
   color: var(--ink);
-  background: color-mix(in srgb, var(--paper-elevated) 97%, transparent);
+  background: var(--paper-elevated);
   box-shadow: 0 18px 42px rgba(49, 41, 32, 0.2), inset 0 1px 0 white;
   backdrop-filter: blur(16px);
 }
@@ -760,7 +816,7 @@ input:focus-visible,
   border: 1px solid var(--line-strong);
   border-radius: 9px;
   color: var(--ink);
-  background: color-mix(in srgb, var(--paper-elevated) 97%, transparent);
+  background: var(--paper-elevated);
   box-shadow: 0 18px 42px rgba(49, 41, 32, 0.2), inset 0 1px 0 white;
   backdrop-filter: blur(16px);
 }
@@ -1025,15 +1081,17 @@ input:focus-visible,
   width: 216px;
   position: fixed;
   z-index: 180;
+  pointer-events: auto;
   padding: 5px;
   overflow: visible;
   border: 1px solid var(--line-strong);
   border-radius: 9px;
   color: var(--ink);
-  background: color-mix(in srgb, var(--paper-elevated) 96%, transparent);
+  background: var(--paper-elevated);
   box-shadow: 0 18px 42px rgba(49, 41, 32, 0.2), inset 0 1px 0 white;
   backdrop-filter: blur(16px);
   max-height: calc(100vh - 16px);
+  animation: tactile-menu-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .cell-menu-heading {
@@ -1079,6 +1137,7 @@ input:focus-visible,
   background: transparent;
   font-size: 10px;
   cursor: pointer;
+  transition: color 130ms ease, background-color 130ms ease, border-color 130ms ease, box-shadow 130ms ease;
 }
 
 .cell-menu-item > span {
@@ -1107,9 +1166,10 @@ input:focus-visible,
   border: 1px solid var(--line-strong);
   border-radius: 9px;
   color: var(--ink);
-  background: color-mix(in srgb, var(--paper-elevated) 97%, transparent);
+  background: var(--paper-elevated);
   box-shadow: 0 18px 42px rgba(49, 41, 32, 0.2), inset 0 1px 0 white;
   backdrop-filter: blur(16px);
+  animation: tactile-menu-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .cell-context-menu.submenu-left .cell-menu-submenu {
@@ -1990,7 +2050,7 @@ kbd {
   gap: 5px;
   padding: 0 7px;
   border-left: 1px solid var(--line);
-  border-radius: 0 5px 5px 0;
+  border-radius: 5px;
   color: var(--muted);
   background: transparent;
   font-size: 8.5px;
@@ -2012,11 +2072,16 @@ kbd {
   width: 25px;
   justify-content: center;
   padding: 0;
-  border-radius: 0;
+  border-radius: 5px;
 }
 
 .app-dock-history button:last-child {
-  border-radius: 0 5px 5px 0;
+  border-radius: 5px;
+}
+
+.app-dock > button,
+.app-dock-history button {
+  border-radius: 5px;
 }
 
 .settings-layer {
@@ -3169,14 +3234,14 @@ kbd {
 }
 
 .spatial-layer {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 20;
   pointer-events: auto;
 }
 
 .transition-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 1;
   background: rgba(39, 34, 28, 0.2);
@@ -3185,7 +3250,7 @@ kbd {
 }
 
 .object-window {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 3;
   overflow: hidden;
@@ -3198,9 +3263,9 @@ kbd {
   transform-origin: 0 0;
   backface-visibility: hidden;
   contain: paint;
-  will-change: transform, border-radius;
-  transition-property: transform, border-radius, box-shadow;
-  transition-duration: 520ms;
+  will-change: transform, border-radius, opacity;
+  transition-property: transform, border-radius, box-shadow, background-color, border-color;
+  transition-duration: 300ms;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -3237,24 +3302,48 @@ kbd {
   width: 100%;
   height: 100%;
   opacity: 1;
-  transition: opacity 220ms ease 90ms;
+  transition: opacity 120ms ease-out 72ms;
 }
 
 .phase-floating .object-window-content {
   padding-top: 13px;
   opacity: 1;
-  transition: none;
+  transition: opacity 120ms ease-out 72ms;
 }
 
 .phase-origin .object-window {
-  border-radius: 12px;
+  border-color: transparent;
+  /* Keep the contracting pane circular. The source cue below owns the final
+     cell-sized outline, so the pane does not need an anisotropic radius that
+     would turn into a stretched arc while the window is still large. */
+  border-radius: 14px;
+  background: transparent;
   box-shadow: 0 3px 8px rgba(50, 42, 33, 0.14);
   transform: translate3d(var(--source-x), var(--source-y), 0) scale(var(--source-scale-x), var(--source-scale-y));
-  transition-duration: 360ms;
+  transition-duration: 300ms;
 }
 
 .phase-origin.is-closing .object-window {
-  transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+  border-radius: 14px;
+  background: var(--paper);
+  /* Let the pane keep its longer spatial travel while its corners stay
+     perfectly circular. The late fade exposes the parent's rounded source
+     cue only after the child has reached the handoff, avoiding a sharp or
+     stretched final frame. */
+  transition-duration: 360ms, 1ms, 240ms, 240ms, 240ms;
+  transition-timing-function:
+    cubic-bezier(0.7, 0, 0.84, 0),
+    linear,
+    cubic-bezier(0.16, 1, 0.3, 1),
+    cubic-bezier(0.7, 0, 0.84, 0),
+    cubic-bezier(0.7, 0, 0.84, 0);
+  animation: reverse-window-surface-collapse 360ms cubic-bezier(0.7, 0, 0.84, 1) forwards;
+}
+
+@keyframes reverse-window-surface-collapse {
+  0%, 68% { background-color: var(--paper); }
+  84% { background-color: color-mix(in srgb, var(--paper) 42%, transparent); }
+  100% { background-color: transparent; }
 }
 
 /* On the way back, keep the child surface present while it contracts. Hiding
@@ -3279,18 +3368,37 @@ kbd {
 .phase-floating .object-window {
   border-radius: 14px;
   transform: translate3d(var(--floating-x, 4vw), var(--floating-y, 4vh), 0) scale(var(--floating-scale, 0.92));
-  transition-duration: 520ms;
+  transition-duration: 300ms;
 }
 
 .phase-floating.is-closing .object-window {
-  transition-duration: 440ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Full -> floating is the exact time-reverse of the expand action above:
+     the same duration with the reversed cubic-bezier curve keeps the pane's
+     corners and scale moving together instead of taking a different route. */
+  transition-duration: 260ms;
+  transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+/* Full view and the floating view use slightly different internal chrome.
+   During the reverse handoff, keep the full-view geometry until the pane has
+   finished moving. Otherwise the header, surface padding, and status dock
+   jump before the transform has had time to carry them away. */
+.phase-floating.is-closing .object-header {
+  padding-right: 16px;
+}
+
+.phase-floating.is-closing .object-window-content {
+  padding-top: 0;
+}
+
+.phase-floating.is-closing .object-statusbar {
+  display: flex;
 }
 
 .phase-full .object-window {
   border-radius: 0;
   transform: translate3d(0, 0, 0) scale(1);
-  transition-duration: 520ms;
+  transition-duration: 260ms;
 }
 
 .phase-full .object-window-content {
@@ -3304,7 +3412,7 @@ kbd {
 
 .phase-floating .transition-backdrop {
   pointer-events: auto;
-  cursor: pointer;
+  cursor: pointer !important;
 }
 
 .phase-origin.is-closing .transition-backdrop {
@@ -3312,7 +3420,7 @@ kbd {
 }
 
 .source-echo {
-  position: fixed;
+  position: absolute;
   left: var(--source-x);
   top: var(--source-y);
   z-index: 4;
@@ -3327,38 +3435,11 @@ kbd {
   box-shadow: 0 0 0 2px var(--accent-soft), 0 7px 18px rgba(50, 42, 33, 0.13);
   pointer-events: none;
   opacity: 1;
-  transition: opacity 120ms linear, transform 360ms ease;
-}
-
-.source-echo::after {
-  content: attr(data-address);
-  position: absolute;
-  left: 4px;
-  top: -20px;
-  max-width: 72px;
-  overflow: hidden;
-  padding: 3px 6px;
-  border: 0;
-  border-left: 1px solid var(--accent);
-  border-radius: 0;
-  color: var(--accent);
-  background: transparent;
-  box-shadow: none;
-  font-family: var(--font-mono);
-  font-size: 7.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.source-echo > svg,
-.source-echo > span,
-.source-echo > small {
-  display: none;
+  transition: opacity 90ms linear;
 }
 
 .phase-full .source-echo {
   opacity: 0;
-  transform: scale(0.96);
 }
 
 .phase-floating .source-echo {
@@ -3368,57 +3449,8 @@ kbd {
   box-shadow: none;
 }
 
-@keyframes source-hold {
-  from {
-    box-shadow: 0 0 0 2px var(--accent-soft), 0 8px 18px rgba(50, 42, 33, 0.18);
-  }
-  to {
-    box-shadow: 0 0 0 5px rgba(179, 77, 53, 0.09), 0 11px 24px rgba(50, 42, 33, 0.22);
-  }
-}
-
 .phase-origin.is-closing .source-echo {
   opacity: 0;
-}
-
-.memory-contours {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.memory-contours span {
-  position: fixed;
-  inset: 0;
-  border: 1px solid color-mix(in srgb, var(--accent) 68%, transparent);
-  border-radius: 16px;
-  opacity: 0;
-  transform: translate3d(var(--source-x), var(--source-y), 0) scale(var(--source-scale-x), var(--source-scale-y));
-  transform-origin: 0 0;
-  animation: contour-memory 560ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.memory-contours span:nth-child(2) {
-  animation-delay: 54ms;
-}
-
-.memory-contours span:nth-child(3) {
-  display: none;
-}
-
-@keyframes contour-memory {
-  0% {
-    opacity: 0.55;
-    transform: translate3d(var(--source-x), var(--source-y), 0) scale(var(--source-scale-x), var(--source-scale-y));
-  }
-  68% {
-    opacity: 0.22;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(4vw, 4vh, 0) scale(0.92);
-  }
 }
 
 .visually-hidden {
@@ -3655,6 +3687,21 @@ kbd {
   backface-visibility: hidden;
 }
 
+/* Keep the column label lane in a native sticky layer. The old transform-only
+   rail could reveal a clipped top edge during the first few scroll pixels
+   before React had written the latest scroll offset to the CSS variable. */
+.sheet-column-header-rail {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--tray) 94%, var(--paper));
+}
+
+.sheet-column-header-rail > .column-header {
+  pointer-events: auto;
+}
+
 .virtual-cell-slot {
   contain: layout;
 }
@@ -3715,7 +3762,46 @@ kbd {
   z-index: 20;
   gap: 3px;
   padding: 6px 8px;
-  overflow: visible;
+  justify-content: center;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.markdown-toolbar-inner {
+  min-width: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 3px;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 62%, var(--line));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--tray) 62%, var(--paper-elevated));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+.markdown-toolbar-inner > .markdown-mode-switch,
+.markdown-toolbar-inner > .markdown-color-control {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 62%, var(--line));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--paper-elevated) 72%, var(--tray));
+}
+
+.markdown-toolbar-inner > .markdown-mode-switch {
+  gap: 1px;
+}
+
+.markdown-toolbar-inner > .markdown-color-control {
+  position: relative;
+}
+
+.markdown-toolbar-inner > .markdown-toolbar-separator {
+  height: 20px;
+  margin: 0 1px;
 }
 
 .markdown-toolbar .markdown-color-control > button {
@@ -3805,15 +3891,14 @@ kbd {
 
 .markdown-color-menu {
   width: 154px;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 80;
+  position: fixed;
+  z-index: 1;
+  pointer-events: auto;
   padding: 7px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   color: var(--ink);
-  background: color-mix(in srgb, var(--paper-elevated) 97%, transparent);
+  background: var(--paper-elevated);
   box-shadow: 0 16px 36px rgba(49, 41, 32, 0.18), inset 0 1px 0 white;
   backdrop-filter: blur(14px);
 }
@@ -3902,9 +3987,6 @@ kbd {
     animation: none !important;
   }
 
-  .memory-contours {
-    display: none;
-  }
 }
 
 /* Feedback pass: clearer editorial alignment, deliberate editing states, and a real bottom bar. */
@@ -4042,12 +4124,13 @@ kbd {
 }
 
 .cell-editor::selection,
+.address-input input::selection,
 .formula-editor::selection,
 .markdown-editor::selection,
 .object-title-field input::selection,
 .object-description-field input::selection {
-  color: var(--ink) !important;
-  background: var(--accent-soft) !important;
+  color: var(--selection-foreground, var(--ink)) !important;
+  background: var(--selection-background, var(--accent-soft)) !important;
 }
 
 .sheet-cell.is-selected::after {
@@ -4088,11 +4171,11 @@ kbd {
   height: 22px;
   padding: 0 8px;
   border-left: 1px solid var(--line);
-  border-radius: 0;
+  border-radius: 5px;
 }
 
 .app-dock button:last-child {
-  border-radius: 0 4px 4px 0;
+  border-radius: 5px;
 }
 
 .app-dock-history button {
@@ -4170,6 +4253,7 @@ kbd {
 .formula-toolbar-row {
   min-height: 24px;
   gap: 8px;
+  justify-content: center;
   overflow: visible;
   position: relative;
   z-index: 4;
@@ -4179,15 +4263,6 @@ kbd {
   gap: 8px;
   position: relative;
   z-index: 1;
-}
-
-.formula-toolbar-label {
-  flex: 0 0 auto;
-  color: var(--faint);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
 }
 
 .cell-format-toolbar {
@@ -4248,14 +4323,13 @@ kbd {
 
 .cell-size-menu {
   width: 164px;
-  position: absolute;
-  left: -1px;
-  top: calc(100% + 6px);
-  z-index: 30;
+  position: fixed;
+  z-index: 1;
+  pointer-events: auto;
   padding: 5px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--paper-elevated) 97%, transparent);
+  background: var(--paper-elevated);
   box-shadow: 0 12px 28px rgba(49, 41, 32, 0.18), inset 0 1px 0 white;
   backdrop-filter: blur(14px);
 }
@@ -4645,6 +4719,11 @@ kbd {
 }
 
 /* Final active-cell geometry: the rust keyline sits on the tile perimeter. */
+.sheet-cell:focus-visible {
+  outline: 0;
+  outline-offset: 0;
+}
+
 .sheet-cell.is-selected::after {
   inset: -1px;
   box-sizing: border-box;
@@ -4654,7 +4733,7 @@ kbd {
 
 /* Final compact header and dock rhythm. */
 .object-header-main { gap: 3px; }
-.object-title-row { min-height: 30px; gap: 9px; }
+.object-title-row { min-height: 30px; column-gap: 4px; }
 .object-header-parent {
   height: 24px;
   display: inline-flex;
@@ -4668,6 +4747,7 @@ kbd {
   background: var(--paper-elevated);
   font-size: 9px;
   cursor: pointer;
+  margin-right: 8px;
 }
 .object-header-parent:hover,
 .object-header-parent:focus-visible {
@@ -4728,6 +4808,7 @@ kbd {
 }
 
 [data-tooltip]::after {
+  display: none !important;
   content: attr(data-tooltip);
   position: absolute;
   top: calc(100% + 7px);
@@ -4736,7 +4817,7 @@ kbd {
   max-width: 220px;
   min-width: max-content;
   padding: 5px 7px;
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line-strong));
+  border: 1px solid var(--line-strong);
   border-radius: 5px;
   color: var(--ink);
   background: color-mix(in srgb, var(--paper-elevated) 96%, white);
@@ -4800,7 +4881,7 @@ kbd {
 }
 
 .object-window-expand-tooltip {
-  position: fixed;
+  position: absolute;
   top: var(--expand-tooltip-top);
   right: var(--expand-tooltip-right);
   z-index: 14;
@@ -4809,7 +4890,7 @@ kbd {
   border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line-strong));
   border-radius: 5px;
   color: var(--ink);
-  background: color-mix(in srgb, var(--paper-elevated) 96%, white);
+  background: var(--paper-elevated);
   box-shadow: 0 6px 16px rgba(79, 61, 43, 0.14), inset 0 1px 0 white;
   font-family: var(--font-ui);
   font-size: 9px;
@@ -4828,6 +4909,36 @@ kbd {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+}
+
+.tactile-tooltip-layer {
+  z-index: 2147483647;
+}
+
+.tactile-tooltip {
+  position: absolute;
+  z-index: 1;
+  max-width: min(260px, calc(100vw - 16px));
+  padding: 5px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line-strong));
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--paper-elevated);
+  box-shadow: 0 6px 16px rgba(79, 61, 43, 0.14), inset 0 1px 0 white;
+  font-family: var(--font-ui, "Public Sans Variable", "Segoe UI Variable", Arial, sans-serif);
+  font-size: 9px;
+  font-weight: 560;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+}
+
+.tactile-tooltip.is-above {
+  transform: translate(-50%, -100%);
 }
 
 .active-cell-status {
@@ -4920,8 +5031,27 @@ kbd {
   min-width: 88px;
   margin-left: 6px;
   padding-left: 12px;
-  border-left: 1px solid var(--line);
-  border-radius: 0 5px 5px 0;
+  border-left: 0;
+  border-radius: 5px;
+}
+
+/* Keep the Settings control rounded while making its group separator a
+   straight dock rule, like the brand and history separators. */
+.app-dock .app-dock-settings {
+  position: relative;
+  border-left: 0;
+}
+
+.app-dock .app-dock-settings::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  border-radius: 0;
+  background: var(--line);
+  pointer-events: none;
 }
 
 .app-dock button:hover,
@@ -4935,4 +5065,1449 @@ kbd {
 .active-cell-status {
   gap: 5px;
   padding-left: 2px;
+}
+
+.app-dock > button:last-child {
+  border-radius: 5px;
+}
+
+.app-dock-history button:last-child {
+  border-radius: 5px;
+}
+
+/* The global controls share the same 32px status-bar lane as object metadata.
+   Keep the dock in that lane instead of floating a second panel above it. */
+.app-bottom-bar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 240;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.tactile-app.has-floating-layer .app-bottom-bar {
+  pointer-events: auto;
+  cursor: auto;
+  background: var(--paper);
+}
+
+.tactile-app.has-floating-layer .app-dock-path {
+  cursor: pointer;
+}
+
+.tactile-app.has-floating-layer .files-layer {
+  cursor: pointer;
+}
+
+.tactile-app.has-floating-layer .files-scrim {
+  cursor: pointer !important;
+}
+
+.app-bottom-bar > .app-dock {
+  pointer-events: auto;
+}
+
+.app-dock {
+  position: static;
+  z-index: auto;
+  height: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.app-dock-brand {
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px 0 5px;
+  border-right: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 680;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Bottom-bar controls share one rounded Paper treatment. Path links opt out
+   below because their interaction is intentionally text-only. */
+.app-dock button {
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 8.5px;
+  cursor: pointer;
+}
+
+.app-dock-path {
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+}
+
+.app-dock-path-part {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.app-dock-path-part > .app-dock-path-button {
+  min-width: 0;
+  max-width: 112px;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-left: 0;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-dock-path-part > .app-dock-path-button:hover,
+.app-dock-path-part > .app-dock-path-button:focus-visible,
+.app-dock-path-part > .app-dock-path-button[aria-current="location"] {
+  outline: 0;
+  color: var(--ink);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-dock-path-part > .app-dock-path-button:hover,
+.app-dock-path-part > .app-dock-path-button:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.app-dock-path-overflow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.app-dock-path-overflow > .app-dock-path-button {
+  max-width: 28px;
+  padding-inline: 5px;
+  border-left: 0;
+  border-radius: 0;
+}
+
+.app-dock-path-popover {
+  /* This hint is portaled to body so it can escape clipped surfaces. Keep
+     the Paper tokens local to the portal instead of relying on the app shell
+     to provide inherited custom properties. */
+  --ink: #181816;
+  --muted: #6f6b64;
+  --faint: #9a958d;
+  --paper-elevated: #fffefa;
+  --line-strong: #c7c0b5;
+  --accent: #b34d35;
+  --font-mono: "Lilex Variable", "Cascadia Mono", Consolas, monospace;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: auto;
+  z-index: 260;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  min-width: 0;
+  max-height: min(300px, calc(100vh - 48px));
+  transform: translateX(-50%);
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--paper-elevated);
+  box-shadow: 0 6px 16px rgba(79, 61, 43, 0.14), inset 0 1px 0 white;
+  font-family: var(--font-ui, "Public Sans Variable", "Segoe UI Variable", Arial, sans-serif);
+  font-size: 9px;
+  font-weight: 560;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.app-dock-path-popover-row {
+  display: grid;
+  grid-auto-rows: minmax(24px, auto);
+  gap: 1px;
+  min-width: 0;
+  max-height: min(256px, calc(100vh - 88px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.app-dock-path-popover-part {
+  display: block;
+  min-width: 0;
+}
+
+.app-dock-path-popover-divider {
+  display: none;
+}
+
+.app-dock-path-popover button {
+  width: 100%;
+  height: 24px;
+  max-width: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-dock-path-popover-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-dock-path-popover button:hover,
+.app-dock-path-popover button:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.app-dock-path-popover button.is-current {
+  color: var(--accent);
+  font-weight: 680;
+}
+
+.app-dock-path-popover button.is-marquee:hover .app-dock-path-popover-label,
+.app-dock-path-popover button.is-marquee:focus-visible .app-dock-path-popover-label {
+  width: max-content;
+  max-width: none;
+  text-overflow: clip;
+  animation: ancestry-label-marquee 4s ease-in-out 300ms infinite alternate;
+}
+
+@keyframes ancestry-label-marquee {
+  0%, 18% { transform: translateX(0); }
+  82%, 100% { transform: translateX(calc(-1 * var(--marquee-distance))); }
+}
+
+/* Keep path navigation text-only even after the dock's shared button hover
+   treatment runs later in the cascade. */
+.app-dock-path-button:hover,
+.app-dock-path-button:focus-visible {
+  color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.app-dock .app-dock-files {
+  margin-inline: 2px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+
+.app-dock .app-dock-files.is-active {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.app-dock button:hover,
+.app-dock button:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--tray) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 55%, transparent);
+}
+
+/* The ellipsis is a path affordance, not a filled dock control. Keep its
+   hover/focus state text-only so the centered parent panel owns the surface. */
+.app-dock .app-dock-path-overflow > .app-dock-path-button:hover,
+.app-dock .app-dock-path-overflow > .app-dock-path-button[aria-expanded="true"] {
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.app-dock .app-dock-path-overflow > .app-dock-path-button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-dock-path-popover button.is-marquee:hover .app-dock-path-popover-label,
+  .app-dock-path-popover button.is-marquee:focus-visible .app-dock-path-popover-label {
+    animation: none;
+  }
+}
+
+.app-dock button:disabled {
+  color: var(--faint);
+  background: transparent;
+  cursor: default;
+  box-shadow: none;
+}
+
+.app-dock-history {
+  display: flex;
+  align-items: center;
+  height: 25px;
+  gap: 2px;
+  padding-left: 5px;
+  border-left: 1px solid var(--line);
+}
+
+.app-dock-history button {
+  width: 27px;
+  justify-content: center;
+  padding: 0;
+  border-left: 0;
+  border-radius: 5px;
+}
+
+.app-dock-history button:last-child {
+  border-radius: 5px;
+}
+
+.app-dock > button:last-child {
+  min-width: 88px;
+  margin-left: 6px;
+  padding-left: 12px;
+  border-left: 0;
+  border-radius: 5px;
+}
+
+/* Keep separators in the breathing room between dock groups. This avoids
+   making a rounded control look like a divider and keeps every divider on
+   the same thin Paper rule. */
+.app-dock {
+  gap: 6px;
+}
+
+.app-dock-brand {
+  position: relative;
+  border-right: 0;
+}
+
+.app-dock-brand::after,
+.app-dock-history::before,
+.app-dock .app-dock-settings::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.app-dock-brand::after {
+  right: -3px;
+}
+
+.app-dock .app-dock-files {
+  position: relative;
+  margin-inline: 0;
+}
+
+/* Keep the Files boundary explicit when the path is empty. The separator uses
+   ::before so the button's document-level tooltip can continue to own ::after. */
+.app-dock .app-dock-files::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.app-dock-history {
+  position: relative;
+  border-left: 0;
+  /* Keep the Undo glyph the same distance from the preceding Files rule as
+     the other dock controls are from their group separators. */
+  padding-left: 0.5px;
+}
+
+.app-dock-history::before {
+  left: -5px;
+}
+
+.app-dock.no-path .app-dock-history::before {
+  display: none;
+}
+
+.app-dock > button.app-dock-settings:last-child {
+  margin-left: 0;
+  padding-left: 10px;
+}
+
+.app-dock .app-dock-settings::before {
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+}
+
+.files-layer {
+  position: fixed;
+  inset: 0 0 32px;
+  z-index: 230;
+  pointer-events: none;
+}
+
+.files-scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(42, 35, 28, 0.12);
+  opacity: 1;
+  cursor: default;
+  pointer-events: auto;
+  transition: opacity 220ms ease;
+}
+
+.files-scrim.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.files-panel {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: min(var(--files-sidebar-width, 360px), calc(100vw - 24px));
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border-right: 1px solid var(--line-strong);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper-elevated) 98%, white);
+  box-shadow: 14px 0 36px rgba(55, 46, 36, 0.17), inset -1px 0 0 rgba(255, 255, 255, 0.72);
+  pointer-events: auto;
+  animation: files-panel-in 180ms ease-out both;
+  transition: width 180ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.files-panel-header {
+  position: relative;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px 9px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.files-panel-kicker,
+.files-section-label {
+  display: block;
+  color: var(--faint);
+  font-size: 7.5px;
+  font-weight: 720;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.files-panel-header h2 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 620;
+  letter-spacing: -0.035em;
+}
+
+.files-close {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.files-close:hover,
+.files-close:focus-visible {
+  outline: 0;
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.files-search-shell {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 14px 8px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--paper);
+  box-shadow: inset 0 1px 1px rgba(46, 39, 31, 0.04);
+}
+
+.files-search-shell:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.files-search-shell input {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  outline: 0;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 11px;
+}
+
+.files-search-shell input::placeholder {
+  color: var(--faint);
+}
+
+.files-search-shell button {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: var(--faint);
+  background: transparent;
+  cursor: pointer;
+}
+
+.files-search-shell button:hover {
+  color: var(--accent);
+}
+
+.files-search-shell kbd,
+.files-panel-footer kbd {
+  padding: 2px 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--faint);
+  background: var(--tray);
+  font-family: var(--font-mono);
+  font-size: 7px;
+}
+
+.files-filter-row {
+  display: flex;
+  gap: 3px;
+  padding: 0 14px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.files-filter-row button {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.files-filter-row button:hover,
+.files-filter-row button:focus-visible {
+  outline: 0;
+  border-color: var(--line);
+  color: var(--ink);
+  background: var(--tray);
+}
+
+.files-filter-row button.is-active {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.files-panel-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 11px 8px 14px;
+  scrollbar-gutter: stable;
+}
+
+.files-section-label,
+.files-result-count {
+  padding: 0 8px 7px;
+}
+
+.files-result-count {
+  color: var(--faint);
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.files-tree-row {
+  min-height: 30px;
+  display: flex;
+  align-items: stretch;
+  padding-left: calc(var(--files-depth) * 15px);
+  border-radius: 4px;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.files-tree-row:hover,
+.files-tree-row:focus-within,
+.files-tree-row.is-active {
+  background: color-mix(in srgb, var(--accent) 9%, var(--paper));
+}
+
+.files-tree-row:hover,
+.files-tree-row:focus-within {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.files-tree-disclosure {
+  width: 22px;
+  flex: 0 0 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: var(--faint);
+  background: transparent;
+  cursor: pointer;
+}
+
+.files-tree-disclosure:disabled {
+  cursor: default;
+}
+
+.files-tree-open,
+.files-result-row {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 0 2px;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.files-tree-open:focus-visible,
+.files-result-row:focus-visible {
+  outline: 0;
+  color: var(--ink);
+}
+
+.files-tree-icon {
+  flex: 0 0 auto;
+  color: var(--faint);
+}
+
+.files-tree-title,
+.files-result-main {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-tree-title {
+  flex: 1;
+  color: var(--ink);
+  font-size: 10.5px;
+}
+
+.files-tree-kind {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-size: 7.5px;
+  text-transform: uppercase;
+}
+
+.files-home-icon {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.files-tree-row.is-alias .files-tree-title,
+.files-tree-row.is-alias .files-tree-icon,
+.files-tree-row.is-alias .files-tree-kind {
+  color: var(--faint);
+}
+
+.files-tree-row.is-active .files-tree-title {
+  color: var(--accent);
+  font-weight: 620;
+}
+
+.files-result-group {
+  margin-bottom: 2px;
+}
+
+.files-result-row {
+  min-height: 42px;
+  padding: 5px 8px;
+  border-radius: 5px;
+}
+
+.files-result-row:hover,
+.files-result-row.is-active {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 9%, var(--paper));
+}
+
+.files-result-main {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.files-result-main strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-result-main small {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-alias-links {
+  display: grid;
+  gap: 2px;
+  padding: 0 8px 4px 29px;
+}
+
+.files-alias-links button {
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  color: var(--faint);
+  background: transparent;
+  font-size: 8px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.files-alias-links button:hover,
+.files-alias-links button:focus-visible {
+  outline: 0;
+  color: var(--accent);
+}
+
+.files-empty-state {
+  margin: 24px 10px;
+  color: var(--faint);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.files-panel-footer {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 14px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.files-panel-footer-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@keyframes files-panel-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .files-panel,
+  .files-scrim,
+  .workspace-shell {
+    animation: none;
+    transition-duration: 1ms !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .app-dock {
+    justify-content: space-between;
+  }
+
+  .app-dock-path {
+    max-width: 24vw;
+    padding-inline: 5px;
+  }
+
+  .app-dock-brand > span,
+  .app-dock button > span,
+  .app-dock-path {
+    display: none;
+  }
+
+  .files-panel {
+    width: 100%;
+    border-right: 0;
+  }
+}
+
+/* Files tree: keep the hierarchy legible without making each level drift too
+   far away from the object title. The guide lines are deliberately quiet so
+   the selected row remains the strongest visual signal. */
+.files-tree {
+  --files-indent: 12px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.files-results {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.files-tree-row {
+  position: relative;
+  padding-left: calc(var(--files-depth) * var(--files-indent));
+}
+
+.files-tree-row.has-icon-popover,
+.files-result-group.has-icon-popover {
+  z-index: 20;
+}
+
+.files-tree-guide {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.files-tree-guide {
+  top: 0;
+  bottom: 0;
+  left: calc(var(--files-guide-depth) * var(--files-indent) + 11px);
+  width: 1px;
+  background: color-mix(in srgb, var(--line) 78%, transparent);
+}
+
+.files-tree-disclosure,
+.files-tree-icon-button,
+.files-tree-open,
+.files-tree-customize {
+  position: relative;
+  z-index: 1;
+}
+
+.files-tree-icon-button {
+  width: 22px;
+  flex: 0 0 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--faint);
+  background: transparent;
+  cursor: pointer;
+}
+
+.files-tree-icon-button:hover,
+.files-tree-icon-button:focus-visible,
+.files-tree-row.has-icon-popover .files-tree-icon-button {
+  outline: 0;
+  color: var(--accent);
+  background: transparent;
+  box-shadow: none;
+}
+
+.files-tree-icon {
+  color: inherit;
+}
+
+.object-glyph-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  line-height: 1;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
+}
+
+.files-tree-customize,
+.files-result-customize {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--faint);
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.files-tree-customize {
+  align-self: center;
+}
+
+.files-tree-row:hover .files-tree-customize,
+.files-tree-row:focus-within .files-tree-customize,
+.files-tree-row.has-icon-popover .files-tree-customize,
+.files-result-group:hover .files-result-customize,
+.files-result-group:focus-within .files-result-customize,
+.files-result-group.has-icon-popover .files-result-customize {
+  opacity: 1;
+}
+
+.files-tree-customize:hover,
+.files-tree-customize:focus-visible,
+.files-result-customize:hover,
+.files-result-customize:focus-visible {
+  outline: 0;
+  color: var(--accent);
+  background: transparent;
+}
+
+.files-result-group {
+  position: relative;
+  margin-bottom: 0;
+}
+
+.files-result-row {
+  padding-right: 34px;
+}
+
+.files-result-customize {
+  position: absolute;
+  top: 9px;
+  right: 6px;
+  z-index: 2;
+}
+
+.files-icon-popover {
+  position: absolute;
+  top: calc(100% - 2px);
+  right: 8px;
+  z-index: 30;
+  width: min(232px, calc(100% - 16px));
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--paper-elevated);
+  box-shadow: 0 12px 28px rgba(55, 46, 36, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.files-icon-popover-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.files-icon-popover-heading svg,
+.files-icon-popover-heading .object-glyph-emoji {
+  color: var(--accent);
+}
+
+.files-icon-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--tray);
+}
+
+.files-icon-mode button,
+.files-icon-reset {
+  height: 24px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 8.5px;
+  cursor: pointer;
+}
+
+.files-icon-mode button:hover,
+.files-icon-mode button:focus-visible,
+.files-icon-mode button.is-active {
+  outline: 0;
+  color: var(--accent);
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(55, 46, 36, 0.08);
+}
+
+.files-icon-colors {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.files-icon-colors button {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.files-icon-colors button:hover,
+.files-icon-colors button:focus-visible,
+.files-icon-colors button.is-selected {
+  outline: 0;
+  border-color: var(--line-strong);
+  background: var(--tray);
+}
+
+.files-icon-colors button > span {
+  width: 13px;
+  height: 13px;
+  display: block;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(44, 41, 37, 0.12);
+}
+
+.files-icon-colors button > span.is-default {
+  background: var(--paper) !important;
+  background-image: linear-gradient(135deg, transparent 42%, var(--muted) 43%, var(--muted) 57%, transparent 58%) !important;
+}
+
+.files-icon-emoji-editor {
+  display: grid;
+  gap: 7px;
+}
+
+.files-icon-emoji-field {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper);
+}
+
+.files-icon-emoji-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.files-icon-emoji-field input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0;
+  outline: 0;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  font-size: 14px;
+}
+
+.files-icon-emoji-field button {
+  height: 22px;
+  margin-right: 3px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.files-icon-emoji-field button:disabled {
+  color: var(--faint);
+  background: var(--tray);
+  cursor: default;
+}
+
+.files-emoji-presets {
+  display: flex;
+  gap: 3px;
+}
+
+.files-emoji-presets button {
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.files-emoji-presets button:hover,
+.files-emoji-presets button:focus-visible {
+  outline: 0;
+  border-color: var(--line);
+  background: var(--tray);
+}
+
+.files-icon-reset {
+  justify-self: start;
+  height: 20px;
+  padding-inline: 0;
+  color: var(--faint);
+  font-size: 8px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.files-icon-reset:hover,
+.files-icon-reset:focus-visible {
+  outline: 0;
+  color: var(--accent);
+}
+
+.files-context-menu {
+  position: fixed;
+  z-index: 1;
+  width: min(238px, calc(100vw - 16px));
+  display: grid;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--paper-elevated);
+  pointer-events: auto;
+  box-shadow: 0 14px 30px rgba(55, 46, 36, 0.19), inset 0 1px 0 rgba(255, 255, 255, 0.84);
+  animation: tactile-menu-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.files-context-menu-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 1px 3px 4px;
+  padding: 4px 5px 6px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.files-context-menu-heading span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-context-menu-heading svg,
+.files-context-menu-heading .object-glyph-emoji {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.files-context-menu-item {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.files-context-menu-item > svg {
+  flex: 0 0 auto;
+  color: var(--faint);
+}
+
+.files-context-menu-item span {
+  min-width: 0;
+  flex: 1;
+}
+
+.files-context-menu-item kbd,
+.files-context-menu-item small {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 7px;
+}
+
+.files-context-menu-item small {
+  font-family: var(--font-ui);
+  font-size: 7.5px;
+}
+
+.files-context-menu-item:hover,
+.files-context-menu-item:focus-visible {
+  outline: 0;
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent-soft) 74%, var(--paper));
+}
+
+.files-context-menu-item:hover > svg,
+.files-context-menu-item:focus-visible > svg {
+  color: var(--accent);
+}
+
+.files-context-menu-item:disabled {
+  color: var(--faint);
+  background: transparent;
+  cursor: default;
+}
+
+.files-context-menu-item:disabled > svg {
+  color: var(--faint);
+}
+
+.files-context-menu-divider {
+  height: 1px;
+  margin: 4px 3px;
+  background: var(--line);
+}
+
+@keyframes tactile-menu-in {
+  from { opacity: 0; transform: translateY(-3px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 620px) {
+  .files-tree-customize,
+  .files-result-customize {
+    opacity: 1;
+  }
+
+  .files-icon-popover {
+    right: 4px;
+  }
+}
+
+/* A pinned Files panel becomes a real sidebar: the workspace gives it room,
+   the scrim cross-fades away, and the pin itself is the way to return to the
+   temporary drawer behavior. */
+.tactile-app {
+  --files-sidebar-width: min(360px, calc(100vw - 24px));
+}
+
+.workspace-shell {
+  transition: left 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.files-is-pinned .workspace-shell {
+  left: var(--files-sidebar-width);
+}
+
+.files-is-resizing .workspace-shell,
+.files-is-resizing .files-panel {
+  transition: none !important;
+}
+
+.files-pin {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.files-pin:hover,
+.files-pin:focus-visible,
+.files-pin.is-active {
+  outline: 0;
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.files-layer.is-pinned .files-panel {
+  width: var(--files-sidebar-width);
+  animation: none;
+  box-shadow: 8px 0 22px rgba(55, 46, 36, 0.12), inset -1px 0 0 rgba(255, 255, 255, 0.72);
+}
+
+.files-layer.is-pinned .files-close {
+  display: none;
+}
+
+.files-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  z-index: 8;
+  width: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.files-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 4px;
+  width: 1px;
+  background: transparent;
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+
+.files-resize-handle:hover::after,
+.files-resize-handle:focus-visible::after,
+.files-resize-handle.is-active::after {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.files-resize-handle:focus-visible {
+  outline: 0;
+}
+
+.files-panel.is-resizing,
+.files-panel.is-resizing * {
+  user-select: none;
+}
+
+@media (max-width: 620px) {
+  .tactile-app {
+    --files-sidebar-width: 100vw;
+  }
+
+  .files-is-pinned .workspace-shell {
+    left: 0;
+  }
+
+  .files-layer.is-pinned .files-panel {
+    width: 100%;
+  }
+
+  .files-resize-handle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .files-panel,
+  .files-scrim,
+  .files-resize-handle::after,
+  .workspace-shell {
+    transition-duration: 1ms !important;
+  }
 }

@@ -185,7 +185,6 @@ export function FormulaBar({ address, rangeLabel, cell, onChange, onAddressChang
   return (
     <div className="formula-bar" aria-label="Formula bar">
       <div className="formula-toolbar-row">
-        <span className="formula-toolbar-label">Cell format</span>
         <CellFormatMenu
           style={cell?.style || {}}
           onChange={onFormat}

@@ -58,6 +58,9 @@ export function SheetGridContextMenu({
         if (!menu.cell.embed) return;
         onOpenObject?.({
           objectId: menu.cell.embed.objectId,
+          linkId: menu.cell.embed.linkId,
+          sourceObjectId: object.id,
+          sourceCellId: menu.cell.id,
           sourceAddress: menu.cell.address,
           sourceLabel: workspaceObjects?.[menu.cell.embed.objectId]?.title || menu.cell.value || "Embedded object",
           sourceType: menu.cell.embed.type,
@@ -69,6 +72,9 @@ export function SheetGridContextMenu({
         if (!menu.cell.embed) return;
         onOpenObject?.({
           objectId: menu.cell.embed.objectId,
+          linkId: menu.cell.embed.linkId,
+          sourceObjectId: object.id,
+          sourceCellId: menu.cell.id,
           sourceAddress: menu.cell.address,
           sourceLabel: workspaceObjects?.[menu.cell.embed.objectId]?.title || menu.cell.value || "Embedded object",
           sourceType: menu.cell.embed.type,

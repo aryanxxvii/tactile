@@ -1,6 +1,7 @@
 import {
   cellIdsInRange as cellIdsInRangeRuntime,
   fillChanges as fillChangesRuntime,
+  fillRange as fillRangeRuntime,
   normalizeRange as normalizeRangeRuntime,
   parseClipboardGrid as parseClipboardGridRuntime,
   pasteChanges as pasteChangesRuntime,
@@ -80,6 +81,20 @@ export function fillChanges(
   sheet: SheetObject,
   sourceAddress: CellAddress | string,
   targetAddress: CellAddress | string,
+  sourceRange: CellRange | null = null,
 ): CellChange[] {
-  return fillChangesRuntime(sheet, String(sourceAddress), String(targetAddress)) as CellChange[];
+  const fillRuntime = fillChangesRuntime as unknown as (
+    runtimeSheet: SheetObject,
+    runtimeSourceAddress: string,
+    runtimeTargetAddress: string,
+    runtimeSourceRange?: CellRange | null,
+  ) => unknown;
+  return fillRuntime(sheet, String(sourceAddress), String(targetAddress), sourceRange) as CellChange[];
+}
+
+export function fillRange(
+  sourceRange: CellRange | null | undefined,
+  targetAddress: CellAddress | string,
+): NormalizedCellRange | null {
+  return normalizeResult(fillRangeRuntime(sourceRange, String(targetAddress)));
 }

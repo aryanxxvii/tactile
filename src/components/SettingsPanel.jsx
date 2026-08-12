@@ -146,7 +146,7 @@ export function SettingsPanel({
       <section ref={panelRef} className="settings-panel" role="dialog" aria-modal="true" aria-labelledby="tactile-settings-title">
         <header className="settings-header">
           <div>
-            <span>Local preferences</span>
+            <span>Workspace preferences</span>
             <h2 id="tactile-settings-title">Settings</h2>
           </div>
           <button ref={closeRef} type="button" className="settings-close" onClick={onClose} aria-label="Close settings"><IconX size={17} /></button>

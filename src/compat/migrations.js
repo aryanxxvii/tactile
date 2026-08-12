@@ -5,6 +5,7 @@ import {
   coordinatesFromCellId,
 } from "../sheet/coordinates.js";
 import { parseTactileLink } from "../format/csv.js";
+import { repairWorkspaceTopology } from "../core/topology.js";
 import { PortableCompatibilityError } from "./errors.js";
 import {
   assertSupportedPortableVersion,
@@ -40,6 +41,8 @@ const DEFAULT_SETTINGS = {
   reduceMotion: false,
   openSingleClick: "floating",
   openDoubleClick: "full",
+  filesPinned: false,
+  filesWidth: 360,
 };
 
 function fail(code, message, details = {}) {
@@ -297,5 +300,7 @@ export function migratePortableWorkspace(input, options = {}) {
     version += 1;
     validatePortableWorkspace(current, options);
   }
-  return current;
+  const repaired = repairWorkspaceTopology(current, { includeReport: Boolean(options.includeTopologyReport) });
+  validatePortableWorkspace(repaired, options);
+  return repaired;
 }

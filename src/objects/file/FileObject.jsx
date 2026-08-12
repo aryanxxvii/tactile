@@ -3,12 +3,11 @@ import {
   IconBrackets,
   IconDownload,
   IconFileUpload,
-  IconFile,
   IconFolderOpen,
   IconLock,
 } from "@tabler/icons-react";
-import { AppDock } from "../../components/AppDock.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
+import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { objectTypeFor } from "../objectTypes.js";
 
 function dataUrlText(dataUrl) {
@@ -21,10 +20,10 @@ function dataUrlText(dataUrl) {
   }
 }
 
-export function FileObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, assets, onReplaceFile, onOpenSettings, onUndo, onRedo, canUndo, canRedo }) {
+export function FileObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, assets, onReplaceFile }) {
   const asset = object.assetId ? assets?.[object.assetId] : null;
   const definition = objectTypeFor(object.type);
-  const ObjectIcon = definition.icon || IconFile;
+  const ObjectIcon = (props) => <ObjectGlyph item={object} {...props} />;
   const fileInputRef = useRef(null);
   const htmlSource = useMemo(
     () => object.type === "html" ? (object.source || dataUrlText(asset?.dataUrl)) : "",
@@ -91,7 +90,6 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
       </main>
 
       <footer className="object-statusbar">
-        <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
         <span className="status-item"><ObjectIcon size={14} stroke={1.55} /> {definition.label}{asset?.size ? ` · ${Math.max(1, Math.round(asset.size / 1024))} KB` : ""}</span>
         <span className="status-divider">·</span>

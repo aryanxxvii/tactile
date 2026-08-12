@@ -30,7 +30,8 @@ export function SheetGridCanvas({
   rowSizeForPosition,
   columnOffsetForPosition,
   columnSizeForPosition,
-  showActiveAxisContext,
+  showActiveRowContext,
+  showActiveColumnContext,
   selectedCoordinates,
   editingCellId,
   onSelect,
@@ -93,11 +94,16 @@ export function SheetGridCanvas({
           }}
         />
 
+        <div
+          className="sheet-column-header-rail"
+          aria-hidden="false"
+          style={{ width: canvasSize.width, height: columnHeaderHeight }}
+        >
         {visibleColumns.map(({ column, position }) => {
           const columnGroup = columnGroupByStart.get(column);
           return (
             <div
-              className={`column-header virtual-sheet-header ${columnGroup ? "has-group" : ""} ${showActiveAxisContext && selectedCoordinates.column === column ? "is-active" : ""}`}
+              className={`column-header virtual-sheet-header ${columnGroup ? "has-group" : ""} ${showActiveColumnContext && selectedCoordinates.column === column ? "is-active" : ""}`}
               role="columnheader"
               tabIndex={0}
               aria-colindex={column + 1}
@@ -124,7 +130,7 @@ export function SheetGridCanvas({
                 top: 0,
                 width: columnSizeForPosition(position),
                 height: columnHeaderHeight,
-                transform: "translate3d(0, var(--sheet-scroll-y, 0px), 0)",
+                transform: "none",
               }}
             >
               <span>{columnLabel(column)}</span>
@@ -153,12 +159,13 @@ export function SheetGridCanvas({
             </div>
           );
         })}
+        </div>
 
         {visibleRows.map(({ row, position }) => {
           const rowGroup = rowGroupByStart.get(row);
           return (
             <div
-              className={`row-header virtual-sheet-header ${rowGroup ? "has-group" : ""} ${showActiveAxisContext && selectedCoordinates.row === row ? "is-active" : ""}`}
+              className={`row-header virtual-sheet-header ${rowGroup ? "has-group" : ""} ${showActiveRowContext && selectedCoordinates.row === row ? "is-active" : ""}`}
               role="rowheader"
               tabIndex={0}
               aria-rowindex={row + 1}
@@ -245,8 +252,8 @@ export function SheetGridCanvas({
                 selected={isActiveCell}
                 inRange={rangeContains(normalizedSelection, row, column)}
                 fillPreview={rangeContains(fillPreviewRange, row, column)}
-                inSelectedRow={showActiveAxisContext && selectedCoordinates.row === row}
-                inSelectedColumn={showActiveAxisContext && selectedCoordinates.column === column}
+                inSelectedRow={showActiveRowContext && selectedCoordinates.row === row}
+                inSelectedColumn={showActiveColumnContext && selectedCoordinates.column === column}
                 editing={editingCellId === id}
                 onSelect={onSelect}
                 onSelectionStart={onSelectionStart}

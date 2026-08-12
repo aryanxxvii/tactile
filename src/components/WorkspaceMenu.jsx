@@ -78,7 +78,7 @@ export function WorkspaceMenu({ isHome, exportState, onSetHome, onExport, onImpo
           <div className="workspace-menu-label">Local workspace</div>
           <WorkspaceMenuItem
             icon={isHome ? IconCheck : IconHome}
-            label={isHome ? "Current home" : "Make this home"}
+            label={isHome ? "Current start" : "Set as start"}
             detail={isHome ? "opens first" : undefined}
             disabled={isHome}
             onClick={invoke(onSetHome)}
@@ -92,7 +92,6 @@ export function WorkspaceMenu({ isHome, exportState, onSetHome, onExport, onImpo
             onClick={invoke(onExport)}
           />
           <WorkspaceMenuItem icon={IconUpload} label="Import workspace" detail="local file" onClick={invoke(onImport)} />
-          <p>Sheets stay CSV. Text and media stay separate files.</p>
         </div>
       ) : null}
     </div>

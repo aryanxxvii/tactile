@@ -98,7 +98,8 @@ export function SheetGrid({
         rowSizeForPosition={projection.rowSizeForPosition}
         columnOffsetForPosition={projection.columnOffsetForPosition}
         columnSizeForPosition={projection.columnSizeForPosition}
-        showActiveAxisContext={projection.showActiveAxisContext}
+        showActiveRowContext={projection.showActiveRowContext}
+        showActiveColumnContext={projection.showActiveColumnContext}
         selectedCoordinates={projection.selectedCoordinates}
         editingCellId={gestures.editingCellId}
         onSelect={onSelect}

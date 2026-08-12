@@ -7,9 +7,22 @@ export function useSheetGridContextMenu({ object, normalizedSelection, onCellsCh
   const pendingFileCellRef = useRef(null);
 
   const openContextMenu = useCallback((event, cell) => {
+    const sourceBox = event.currentTarget?.getBoundingClientRect?.();
+    const fallbackX = sourceBox ? sourceBox.left + Math.min(sourceBox.width, 28) : 8;
+    const fallbackY = sourceBox ? sourceBox.bottom : 8;
     setMenu({
-      x: event.clientX,
-      y: event.clientY,
+      x: Number.isFinite(event.clientX) && event.clientX > 0 ? event.clientX : fallbackX,
+      y: Number.isFinite(event.clientY) && event.clientY > 0 ? event.clientY : fallbackY,
+      anchorRect: sourceBox
+        ? {
+          left: sourceBox.left,
+          top: sourceBox.top,
+          right: sourceBox.right,
+          bottom: sourceBox.bottom,
+          width: sourceBox.width,
+          height: sourceBox.height,
+        }
+        : null,
       cell,
       sourceElement: event.currentTarget,
     });

@@ -1,8 +1,7 @@
 import { IconBrackets, IconFileText } from "@tabler/icons-react";
-import { AppDock } from "../../components/AppDock.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 
-export function DocumentObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onOpenSettings, onUndo, onRedo, canUndo, canRedo }) {
+export function DocumentObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions }) {
   return (
     <article className="object-surface document-object" data-object-type="document">
       <ObjectHeader
@@ -31,7 +30,6 @@ export function DocumentObject({ object, path, saveState, onUpdateObject, onBack
       </main>
 
       <footer className="object-statusbar">
-        <AppDock path={path} onOpenSettings={onOpenSettings} onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
         <span className="status-spacer" />
         <span className="status-item keyboard-hint"><IconBrackets size={14} stroke={1.6} /> <kbd>[</kbd> out</span>
       </footer>

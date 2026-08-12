@@ -53,6 +53,50 @@ test("fill continues numeric and numbered labels as a series", () => {
   assert.deepEqual(labelChanges.map((change) => change.patch.value), ["Task 2", "Task 3"]);
 });
 
+test("fill repeats a constant selected block instead of inventing a series", () => {
+  const sheet = {
+    cells: {
+      "0:0": { value: "1" },
+      "1:0": { value: "1" },
+      "2:0": { value: "1" },
+    },
+  };
+  const changes = fillChanges(sheet, "A3", "A6", { anchor: "A1", focus: "A3" });
+  assert.deepEqual(changes.map((change) => change.patch.value), ["1", "1", "1"]);
+});
+
+test("fill continues an ordered selected block as a series", () => {
+  const sheet = {
+    cells: {
+      "0:0": { value: "1" },
+      "1:0": { value: "2" },
+      "2:0": { value: "3" },
+    },
+  };
+  const changes = fillChanges(sheet, "A3", "A6", { anchor: "A1", focus: "A3" });
+  assert.deepEqual(changes.map((change) => change.patch.value), ["4", "5", "6"]);
+});
+
+test("fill continues each column series in a rectangular selection", () => {
+  const sheet = { cells: {} };
+  for (let row = 0; row < 6; row += 1) {
+    sheet.cells[`r${row + 1}c2`] = { value: String(row + 1) };
+    sheet.cells[`r${row + 1}c3`] = { value: String(row + 1) };
+  }
+  const changes = fillChanges(sheet, "C6", "C9", { anchor: "B1", focus: "C6" });
+  assert.deepEqual(
+    changes.map((change) => [change.cellId, change.patch.value]),
+    [
+      ["r7c2", "7"],
+      ["r7c3", "7"],
+      ["r8c2", "8"],
+      ["r8c3", "8"],
+      ["r9c2", "9"],
+      ["r9c3", "9"],
+    ],
+  );
+});
+
 test("cell number formats remain data-preserving display transforms", () => {
   assert.equal(formatCellValue("1234.5", { numberFormat: "number" }), "1,234.50");
   assert.equal(formatCellValue("0.125", { numberFormat: "percent" }), "12.5%");

@@ -5,6 +5,7 @@ export type Brand<Value, Tag extends string> = Value & {
 export type WorkspaceId = Brand<string, "WorkspaceId">;
 export type ObjectId = Brand<string, "ObjectId">;
 export type CellId = Brand<string, "CellId">;
+export type EmbedLinkId = Brand<string, "EmbedLinkId">;
 export type AssetId = Brand<string, "AssetId">;
 export type ThemeId = Brand<string, "ThemeId">;
 export type CommandId = Brand<string, "CommandId">;
@@ -27,6 +28,10 @@ export function asObjectId(value: string): ObjectId {
 
 export function asCellId(value: string): CellId {
   return value as CellId;
+}
+
+export function asEmbedLinkId(value: string): EmbedLinkId {
+  return value as EmbedLinkId;
 }
 
 export function asAssetId(value: string): AssetId {
