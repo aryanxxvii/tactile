@@ -95,6 +95,8 @@ test("Markdown surfaces hide file metadata while linked editing and navigation s
   expect(toolbarGeometry.groupHeight).toBeLessThan(29);
   expect(toolbarGeometry.actionHeight).toBeGreaterThan(21);
   expect(toolbarGeometry.actionHeight).toBeLessThan(23);
+  await expect(surface.locator('[data-tooltip="Heading"]')).toHaveCount(0);
+  await expect(surface.locator('[data-tooltip="Subheading"]')).toHaveCount(0);
 
   await surface.locator(".workspace-menu-trigger").click();
   const workspaceMenu = surface.locator(".workspace-menu");

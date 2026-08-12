@@ -8,7 +8,6 @@ import {
   IconCode,
   IconColumns2,
   IconEye,
-  IconH1,
   IconHighlight,
   IconItalic,
   IconLink,
@@ -282,8 +281,6 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
           </div>
           <span className="markdown-toolbar-separator" />
           <div className="markdown-style-group cell-format-group" role="group" aria-label="Text style">
-          <button type="button" data-tooltip="Heading" onClick={() => replaceSelection("# ", "", "Heading")}><IconH1 size={15} stroke={1.7} /></button>
-          <button type="button" data-tooltip="Subheading" onClick={() => insertBlock("## ", "Subheading")}><IconH1 size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Bold · Ctrl+B" onClick={() => replaceSelection("**")}><IconBold size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Italic · Ctrl+I" onClick={() => replaceSelection("_")}><IconItalic size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Underline · Ctrl+U" onClick={() => replaceSelection("<u>", "</u>")}><IconUnderline size={15} stroke={1.7} /></button>
