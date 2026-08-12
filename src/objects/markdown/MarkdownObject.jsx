@@ -41,18 +41,19 @@ const HIGHLIGHT_COLORS = [
 ];
 
 const MARKDOWN_PLACEHOLDERS = [
-  "Jot it down",
-  "Tiny idea?",
-  "Note to self",
-  "Start here",
-  "Make a note",
-  "Capture the spark",
-  "Think out loud",
-  "Aha moment",
-  "Plan something",
-  "Write freely",
-  "Keep exploring",
-  "Brain dump",
+  "# Differential Diagnosis",
+  "# Not Lupus",
+  "# Whiteboard Moment",
+  "# Vicodin Time",
+  "# Middle Out",
+  "# Hotdog, Not Hotdog",
+  "# Pivot",
+  "# Bazinga",
+  "# Tiny Idea",
+  "# Brain Dump",
+  "# Make a note",
+  "# Jot It Down",
+  "# Start Here",
 ];
 
 function markdownPlaceholderFor(objectId) {

@@ -65,7 +65,8 @@ test("Markdown surfaces hide file metadata while linked editing and navigation s
   await expect(editor).toHaveValue("# Draft\n\nKeep this linked note local.");
   const placeholder = await editor.getAttribute("placeholder");
   expect(placeholder).not.toContain("saved as its own Markdown file");
-  expect(placeholder?.trim().split(/\s+/).length).toBeLessThanOrEqual(3);
+  expect(placeholder).toMatch(/^# /);
+  expect(placeholder?.trim().replace(/^#\s+/, "").split(/\s+/).length).toBeLessThanOrEqual(3);
 
   const toolbarGeometry = await surface.locator(".markdown-toolbar").evaluate((toolbar) => {
     const toolbarBox = toolbar.getBoundingClientRect();
