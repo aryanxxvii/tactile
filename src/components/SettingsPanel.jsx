@@ -24,6 +24,7 @@ const colorTokens = [
   ["cell", "Tile face"],
   ["cellHover", "Hover face"],
   ["ink", "Ink"],
+  ["defaultInk", "Default tile ink"],
   ["muted", "Muted ink"],
   ["faint", "Faint ink"],
   ["line", "Fine rule"],

@@ -25,12 +25,12 @@ const FILL_COLORS = [
 ];
 
 const TEXT_COLORS = [
-  { value: undefined, label: "Default ink", color: "#2c2925", icon: IconEraser },
-  { value: "accent", label: "Rust", color: "#b84c31" },
-  { value: "positive", label: "Green", color: "#367c5a" },
-  { value: "negative", label: "Red", color: "#a33a30" },
+  { value: undefined, label: "Default ink", color: "var(--default-ink)", icon: IconEraser },
+  { value: "accent", label: "Accent", color: "var(--accent)" },
+  { value: "positive", label: "Positive", color: "var(--positive)" },
+  { value: "negative", label: "Negative", color: "var(--negative)" },
   { value: "blue", label: "Blue", color: "#416b86" },
-  { value: "muted", label: "Muted", color: "#81786d" },
+  { value: "muted", label: "Muted", color: "var(--muted)" },
 ];
 
 const TEXT_SIZES = [
@@ -71,7 +71,14 @@ function ColorGroup({ label, icon: GroupIcon, colors, selected, onSelect }) {
             data-tooltip={colorLabel}
             onClick={() => onSelect(value)}
           >
-            {Icon ? <Icon size={11} stroke={1.7} aria-hidden="true" /> : null}
+            {Icon ? (
+              <Icon
+                size={11}
+                stroke={1.7}
+                style={color === "transparent" ? undefined : { color }}
+                aria-hidden="true"
+              />
+            ) : null}
             {value ? <span style={{ backgroundColor: color }} aria-hidden="true" /> : null}
           </button>
         ))}

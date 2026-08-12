@@ -35,9 +35,13 @@ function themeVariables(anchor) {
   const value = (name, fallback) => computed.getPropertyValue(name).trim() || fallback;
   return {
     "--ink": value("--ink", "#181816"),
+    "--default-ink": value("--default-ink", "#2c2925"),
     "--paper-elevated": value("--paper-elevated", "#fffefa"),
     "--accent": value("--accent", "#b34d35"),
     "--line-strong": value("--line-strong", "#c7c0b5"),
+    "--surface-highlight": value("--surface-highlight", "rgba(255,255,255,.82)"),
+    "--surface-highlight-soft": value("--surface-highlight-soft", "rgba(255,255,255,.42)"),
+    "--elevation-shadow": value("--elevation-shadow", "rgba(49,41,32,.18)"),
   };
 }
 
