@@ -21,7 +21,10 @@
 
 ## Wave 1 — Create safe architectural seams
 
-- [ ] B01 — Typed domain and engine contracts
+- [x] B01 — Typed domain and engine contracts
+  - React/DOM/storage-free contracts now live under `src/core/` for domain records, IDs, commands, patches, transactions, persistence, engine reads, and transient-versus-durable state.
+  - Typed facades cover the existing model, coordinate, range, structure, and formatting helpers without changing their runtime behavior.
+  - TypeScript, formatting, lint, build, and 35/35 unit/compatibility/core contract tests pass; B02–B04 remain separate extraction packets.
 - [ ] B02 — SheetGrid extraction
 - [ ] B03 — App shell and In & Out extraction
 - [ ] B04 — Object-type descriptor foundation
