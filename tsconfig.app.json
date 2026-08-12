@@ -15,6 +15,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "tsBuildInfoFile": ".cache/tsconfig.app.tsbuildinfo",
     "jsx": "react-jsx",
     "types": ["vite/client"]
   },

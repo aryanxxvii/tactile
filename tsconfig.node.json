@@ -10,6 +10,7 @@
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "noEmit": true,
+    "tsBuildInfoFile": ".cache/tsconfig.node.tsbuildinfo",
     "types": ["node"]
   },
   "include": ["vite.config.mjs", "playwright*.config.mjs", "scripts/**/*.mjs", "benchmarks/**/*.mjs", "tests/**/*.mjs"]

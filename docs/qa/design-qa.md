@@ -5,12 +5,12 @@
 - Paper source visual truth: `C:\Users\Aryan Wadhawan\.codex\generated_images\019fe4d7-ef9b-7f63-a048-349b41118949\exec-67d162d5-ac00-4b8d-b035-3e539427d84b.png`
 - User formula-font callout: `C:\Users\ARYANW~1\AppData\Local\Temp\codex-clipboard-f6ed5daf-cf29-43c6-b080-2977905eee7d.png`
 - User active-cell callout: `C:\Users\ARYANW~1\AppData\Local\Temp\codex-clipboard-71b43938-50de-4fb0-9912-6f136712ea84.png`
-- Final root-sheet implementation: `C:\dev\tactile\qa-implementation-paper-public-lilex-final.png`
-- Final 90% In & Out hold: `C:\dev\tactile\qa-in-out-public-lilex.png`
-- Final 30-direction Type Lab: `C:\dev\tactile\qa-type-lab-public-lilex.png`
-- Full-view comparison: `C:\dev\tactile\qa-comparison-paper-public-lilex.png`
-- Formula-font comparison: `C:\dev\tactile\qa-comparison-formula-mono.png`
-- Active-cell comparison: `C:\dev\tactile\qa-comparison-active-cell.png`
+- Final root-sheet implementation: `../../audits/2026-08-12-paper-public-lilex-qa/qa-implementation-paper-public-lilex-final.png`
+- Final 90% In & Out hold: `../../audits/2026-08-12-paper-public-lilex-qa/qa-in-out-public-lilex.png`
+- Final 30-direction Type Lab: `../../audits/2026-08-12-paper-public-lilex-qa/qa-type-lab-public-lilex.png`
+- Full-view comparison: `../../audits/2026-08-12-paper-public-lilex-qa/qa-comparison-paper-public-lilex.png`
+- Formula-font comparison: `../../audits/2026-08-12-paper-public-lilex-qa/qa-comparison-formula-mono.png`
+- Active-cell comparison: `../../audits/2026-08-12-paper-public-lilex-qa/qa-comparison-active-cell.png`
 - Source pixels: 1440 × 1024.
 - Browser implementation pixels: 1125 × 1066.
 - CSS viewport: 1125 × 1066; device pixel ratio 1.75. The browser screenshot API returned CSS-sized pixels, so no additional density conversion was applied.
@@ -61,7 +61,7 @@ The implementation's compact Public Sans title and non-italic description intent
 
 ### Pass 2 — passed
 
-- Post-fix evidence: `C:\dev\tactile\qa-comparison-paper-public-lilex.png`, `C:\dev\tactile\qa-comparison-formula-mono.png`, and `C:\dev\tactile\qa-comparison-active-cell.png`.
+- Post-fix evidence: `../../audits/2026-08-12-paper-public-lilex-qa/qa-comparison-paper-public-lilex.png`, `../../audits/2026-08-12-paper-public-lilex-qa/qa-comparison-formula-mono.png`, and `../../audits/2026-08-12-paper-public-lilex-qa/qa-comparison-active-cell.png`.
 - The explicit density, motion, typography, and active-cell findings are visibly resolved. No actionable P0/P1/P2 differences remain after the user's intentional departures from the generated Paper source are accounted for.
 
 ## Browser and packaging verification
