@@ -41,6 +41,37 @@ const HIGHLIGHT_COLORS = [
   { name: "Clay", value: "#e8d0bd" },
 ];
 
+function markdownLineContinuation(value, start, end) {
+  if (start !== end) return null;
+
+  const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+  const lineBeforeCaret = value.slice(lineStart, start);
+
+  const finish = (prefix, body) => {
+    if (!body.trim()) {
+      return { start: lineStart, end: start, text: "\n", caret: lineStart + 1 };
+    }
+    return { start, end, text: `\n${prefix}`, caret: start + prefix.length + 1 };
+  };
+
+  const task = /^(\s*)([-*+])[ \t]+\[([ xX]?)\][ \t]*(.*)$/.exec(lineBeforeCaret);
+  if (task) return finish(`${task[1]}${task[2]} [ ] `, task[4]);
+
+  const bullet = /^(\s*)([-*+])[ \t]+(.*)$/.exec(lineBeforeCaret);
+  if (bullet) return finish(`${bullet[1]}${bullet[2]} `, bullet[3]);
+
+  const numbered = /^(\s*)(\d+)([.)])[ \t]+(.*)$/.exec(lineBeforeCaret);
+  if (numbered) {
+    const nextNumber = Number.parseInt(numbered[2], 10) + 1;
+    return finish(`${numbered[1]}${nextNumber}${numbered[3]} `, numbered[4]);
+  }
+
+  const quote = /^(\s*)>[ \t]+(.*)$/.exec(lineBeforeCaret);
+  if (quote) return finish(`${quote[1]}> `, quote[2]);
+
+  return null;
+}
+
 function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(null);
@@ -190,6 +221,19 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
 
   const handleKeyDown = (event) => {
     const command = event.ctrlKey || event.metaKey;
+    if (event.key === "Enter" && !event.shiftKey && !event.altKey && !command && !event.isComposing) {
+      const continuation = markdownLineContinuation(content, event.currentTarget.selectionStart, event.currentTarget.selectionEnd);
+      if (continuation) {
+        event.preventDefault();
+        const next = `${content.slice(0, continuation.start)}${continuation.text}${content.slice(continuation.end)}`;
+        onUpdateObject({ content: next });
+        window.requestAnimationFrame(() => {
+          editorRef.current?.focus();
+          editorRef.current?.setSelectionRange(continuation.caret, continuation.caret);
+        });
+        return;
+      }
+    }
     if (command && event.key.toLowerCase() === "b") {
       event.preventDefault();
       replaceSelection("**");

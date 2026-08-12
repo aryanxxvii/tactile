@@ -122,3 +122,31 @@ test("Markdown surfaces hide file metadata while linked editing and navigation s
   );
   await expect(page).toHaveURL(/route=home-meeting-notes/);
 });
+
+test("continues Markdown lists intelligently when Enter is pressed", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownObject(page);
+  const editor = layer.getByRole("textbox", { name: "Meeting notes Markdown editor" });
+  const cases = [
+    ["- [ ] First task", "- [ ] First task\n- [ ] "],
+    ["- [x] Completed task", "- [x] Completed task\n- [ ] "],
+    ["* First bullet", "* First bullet\n* "],
+    ["1. First item", "1. First item\n2. "],
+    ["3) First item", "3) First item\n4) "],
+    ["> Quoted line", "> Quoted line\n> "],
+  ];
+
+  for (const [initial, expected] of cases) {
+    await editor.fill(initial);
+    await editor.evaluate((element) => element.setSelectionRange(element.value.length, element.value.length));
+    await editor.press("Enter");
+    await expect(editor).toHaveValue(expected);
+  }
+
+  await editor.fill("- [ ] First task\n- [ ] ");
+  await editor.evaluate((element) => element.setSelectionRange(element.value.length, element.value.length));
+  await editor.press("Enter");
+  await expect(editor).toHaveValue("- [ ] First task\n\n");
+});
