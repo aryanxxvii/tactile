@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   IconBlockquote,
   IconBold,
-  IconBrackets,
   IconChevronDown,
   IconCheckbox,
   IconCode,
@@ -40,6 +39,29 @@ const HIGHLIGHT_COLORS = [
   { name: "Sky", value: "#cbdde9" },
   { name: "Clay", value: "#e8d0bd" },
 ];
+
+const MARKDOWN_PLACEHOLDERS = [
+  "Jot it down",
+  "Tiny idea?",
+  "Note to self",
+  "Start here",
+  "Make a note",
+  "Capture the spark",
+  "Think out loud",
+  "Aha moment",
+  "Plan something",
+  "Write freely",
+  "Keep exploring",
+  "Brain dump",
+];
+
+function markdownPlaceholderFor(objectId) {
+  const hash = Array.from(String(objectId || ""), (character) => character.charCodeAt(0)).reduce(
+    (total, code) => total + code,
+    0,
+  );
+  return MARKDOWN_PLACEHOLDERS[hash % MARKDOWN_PLACEHOLDERS.length];
+}
 
 function markdownLineContinuation(value, start, end) {
   if (start !== end) return null;
@@ -176,6 +198,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   const [mode, setMode] = useState("write");
   const editorRef = useRef(null);
   const content = object.content || "";
+  const editorPlaceholder = useMemo(() => markdownPlaceholderFor(object.id), [object.id]);
   const words = useMemo(() => content.trim().split(/\s+/).filter(Boolean).length, [content]);
   const lines = useMemo(() => content ? content.split(/\r?\n/).length : 0, [content]);
 
@@ -284,7 +307,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       onChange={(event) => onUpdateObject({ content: event.target.value })}
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}
-      placeholder="# Start writing…\n\nThis text is saved as its own Markdown file."
+      placeholder={editorPlaceholder}
       spellCheck="true"
       aria-label={`${object.title} Markdown editor${suffix}`}
     />
@@ -366,9 +389,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
 
       <footer className="object-statusbar">
         <span className="status-spacer" />
-        <span className="status-item">{words} words · {lines} lines · .md</span>
-        <span className="status-divider">·</span>
-        <span className="status-item keyboard-hint"><IconBrackets size={14} stroke={1.6} /> <kbd>[</kbd> out</span>
+        <span className="status-item">{words} words · {lines} lines</span>
       </footer>
     </article>
   );
