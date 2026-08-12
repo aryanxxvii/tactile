@@ -1,6 +1,7 @@
 import { OBJECT_TYPE_DEFINITIONS } from "./descriptors.js";
 
 const FALLBACK_TYPE = "document";
+const rendererPromises = new Map();
 
 /** @type {Map<string, Object>} */
 const customDefinitions = new Map();
@@ -46,9 +47,32 @@ export function registerObjectTypeDefinition(definition) {
  * @param {string} type
  * @returns {Promise<Function>}
  */
-export async function loadObjectRenderer(type) {
-  const loaded = await getObjectTypeDefinition(type).renderer.load();
-  return loaded?.default || loaded;
+export function loadObjectRenderer(type) {
+  const definition = getObjectTypeDefinition(type);
+  const key = definition.type;
+  const existing = rendererPromises.get(key);
+  if (existing) return existing;
+
+  const promise = definition.renderer.load()
+    .then((loaded) => loaded?.default || loaded)
+    .catch((error) => {
+      rendererPromises.delete(key);
+      throw error;
+    });
+  rendererPromises.set(key, promise);
+  return promise;
+}
+
+/**
+ * Warm only a renderer referenced by a currently visible embedded cell. The
+ * registry remains lazy: callers opt into this just-in-time hint, and
+ * inactive object types are never loaded at registry construction time.
+ *
+ * @param {string} type
+ * @returns {Promise<Function | null>}
+ */
+export function preloadObjectRenderer(type) {
+  return loadObjectRenderer(type).catch(() => null);
 }
 
 export { OBJECT_TYPE_DEFINITIONS };

@@ -3242,6 +3242,8 @@ kbd {
 
 .phase-floating .object-window-content {
   padding-top: 13px;
+  opacity: 1;
+  transition: none;
 }
 
 .phase-origin .object-window {

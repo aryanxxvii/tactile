@@ -25,10 +25,14 @@
   - React/DOM/storage-free contracts now live under `src/core/` for domain records, IDs, commands, patches, transactions, persistence, engine reads, and transient-versus-durable state.
   - Typed facades cover the existing model, coordinate, range, structure, and formatting helpers without changing their runtime behavior.
   - TypeScript, formatting, lint, build, and 35/35 unit/compatibility/core contract tests pass; B02–B04 remain separate extraction packets.
-- [ ] B02 — SheetGrid extraction
-- [ ] B03 — App shell and In & Out extraction
-- [ ] B04 — Object-type descriptor foundation
-- [ ] G1 — Wave 1 gate
+- [x] B02 — SheetGrid extraction
+  - `SheetGrid` is now a small composition shell over extracted canvas, projection, gesture, and context-menu modules; keyboard, focus, selection, scroll, editing, formatting, and drag-reversal behavior remain covered.
+- [x] B03 — App shell and In & Out extraction
+  - Navigation/history, layer lifecycle, In & Out timing, selection/workspace commands, settings/notices, and object rendering now live behind `src/shell/**`; App remains the composition entry point.
+- [x] B04 — Object-type descriptor foundation
+  - All eight existing object types resolve through a lazy typed/JSDoc-compatible registry with compatibility adapters; existing portable import/export behavior remains unchanged.
+- [x] G1 — Wave 1 gate
+  - Full formatting, lint, type, unit/compatibility, object-registry, browser, build, and Sites checks pass on 2026-08-12; the visual baseline and benchmark deltas are recorded in `docs/wave-1/g1-results.md`.
 
 ## Wave 2 — Replace expensive state and calculation paths
 

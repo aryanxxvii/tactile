@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 import { createCellRecord } from "../../../model.js";
+import { preloadObjectRenderer } from "../../objectRegistry.jsx";
 import { formatFormulaResult } from "../../../sheet/formulas.js";
 import { formatCellValue } from "../../../sheet/formatting.js";
 import { conditionalToneForCell } from "../../../sheet/conditionalFormatting.js";
@@ -50,6 +52,11 @@ export function SheetGridCanvas({
   onToggleColumnGroup,
 }) {
   const { rowHeaderWidth, columnHeaderHeight } = metrics;
+
+  useEffect(() => {
+    const embedType = object.cells?.[cellId(selectedCoordinates.row, selectedCoordinates.column)]?.embed?.type;
+    if (embedType) preloadObjectRenderer(embedType);
+  }, [object.cells, selectedCoordinates.column, selectedCoordinates.row]);
 
   return (
     <div className="sheet-scroll" data-sheet-scroll ref={scrollRef} onScroll={onScroll}>

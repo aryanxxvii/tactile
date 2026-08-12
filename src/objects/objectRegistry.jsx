@@ -5,8 +5,14 @@ import {
   loadObjectRenderer,
 } from "./registry/index.js";
 
+const loadedRenderers = new Map();
+
 function lazyObjectRenderer(type) {
-  return lazy(async () => ({ default: await loadObjectRenderer(type) }));
+  return lazy(async () => {
+    const Renderer = await loadObjectRenderer(type);
+    loadedRenderers.set(type, Renderer);
+    return { default: Renderer };
+  });
 }
 
 // This map preserves the old synchronous lookup surface for callers that
@@ -22,10 +28,22 @@ export function registerObjectRenderer(type, renderer) {
 
 export function ObjectRenderer({ object, ...props }) {
   const definition = getObjectTypeDefinition(object.type);
+  const LoadedRenderer = loadedRenderers.get(definition.type);
+  if (LoadedRenderer) return <LoadedRenderer object={object} {...props} />;
   const Renderer = OBJECT_RENDERERS[definition.type] || OBJECT_RENDERERS.document;
   return (
     <Suspense fallback={null}>
       <Renderer object={object} {...props} />
     </Suspense>
   );
+}
+
+export function preloadObjectRenderer(type) {
+  const definition = getObjectTypeDefinition(type);
+  return loadObjectRenderer(type)
+    .then((Renderer) => {
+      loadedRenderers.set(definition.type, Renderer);
+      return Renderer;
+    })
+    .catch(() => null);
 }
