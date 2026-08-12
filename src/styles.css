@@ -6511,3 +6511,109 @@ kbd {
     transition-duration: 1ms !important;
   }
 }
+
+/* Markdown and Tiles share one compact Paper format language. Markdown keeps
+   its richer command groups, but the rail, groups, buttons, and color
+   triggers use the same dimensions and surfaces as the sheet formatter. */
+.markdown-toolbar.cell-format-toolbar {
+  width: 100%;
+  max-width: 100%;
+  align-self: center;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 5px;
+  height: max-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.markdown-toolbar .markdown-mode-switch {
+  gap: 2px;
+}
+
+.markdown-toolbar .markdown-mode-switch > button {
+  height: 22px;
+  min-width: 0;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 9px;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.markdown-toolbar .markdown-mode-switch > button:hover,
+.markdown-toolbar .markdown-mode-switch > button:focus-visible,
+.markdown-toolbar .markdown-mode-switch > button.is-active {
+  outline: 0;
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.markdown-toolbar .markdown-style-group > button,
+.markdown-toolbar .markdown-block-group > button,
+.markdown-toolbar .markdown-insert-group > button {
+  width: 24px;
+  height: 22px;
+  min-width: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.markdown-toolbar .markdown-style-group > button:hover,
+.markdown-toolbar .markdown-style-group > button:focus-visible,
+.markdown-toolbar .markdown-block-group > button:hover,
+.markdown-toolbar .markdown-block-group > button:focus-visible,
+.markdown-toolbar .markdown-insert-group > button:hover,
+.markdown-toolbar .markdown-insert-group > button:focus-visible {
+  outline: 0;
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.markdown-toolbar .markdown-color-control {
+  flex: 0 0 auto;
+}
+
+.markdown-toolbar .markdown-color-control > button {
+  width: 28px;
+  height: 22px;
+  min-width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.markdown-toolbar .markdown-toolbar-separator {
+  flex: 0 0 1px;
+  width: 1px;
+  height: 20px;
+  margin: 0;
+  background: var(--line);
+}
+
+@media (max-width: 900px) {
+  .markdown-toolbar.cell-format-toolbar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}

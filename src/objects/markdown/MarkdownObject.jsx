@@ -94,10 +94,10 @@ function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
   }, [open]);
 
   return (
-    <div className="markdown-color-control" ref={rootRef}>
+    <div className="markdown-color-control cell-color-group" ref={rootRef}>
       <button
         ref={triggerRef}
-        className={open ? "is-active" : ""}
+        className={open ? "cell-format-button is-active" : "cell-format-button"}
         type="button"
         aria-label={label}
         aria-haspopup="menu"
@@ -268,9 +268,8 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       />
 
       <main className={mode === "split" ? "markdown-workspace is-split" : "markdown-workspace"}>
-        <div className="markdown-toolbar" aria-label="Text commands">
-          <div className="markdown-toolbar-inner">
-          <div className="markdown-mode-switch">
+        <div className="markdown-toolbar cell-format-toolbar" aria-label="Text commands">
+          <div className="markdown-mode-switch cell-format-group" role="group" aria-label="Text view">
             <button className={mode === "write" ? "is-active" : ""} type="button" onClick={() => setMode("write")}>
               <IconPencil size={14} stroke={1.6} /> Write
             </button>
@@ -282,12 +281,14 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
             </button>
           </div>
           <span className="markdown-toolbar-separator" />
+          <div className="markdown-style-group cell-format-group" role="group" aria-label="Text style">
           <button type="button" data-tooltip="Heading" onClick={() => replaceSelection("# ", "", "Heading")}><IconH1 size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Subheading" onClick={() => insertBlock("## ", "Subheading")}><IconH1 size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Bold · Ctrl+B" onClick={() => replaceSelection("**")}><IconBold size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Italic · Ctrl+I" onClick={() => replaceSelection("_")}><IconItalic size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Underline · Ctrl+U" onClick={() => replaceSelection("<u>", "</u>")}><IconUnderline size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Strikethrough · Ctrl+Shift+X" onClick={() => replaceSelection("~~")}><IconStrikethrough size={15} stroke={1.7} /></button>
+          </div>
           <MarkdownColorControl
             label="Text color"
             colors={TEXT_COLORS}
@@ -300,11 +301,15 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
             icon={IconHighlight}
             onSelect={(color) => replaceSelection(`<mark style="background-color: ${color}">`, "</mark>", "highlighted text")}
           />
+          <span className="markdown-toolbar-separator" />
+          <div className="markdown-block-group cell-format-group" role="group" aria-label="Markdown blocks">
           <button type="button" data-tooltip="Link · Ctrl+K" onClick={() => replaceSelection("[", "]()", "link")}><IconLink size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Bulleted list" onClick={() => replaceSelection("- ", "", "List item")}><IconList size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Numbered list" onClick={() => replaceSelection("1. ", "", "List item")}><IconListNumbers size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Task list" onClick={() => insertBlock("- [ ] ", "Task")}><IconCheckbox size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Quote" onClick={() => replaceSelection("> ", "", "Quote")}><IconBlockquote size={15} stroke={1.7} /></button>
+          </div>
+          <div className="markdown-insert-group cell-format-group" role="group" aria-label="Markdown inserts">
           <button type="button" data-tooltip="Inline code" onClick={() => replaceSelection("`")}><IconCode size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Code block" onClick={() => insertBlock("```\n", "code\n```")}><IconCode size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Insert table" onClick={() => insertAtSelection("| Column | Column |\n| --- | --- |\n| Value | Value |\n")}><IconTable size={15} stroke={1.7} /></button>

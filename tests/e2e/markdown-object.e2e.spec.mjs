@@ -64,19 +64,37 @@ test("Markdown surfaces hide file metadata while linked editing and navigation s
   await expect(editor).toHaveValue("# Draft\n\nKeep this linked note local.");
 
   const toolbarGeometry = await surface.locator(".markdown-toolbar").evaluate((toolbar) => {
-    const inner = toolbar.querySelector(".markdown-toolbar-inner");
     const toolbarBox = toolbar.getBoundingClientRect();
-    const innerBox = inner?.getBoundingClientRect();
+    const firstGroup = toolbar.querySelector(".markdown-mode-switch");
+    const lastGroup = toolbar.querySelector(".markdown-insert-group");
+    const modeBox = firstGroup?.getBoundingClientRect();
+    const lastBox = lastGroup?.getBoundingClientRect();
+    const action = toolbar.querySelector(".markdown-style-group > button");
+    const actionBox = action?.getBoundingClientRect();
     return {
-      centered: innerBox
-        ? Math.abs((toolbarBox.left + toolbarBox.right) / 2 - (innerBox.left + innerBox.right) / 2) < 1
-        : false,
-      contained: Boolean(innerBox && innerBox.left >= toolbarBox.left && innerBox.right <= toolbarBox.right),
-      modeBorder: inner ? getComputedStyle(inner.querySelector(".markdown-mode-switch")).borderStyle : "none",
-      colorControlCount: inner?.querySelectorAll(".markdown-color-control").length || 0,
+      centered:
+        modeBox && lastBox
+          ? Math.abs((toolbarBox.left + toolbarBox.right) / 2 - (modeBox.left + lastBox.right) / 2) < 1
+          : false,
+      contained: Boolean(modeBox && lastBox && modeBox.left >= toolbarBox.left && lastBox.right <= toolbarBox.right),
+      modeBorder: firstGroup ? getComputedStyle(firstGroup).borderStyle : "none",
+      groupHeight: modeBox?.height || 0,
+      actionHeight: actionBox?.height || 0,
+      colorControlCount: toolbar.querySelectorAll(".markdown-color-control").length || 0,
+      hasInnerRail: Boolean(toolbar.querySelector(".markdown-toolbar-inner")),
     };
   });
-  expect(toolbarGeometry).toMatchObject({ centered: true, contained: true, modeBorder: "solid", colorControlCount: 2 });
+  expect(toolbarGeometry).toMatchObject({
+    centered: true,
+    contained: true,
+    modeBorder: "solid",
+    colorControlCount: 2,
+    hasInnerRail: false,
+  });
+  expect(toolbarGeometry.groupHeight).toBeGreaterThan(24);
+  expect(toolbarGeometry.groupHeight).toBeLessThan(29);
+  expect(toolbarGeometry.actionHeight).toBeGreaterThan(21);
+  expect(toolbarGeometry.actionHeight).toBeLessThan(23);
 
   await surface.locator(".workspace-menu-trigger").click();
   const workspaceMenu = surface.locator(".workspace-menu");
