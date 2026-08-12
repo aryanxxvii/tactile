@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packet": "A01",
   "phase": "integrated-wave-0",
-  "capturedOn": "2026-08-11",
+  "capturedOn": "2026-08-12",
   "product": "Tactile",
   "baselineKind": "unmodified-product-wave-0",
   "environment": {
@@ -29,17 +29,38 @@
     "javascript": { "rawBytes": 471710, "gzipBytes": 140125, "budgetGzipBytes": 112640, "budgetStatus": "over" },
     "css": { "rawBytes": 81918, "gzipBytes": 14505, "budgetGzipBytes": 18432, "budgetStatus": "within" },
     "transformedModules": 6258,
-    "buildSecondsObserved": 8.6
+    "buildSecondsObserved": 32.1
   },
   "browserHarness": {
     "status": "measured",
     "resultFile": "docs/performance/browser-results.json",
     "visualResultFile": "docs/performance/visual-results.json",
+    "typingActionCompleted": true,
+    "reactCommitCountsObservable": true,
     "scenarios": {
-      "scroll": { "frameTimeP95Ms": 183.4, "maxLongTaskMs": 1819, "mountedCellsMax": 570 },
-      "typing": { "frameTimeP95Ms": 16.7, "inputLatencyP95Ms": 344, "maxLongTaskMs": 1819, "mountedCellsMax": 390 },
-      "inOut": { "frameTimeP95Ms": 116.7, "inputLatencyP95Ms": 384, "maxLongTaskMs": 1819, "mountedCellsMax": 780 },
-      "nested": { "frameTimeP95Ms": 216.7, "inputLatencyP95Ms": 496, "maxLongTaskMs": 1819, "mountedCellsMax": 1950 }
+      "fixtureImport": { "reactCommitCount": 9, "mountedCellsMax": 390 },
+      "scroll": { "frameTimeP95Ms": 200.1, "maxLongTaskMs": 1801, "mountedCellsMax": 570, "reactCommitCount": 54 },
+      "typing": {
+        "frameTimeP95Ms": 283.2,
+        "inputLatencyP95Ms": 2536,
+        "maxLongTaskMs": 2509,
+        "mountedCellsMax": 390,
+        "reactCommitCount": 7
+      },
+      "inOut": {
+        "frameTimeP95Ms": 166.7,
+        "inputLatencyP95Ms": 2536,
+        "maxLongTaskMs": 2509,
+        "mountedCellsMax": 780,
+        "reactCommitCount": 14
+      },
+      "nested": {
+        "frameTimeP95Ms": 300.1,
+        "inputLatencyP95Ms": 2528,
+        "maxLongTaskMs": 2509,
+        "mountedCellsMax": 1935,
+        "reactCommitCount": 52
+      }
     }
   },
   "releaseBudgets": {
@@ -51,9 +72,13 @@
     "regressionTolerance": 0.1
   },
   "verification": {
-    "tests": 27,
+    "tests": 32,
     "sitesArtifacts": true,
     "npmAuditHighOrCritical": 0,
-    "rustAvailable": false
+    "rustAvailable": true,
+    "rustVersion": "1.97.1",
+    "cargoFmtCheck": true,
+    "cargoClippyWarningsDenied": true,
+    "cargoTest": true
   }
 }

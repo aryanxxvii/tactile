@@ -15,3 +15,4 @@ tests/format.test.mjs
 tests/formulas.test.mjs
 tests/ranges.test.mjs
 tests/structure.test.mjs
+WORKFLOW.md

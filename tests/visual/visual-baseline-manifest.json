@@ -19,5 +19,5 @@
     "in-out-returned"
   ],
   "source": "tests/performance/run-browser.mjs",
-  "note": "Baseline images are captured from the unmodified Paper product. Missing browser tooling is recorded as an explicit skip; no placeholder images are accepted."
+  "note": "Baseline images are captured from the unmodified Paper product. Missing browser tooling must be recorded as an explicit skip; no placeholder images are accepted."
 }

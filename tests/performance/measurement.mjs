@@ -91,6 +91,9 @@ function instrumentationSource() {
     internalDepth: 0,
   };
 
+  state.reactCommitCount = 0;
+  state.reactCommitCountObservable = false;
+
   const isInternal = () => state.internalDepth > 0;
   const withInternal = (callback) => {
     state.internalDepth += 1;
@@ -281,20 +284,42 @@ function instrumentationSource() {
     return result;
   };
 
-  state.reactCommitCount = 0;
-  state.reactCommitCountObservable = false;
-  const reactHook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
-  if (reactHook && typeof reactHook.onCommitFiberRoot === "function") {
-    const originalCommit = reactHook.onCommitFiberRoot;
+  const recordReactCommit = (hook, originalCommit) => {
     try {
-      reactHook.onCommitFiberRoot = function onCommitFiberRoot(...args) {
+      hook.onCommitFiberRoot = function onCommitFiberRoot(...args) {
         state.reactCommitCount += 1;
         state.reactCommitCountObservable = true;
-        return originalCommit.apply(this, args);
+        if (typeof originalCommit === "function") return originalCommit.apply(this, args);
+        return undefined;
       };
+      return true;
     } catch {
-      state.reactCommitCountObservable = false;
+      return false;
     }
+  };
+
+  let reactHook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+  if (!reactHook) {
+    let nextRendererId = 0;
+    reactHook = {
+      isDisabled: false,
+      supportsFiber: true,
+      renderers: new Map(),
+      inject(internals) {
+        const rendererId = ++nextRendererId;
+        this.renderers.set(rendererId, internals);
+        return rendererId;
+      },
+      onCommitFiberUnmount() {},
+    };
+    try {
+      window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = reactHook;
+    } catch {
+      reactHook = null;
+    }
+  }
+  if (reactHook) {
+    recordReactCommit(reactHook, reactHook.onCommitFiberRoot);
   }
 
   window.__tactilePerf = {

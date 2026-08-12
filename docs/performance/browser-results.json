@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-11T16:02:57.578Z",
-  "status": "skipped",
+  "generatedAt": "2026-08-12T03:02:01.240Z",
+  "status": "measured",
   "environment": {
     "node": "v24.13.0",
     "platform": "win32",
@@ -9,7 +9,7 @@
     "cpuCount": 12,
     "memoryBytes": 16477036544,
     "headless": true,
-    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-55260\\fixture.json",
+    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-15128\\fixture.json",
     "fixtureGeneratedOnRun": true,
     "fixtureFingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4"
   },
@@ -80,10 +80,500 @@
       "gzipBytes": 14505
     }
   },
-  "scenarios": {},
-  "screenshots": [],
-  "limitations": ["A compatible Chromium executable is unavailable in this environment."],
-  "reason": "Playwright Chromium could not launch: browserType.launch: Executable doesn't exist at C:\\Users\\Aryan Wadhawan\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1193\\chrome-win\\headless_shell.exe\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝",
+  "scenarios": {
+    "fixture-import-and-render": {
+      "label": "fixture-import-and-render",
+      "durationMs": 4918.299999952316,
+      "frameTimeMs": {
+        "samples": 80,
+        "average": 61.662975,
+        "p95": 133.4000000000001,
+        "max": 1833.1999999999998,
+        "droppedFrameSamples": 21
+      },
+      "longTasks": {
+        "observable": true,
+        "count": 12,
+        "totalDurationMs": 3949,
+        "maxDurationMs": 1801,
+        "over50Ms": 11
+      },
+      "inputLatencyMs": {
+        "observable": true,
+        "samples": 0,
+        "p95": null,
+        "max": null
+      },
+      "react": {
+        "commitCount": 9,
+        "commitCountObservable": true,
+        "domMutationBatches": 9
+      },
+      "mounted": {
+        "cellsMax": 390,
+        "sheetCellsMax": 390,
+        "domNodesMax": 1901
+      },
+      "resources": null,
+      "runtimeCounts": {
+        "listeners": 181,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 1,
+        "animationFrames": 0
+      },
+      "memory": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 167000000,
+        "totalJSHeapSize": 225000000,
+        "jsHeapSizeLimit": 3760000000
+      }
+    },
+    "scroll": {
+      "label": "scroll",
+      "durationMs": 6102.200000047684,
+      "frameTimeMs": {
+        "samples": 79,
+        "average": 77.0012658227848,
+        "p95": 200.10000000000036,
+        "max": 216.69999999999982,
+        "droppedFrameSamples": 64
+      },
+      "longTasks": {
+        "observable": true,
+        "count": 41,
+        "totalDurationMs": 6616,
+        "maxDurationMs": 1801,
+        "over50Ms": 36
+      },
+      "inputLatencyMs": {
+        "observable": true,
+        "samples": 0,
+        "p95": null,
+        "max": null
+      },
+      "react": {
+        "commitCount": 54,
+        "commitCountObservable": true,
+        "domMutationBatches": 108
+      },
+      "mounted": {
+        "cellsMax": 570,
+        "sheetCellsMax": 570,
+        "domNodesMax": 2636
+      },
+      "resources": null,
+      "runtimeCounts": {
+        "listeners": 181,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 1,
+        "animationFrames": 0
+      },
+      "memory": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 167000000,
+        "totalJSHeapSize": 225000000,
+        "jsHeapSizeLimit": 3760000000
+      }
+    },
+    "typing": {
+      "label": "typing",
+      "durationMs": 4113.099999904633,
+      "frameTimeMs": {
+        "samples": 36,
+        "average": 113.42222222222219,
+        "p95": 283.2000000000007,
+        "max": 2516.6000000000004,
+        "droppedFrameSamples": 21
+      },
+      "longTasks": {
+        "observable": true,
+        "count": 49,
+        "totalDurationMs": 10162,
+        "maxDurationMs": 2509,
+        "over50Ms": 44
+      },
+      "inputLatencyMs": {
+        "observable": true,
+        "samples": 9,
+        "p95": 2536,
+        "max": 2536
+      },
+      "react": {
+        "commitCount": 7,
+        "commitCountObservable": true,
+        "domMutationBatches": 6
+      },
+      "mounted": {
+        "cellsMax": 390,
+        "sheetCellsMax": 390,
+        "domNodesMax": 1901
+      },
+      "resources": null,
+      "runtimeCounts": {
+        "listeners": 182,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 1,
+        "animationFrames": 0
+      },
+      "memory": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 167000000,
+        "totalJSHeapSize": 225000000,
+        "jsHeapSizeLimit": 3760000000
+      }
+    },
+    "in-out": {
+      "label": "in-out",
+      "durationMs": 2431.9000000953674,
+      "frameTimeMs": {
+        "samples": 48,
+        "average": 50.34445833333333,
+        "p95": 166.70000000000073,
+        "max": 283.2999999999993,
+        "droppedFrameSamples": 30
+      },
+      "longTasks": {
+        "observable": true,
+        "count": 61,
+        "totalDurationMs": 11446,
+        "maxDurationMs": 2509,
+        "over50Ms": 56
+      },
+      "inputLatencyMs": {
+        "observable": true,
+        "samples": 9,
+        "p95": 2536,
+        "max": 2536
+      },
+      "react": {
+        "commitCount": 14,
+        "commitCountObservable": true,
+        "domMutationBatches": 11
+      },
+      "mounted": {
+        "cellsMax": 780,
+        "sheetCellsMax": 780,
+        "domNodesMax": 3815
+      },
+      "resources": null,
+      "runtimeCounts": {
+        "listeners": 188,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 1,
+        "animationFrames": 0
+      },
+      "memory": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 167000000,
+        "totalJSHeapSize": 225000000,
+        "jsHeapSizeLimit": 3760000000
+      }
+    },
+    "nested": {
+      "label": "nested",
+      "durationMs": 17211.299999952316,
+      "frameTimeMs": {
+        "samples": 238,
+        "average": 72.26596638655461,
+        "p95": 300.09999999999854,
+        "max": 533.2999999999993,
+        "droppedFrameSamples": 175
+      },
+      "longTasks": {
+        "observable": true,
+        "count": 159,
+        "totalDurationMs": 23631,
+        "maxDurationMs": 2509,
+        "over50Ms": 153
+      },
+      "inputLatencyMs": {
+        "observable": true,
+        "samples": 27,
+        "p95": 2528,
+        "max": 2536
+      },
+      "react": {
+        "commitCount": 52,
+        "commitCountObservable": true,
+        "domMutationBatches": 43
+      },
+      "mounted": {
+        "cellsMax": 1935,
+        "sheetCellsMax": 1935,
+        "domNodesMax": 9666
+      },
+      "resources": null,
+      "runtimeCounts": {
+        "listeners": 216,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 1,
+        "animationFrames": 0
+      },
+      "memory": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 167000000,
+        "totalJSHeapSize": 225000000,
+        "jsHeapSizeLimit": 3760000000
+      }
+    }
+  },
+  "screenshots": [
+    {
+      "file": "tests/visual/baselines/sheet-base.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772",
+      "title": "Tactile — Performance root",
+      "phase": null,
+      "layerCount": 0
+    },
+    {
+      "file": "tests/visual/baselines/in-out-origin.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772",
+      "title": "Tactile — Performance root",
+      "phase": null,
+      "layerCount": 0
+    },
+    {
+      "file": "tests/visual/baselines/in-out-floating.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-layer-1-sheet&mode=floating&from=perf-root-sheet&cell=A1",
+      "title": "Tactile — Layer one",
+      "phase": "floating",
+      "layerCount": 1
+    },
+    {
+      "file": "tests/visual/baselines/in-out-full.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-layer-1-sheet&mode=full&from=perf-root-sheet&cell=A1",
+      "title": "Tactile — Layer one",
+      "phase": "full",
+      "layerCount": 1
+    },
+    {
+      "file": "tests/visual/baselines/in-out-closing.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772",
+      "title": "Tactile — Performance root",
+      "phase": null,
+      "layerCount": 0
+    },
+    {
+      "file": "tests/visual/baselines/in-out-nested-floating.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-250kb-markdown&mode=floating&from=perf-layer-4-sheet&cell=A1&depth=5",
+      "title": "Tactile — 250 KiB Markdown",
+      "phase": "floating",
+      "layerCount": 5
+    },
+    {
+      "file": "tests/visual/baselines/in-out-nested-full.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-250kb-markdown&mode=full&from=perf-layer-4-sheet&cell=A1&depth=5",
+      "title": "Tactile — 250 KiB Markdown",
+      "phase": "full",
+      "layerCount": 5
+    },
+    {
+      "file": "tests/visual/baselines/in-out-nested-closing.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-layer-4-sheet&mode=floating&from=perf-layer-3-sheet&cell=A1&depth=4",
+      "title": "Tactile — Layer four",
+      "phase": "floating",
+      "layerCount": 4
+    },
+    {
+      "file": "tests/visual/baselines/in-out-returned.jpg",
+      "url": "http://127.0.0.1:5187/?perf=1786503730772",
+      "title": "Tactile — Performance root",
+      "phase": null,
+      "layerCount": 0
+    }
+  ],
+  "limitations": [],
+  "playwright": "playwright",
+  "browser": "chromium",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 1
+  },
+  "resources": [
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=43702f32",
+      "transferSize": 12806,
+      "encodedBodySize": 12506,
+      "decodedBodySize": 12506
+    },
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/react.js?v=43702f32",
+      "transferSize": 1324,
+      "encodedBodySize": 1024,
+      "decodedBodySize": 1024
+    },
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/react-dom_client.js?v=43702f32",
+      "transferSize": 1005907,
+      "encodedBodySize": 1005607,
+      "decodedBodySize": 1005607
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/fonts.css",
+      "transferSize": 4979,
+      "encodedBodySize": 4679,
+      "decodedBodySize": 4679
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/styles.css",
+      "transferSize": 104295,
+      "encodedBodySize": 103995,
+      "decodedBodySize": 103995
+    },
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/chunk-PR4QN5HX.js?v=4b0c02fa",
+      "transferSize": 10423,
+      "encodedBodySize": 10123,
+      "decodedBodySize": 10123
+    },
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/chunk-6EXAMU6Q.js?v=4b0c02fa",
+      "transferSize": 45963,
+      "encodedBodySize": 45663,
+      "decodedBodySize": 45663
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/export.js",
+      "transferSize": 52943,
+      "encodedBodySize": 52643,
+      "decodedBodySize": 52643
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/hooks/useLocalWorkspace.js",
+      "transferSize": 114268,
+      "encodedBodySize": 113968,
+      "decodedBodySize": 113968
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/model.js",
+      "transferSize": 57276,
+      "encodedBodySize": 56976,
+      "decodedBodySize": 56976
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/sheet/coordinates.js",
+      "transferSize": 8437,
+      "encodedBodySize": 8137,
+      "decodedBodySize": 8137
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/sheet/ranges.js",
+      "transferSize": 31690,
+      "encodedBodySize": 31390,
+      "decodedBodySize": 31390
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/themes.js",
+      "transferSize": 35156,
+      "encodedBodySize": 34856,
+      "decodedBodySize": 34856
+    },
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/chunk-GDZKV5FY.js?v=4b0c02fa",
+      "transferSize": 16833,
+      "encodedBodySize": 16533,
+      "decodedBodySize": 16533
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/objects/objectTypes.js",
+      "transferSize": 4280,
+      "encodedBodySize": 3980,
+      "decodedBodySize": 3980
+    },
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/@tabler_icons-react.js?v=425fbc2b",
+      "transferSize": 4276695,
+      "encodedBodySize": 4276395,
+      "decodedBodySize": 4276395
+    },
+    {
+      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/jszip.js?v=84b6d186",
+      "transferSize": 151945,
+      "encodedBodySize": 151645,
+      "decodedBodySize": 151645
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/format/csv.js",
+      "transferSize": 24149,
+      "encodedBodySize": 23849,
+      "decodedBodySize": 23849
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/sheet/structure.js",
+      "transferSize": 17299,
+      "encodedBodySize": 16999,
+      "decodedBodySize": 16999
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/storage.js",
+      "transferSize": 13753,
+      "encodedBodySize": 13453,
+      "decodedBodySize": 13453
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/sheet/formulas.js",
+      "transferSize": 87963,
+      "encodedBodySize": 87663,
+      "decodedBodySize": 87663
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/sheet/formatting.js",
+      "transferSize": 3986,
+      "encodedBodySize": 3686,
+      "decodedBodySize": 3686
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/sheet/conditionalFormatting.js",
+      "transferSize": 5210,
+      "encodedBodySize": 4910,
+      "decodedBodySize": 4910
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/sheet/sort.js",
+      "transferSize": 12197,
+      "encodedBodySize": 11897,
+      "decodedBodySize": 11897
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/objects/sheet/useVirtualSheet.js",
+      "transferSize": 40208,
+      "encodedBodySize": 39908,
+      "decodedBodySize": 39908
+    },
+    {
+      "name": "http://127.0.0.1:5187/src/components/controls/menuKeyboard.js",
+      "transferSize": 9476,
+      "encodedBodySize": 9176,
+      "decodedBodySize": 9176
+    }
+  ],
+  "browserUrl": "http://127.0.0.1:5187",
   "runsRequested": 1,
   "measurementNote": "Repeat the command three times on pinned reference hardware for certification medians/p95s."
 }

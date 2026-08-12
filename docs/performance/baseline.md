@@ -1,6 +1,6 @@
 # Wave 0 performance and visual baseline
 
-Captured 2026-08-11 against the unmodified Paper product on Windows x64 with Node `v24.13.0`, 12 logical CPUs, and approximately 16 GB of system memory. The browser runner used Playwright Chromium at a 1440 × 900 viewport.
+Captured 2026-08-12 against the unmodified Paper product on Windows x64 with Node `v24.13.0`, 12 logical CPUs, and approximately 16 GB of system memory. The browser runner used Playwright Chromium at a 1440 x 900 viewport.
 
 Machine-readable output: [`browser-results.json`](./browser-results.json). Visual captures: [`tests/visual/baselines`](../../tests/visual/baselines).
 
@@ -27,22 +27,22 @@ The deterministic fixture generator in [`benchmarks/generate-fixture.mjs`](../..
 
 These are diagnostic starting values, not a certification pass. The release budgets from the modernization brief are included for comparison.
 
-| Scenario                     | p95 frame time | Max long task | Input p95 | Mounted cells | Result                                                                       |
-| ---------------------------- | -------------: | ------------: | --------: | ------------: | ---------------------------------------------------------------------------- |
-| Scroll                       |       183.4 ms |      1,819 ms |         — |           570 | Fails current budget; optimization work required                             |
-| Typing                       |        16.7 ms |      1,819 ms |    344 ms |           390 | Action could not reach the expected editor; investigate harness/product path |
-| In & Out                     |       116.7 ms |      1,819 ms |    384 ms |           780 | Fails current budget; optimization work required                             |
-| Five-level nested navigation |       216.7 ms |      1,819 ms |    496 ms |         1,950 | Fails current budget; optimization work required                             |
+| Scenario                     | p95 frame time | Max long task | Input p95 | React commits | Mounted cells | Result                                                      |
+| ---------------------------- | -------------: | ------------: | --------: | ------------: | ------------: | ----------------------------------------------------------- |
+| Scroll                       |       200.1 ms |      1,801 ms |         - |            54 |           570 | Fails current budget; optimization work required            |
+| Typing                       |       283.2 ms |      2,509 ms |  2,536 ms |             7 |           390 | Action completed and committed; future budget remains unmet |
+| In & Out                     |       166.7 ms |      2,509 ms |  2,536 ms |            14 |           780 | Fails current budget; optimization work required            |
+| Five-level nested navigation |       300.1 ms |      2,509 ms |  2,528 ms |            52 |         1,935 | Fails current budget; optimization work required            |
 
-The browser harness observed 33 long tasks during scroll, 35 during typing, 43 during In & Out, and 137 during nested navigation. React commit counts were not observable through the production browser hook. Memory was observable through `performance.memory`; the run reported approximately 254 MB used heap against a 3.76 GB limit.
+The browser harness observed 41 long tasks during scroll, 49 during typing, 61 during In & Out, and 159 during nested navigation. React commit counts are observable through a test-only pre-load hook: 54 during scroll, 7 during typing, 14 during In & Out, and 52 during nested navigation. Memory was observable through `performance.memory`; the run reported approximately 159 MB used heap against a 3.76 GB limit.
 
-The import-and-render scenario is recorded as unmeasurable because the deliberate page reload replaces the instrumentation document. The runner records that condition instead of treating it as a zero or fabricated timing.
+The import-and-render scenario is recorded as a measured 9-commit run. Its input sample is not applicable because it is driven by a file import. The typing scenario completed without an action error and verified the edited cell value.
 
 ## Bundle baseline
 
 The production build currently emits approximately 471.7 KB raw / 140.1 KB gzip JavaScript and 81.9 KB raw / 14.5 KB gzip CSS across the initial client chunks. This exceeds the future 110 KB JavaScript gzip budget while CSS is within the 18 KB target.
 
-The verified starting build transformed 6,258 modules and completed in approximately 8.6 seconds in this environment. The inspected-machine reference in the brief recorded approximately 16 seconds.
+The verified clean-install build transformed 6,258 modules and completed in approximately 32.1 seconds in this environment. The inspected-machine reference in the brief recorded approximately 16 seconds.
 
 ## Visual baseline states
 

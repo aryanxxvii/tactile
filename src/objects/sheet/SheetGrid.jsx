@@ -185,6 +185,7 @@ export function SheetGrid({
     if (!scroller) return;
     const activeElement = document.activeElement;
     const restoreGridFocus = !editingCellId
+      && !selectionDragRef.current
       && activeElement instanceof Element
       && Boolean(activeElement.closest(".sheet-grid-shell"));
     const { rowHeaderWidth, columnHeaderHeight } = metrics;
@@ -217,16 +218,27 @@ export function SheetGrid({
 
   useEffect(() => {
     const finishPointerGesture = () => {
+      const selectionDrag = selectionDragRef.current;
       selectionDragRef.current = null;
       const fill = fillDragRef.current;
       const target = fillTargetRef.current;
       fillDragRef.current = null;
       fillTargetRef.current = null;
       setFillTarget(null);
-      if (!fill || !target || target === fill.sourceAddress) return;
-      const changes = fillChanges(object, fill.sourceAddress, target);
-      onCellsChange?.(changes, "fill");
-      onSelectRange?.(fill.sourceAddress, target);
+      if (fill && target && target !== fill.sourceAddress) {
+        const changes = fillChanges(object, fill.sourceAddress, target);
+        onCellsChange?.(changes, "fill");
+        onSelectRange?.(fill.sourceAddress, target);
+      }
+
+      if (selectionDrag?.focus) {
+        window.requestAnimationFrame(() => {
+          const nextCell = document.querySelector(
+            `[data-object-id="${object.id}"][data-cell-address="${selectionDrag.focus}"]`,
+          );
+          nextCell?.focus({ preventScroll: true });
+        });
+      }
     };
     window.addEventListener("pointerup", finishPointerGesture);
     window.addEventListener("pointercancel", finishPointerGesture);

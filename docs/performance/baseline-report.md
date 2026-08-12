@@ -1,6 +1,6 @@
 # Tactile Wave 0 performance and visual baseline
 
-Captured 2026-08-11 against the unmodified Paper product on Windows x64. The host reports Node `v24.13.0`, 12 logical CPUs, and approximately 16 GB of memory; it is not the pinned four-core certification machine.
+Captured 2026-08-12 against the unmodified Paper product on Windows x64. The host reports Node `v24.13.0`, 12 logical CPUs, and approximately 16 GB of memory; it is not the pinned four-core certification machine.
 
 ## Fixed fixture
 
@@ -18,14 +18,14 @@ The default fixture keeps binary payloads as manifest-backed placeholders; `--ma
 
 The Playwright runner is checked in under [`tests/performance/run-browser.mjs`](../../tests/performance/run-browser.mjs). The current measured output is [`browser-results.json`](./browser-results.json). It captured the fixed fixture at 1440 x 900 with Playwright Chromium.
 
-| Scenario          | p95 frame time | Max long task | Input p95 | Mounted cells | Result                                |
-| ----------------- | -------------: | ------------: | --------: | ------------: | ------------------------------------- |
-| Scroll            |       183.4 ms |      1,819 ms |         - |           570 | Over future budget; baseline evidence |
-| Typing            |        16.7 ms |      1,819 ms |    344 ms |           390 | Editor action timed out; investigate  |
-| In & Out          |       116.7 ms |      1,819 ms |    384 ms |           780 | Over future budget; baseline evidence |
-| Nested navigation |       216.7 ms |      1,819 ms |    496 ms |         1,950 | Over future budget; baseline evidence |
+| Scenario          | p95 frame time | Max long task | Input p95 | React commits | Mounted cells | Result                                |
+| ----------------- | -------------: | ------------: | --------: | ------------: | ------------: | ------------------------------------- |
+| Scroll            |       200.1 ms |      1,801 ms |         - |            54 |           570 | Over future budget; baseline evidence |
+| Typing            |       283.2 ms |      2,509 ms |  2,536 ms |             7 |           390 | Action completed; budget unmet        |
+| In & Out          |       166.7 ms |      2,509 ms |  2,536 ms |            14 |           780 | Over future budget; baseline evidence |
+| Nested navigation |       300.1 ms |      2,509 ms |  2,528 ms |            52 |         1,935 | Over future budget; baseline evidence |
 
-The import-and-render scenario is recorded as unmeasurable because its deliberate page reload replaces the instrumentation document. React commit counts were not observable through the production browser hook. The browser did observe 33 long tasks during scroll, 35 during typing, 43 during In & Out, and 137 during nested navigation. `performance.memory` reported approximately 254 MB used heap.
+The import-and-render scenario is recorded as a measured 9-commit run; its input sample is not applicable because it is driven by a file import. The test-only pre-load instrumentation now installs a minimal React DevTools hook, so commit counts are observable without changing production code. The final run observed 41 long tasks during scroll, 49 during typing, 61 during In & Out, and 159 during nested navigation. `performance.memory` reported approximately 159 MB used heap. The typing action completed and asserted the committed cell value; it no longer times out.
 
 These measurements are diagnostic starting values, not release certification. The future targets remain p95 frame time <=16.7 ms, input-to-paint <=50 ms, and no repeated main-thread task over 50 ms.
 
@@ -33,7 +33,7 @@ These measurements are diagnostic starting values, not release certification. Th
 
 The current production build transforms 6,258 modules and emits approximately 471,710 raw / 140,125 gzip JavaScript bytes and 81,918 raw / 14,505 gzip CSS bytes. JavaScript is above the future 110 KiB gzip budget; CSS is within the 18 KiB budget.
 
-The verified build completed in approximately 8.6 seconds in this environment. It produced `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
+The verified clean-install build completed in approximately 32.1 seconds in this environment. It produced `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
 
 ## Visual states
 

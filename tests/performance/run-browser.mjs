@@ -143,13 +143,22 @@ async function scrollAction(page) {
 
 async function typingAction(page) {
   const cell = page.locator(`[data-object-id="${ROOT_OBJECT_ID}"][data-cell-address="B1"]`);
+  await cell.waitFor({ state: "visible", timeout: 30_000 });
   await cell.click();
-  await page.keyboard.press("F2");
+  await cell.press("F2");
   const editor = cell.locator("input.cell-editor");
-  await editor.waitFor({ state: "visible" });
+  await editor.waitFor({ state: "visible", timeout: 30_000 });
+  const initialValue = await editor.inputValue();
   await editor.press("End");
   await editor.type("9");
   await editor.press("Enter");
+  await page.waitForFunction(
+    ({ objectId, address, expected }) =>
+      document.querySelector(`[data-object-id="${objectId}"][data-cell-address="${address}"] .cell-value`)
+        ?.textContent === expected,
+    { objectId: ROOT_OBJECT_ID, address: "B1", expected: `${initialValue}9` },
+    { timeout: 30_000 },
+  );
 }
 
 async function openFloating(page, objectId = ROOT_OBJECT_ID) {

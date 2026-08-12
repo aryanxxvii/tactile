@@ -1,13 +1,13 @@
 # Tactile modernization - Wave 0 delegation board
 
-Status: Gate G0 passed; integrated Wave 0
-Started: 2026-08-11
+Status: Wave 0 complete; G0 sign-off passed
+Started: 2026-08-11; reverified: 2026-08-12
 Integrator: Luna Max orchestration thread
 
 ## Repository baseline
 
 - Repository: `C:\dev\tactile`
-- Branch: `main`
+- Branch: `codex/tactile-wave-0-modernization`
 - HEAD at kickoff: `d2027b9` (`remove dock shortcut hint`)
 - Worktree: clean at kickoff
 - Product direction: Paper visual scheme and all durable decisions in `AGENTS.md` remain locked
@@ -15,11 +15,11 @@ Integrator: Luna Max orchestration thread
 
 ## Wave 0 packets
 
-| Packet                                                 | Owner                                                                                          | Write scope                                                                                                      | Status     | Review gate                                                                                                                                                  |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A01 - performance and visual baseline                  | Boole (`019ff16d-6916-74f0-aebb-0eb8972b94b3`)                                                 | `benchmarks/**`, `tests/performance/**`, `tests/visual/**`, performance Playwright config, `docs/performance/**` | integrated | Fixed fixture, browser harness, 8 visual states, bundle report, and measured rerun are reviewed; future budgets remain intentionally unmet baseline evidence |
-| A02 - toolchain, TypeScript, and dependency foundation | Volta / Heisenberg (workers stopped; integrator applied)                                       | `package.json`, `package-lock.json`, TypeScript/ESLint/Prettier/Vite/toolchain config, shared scripts            | integrated | Strict migration bridge, requested scripts, Vite 6.4.3, zero high/critical audit findings, and Sites preservation are verified                               |
-| A03 - compatibility and migration fixtures             | Faraday + Ohm (`019ff16d-6bfb-79c2-8f38-d10adab24d2c`, `019ff17a-dc89-7500-845a-95a47567b67d`) | `tests/fixtures/**`, `tests/compatibility/**`, `src/compat/**`, runtime schema modules only                      | integrated | v1-v4 fixtures, sequential migration/round-trip tests, unknown metadata preservation, and safe rejection behavior are verified                               |
+| Packet                                                 | Owner                                                                                          | Write scope                                                                                                      | Status                | Review gate                                                                                                                                                                                       |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A01 - performance and visual baseline                  | Boole (`019ff16d-6916-74f0-aebb-0eb8972b94b3`)                                                 | `benchmarks/**`, `tests/performance/**`, `tests/visual/**`, performance Playwright config, `docs/performance/**` | integrated/reverified | Fixed fixture, browser harness, nine visual states, bundle report, typing assertion, and observable React commit counts are reviewed; future budgets remain intentionally unmet baseline evidence |
+| A02 - toolchain, TypeScript, and dependency foundation | Volta / Heisenberg (workers stopped; integrator applied)                                       | `package.json`, `package-lock.json`, TypeScript/ESLint/Prettier/Vite/toolchain config, shared scripts            | integrated/reverified | Strict migration bridge, requested scripts, pinned Node/npm metadata, Vite 6.4.3, zero high/critical audit findings, Sites preservation, and Rust smoke checks are verified                       |
+| A03 - compatibility and migration fixtures             | Faraday + Ohm (`019ff16d-6bfb-79c2-8f38-d10adab24d2c`, `019ff17a-dc89-7500-845a-95a47567b67d`) | `tests/fixtures/**`, `tests/compatibility/**`, `src/compat/**`, runtime schema modules only                      | integrated            | v1-v4 fixtures, sequential migration/round-trip tests, unknown metadata preservation, and safe rejection behavior are verified                                                                    |
 
 ## Integration rules
 
@@ -35,4 +35,4 @@ Integrator: Luna Max orchestration thread
 - [x] Production build succeeds
 - [x] Sites artifacts exist
 - [x] Baseline reports are archived
-- [x] Wave 0 integration files are clean after the commit; unrelated user-owned `WORKFLOW.md` remains untracked and untouched
+- [x] Worktree disposition is complete; user-owned `WORKFLOW.md` and `TRACKER.md` were explicitly approved and committed

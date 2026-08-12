@@ -1,7 +1,7 @@
 # A02 — toolchain, TypeScript, and dependency integration proposal
 
-Status: integrator-prepared after the delegated A02 workers failed to return a reviewable proposal.
-Date: 2026-08-11
+Status: completed and reverified by the integrator after the delegated A02 workers failed to return a reviewable proposal.
+Date: 2026-08-12
 
 This document is intentionally a proposal. Shared root files remain owned by the Luna Max integrator under the Wave 0 orchestration rules.
 
@@ -9,7 +9,7 @@ This document is intentionally a proposal. Shared root files remain owned by the
 
 - Node: `v24.13.0`
 - npm: `11.6.2`
-- Rust: `rustc` and `cargo` are not installed on this machine.
+- Rust: `rustc 1.97.1`, `cargo 1.97.1`, `rustfmt 1.9.0-stable`, and Clippy `0.1.97` are installed through the host MSVC distribution.
 - React: `19.2.0`
 - Vite: `6.4.2`
 - `@vitejs/plugin-react`: `5.0.4`
@@ -84,10 +84,10 @@ Apply centrally, in this order, after reviewing the dependency graph:
 
 ## Acceptance and limitations
 
-The following are proven now: the existing tests pass, the current build produces Sites artifacts, Node/npm are already on the requested major lines, and Rust is unavailable. The following remain unproven until the integrator applies and verifies root changes: zero high/critical advisories, lint/typecheck/format scripts, clean-install reproducibility, component/e2e runner setup, and Rust formatting/clippy/tests.
+The following are proven now: the existing tests pass, the current build produces Sites artifacts, Node/npm are pinned at the requested versions, the clean lockfile install succeeds, zero high/critical advisories are reported, lint/typecheck/format scripts pass, and the temporary Rust smoke project passes formatting, Clippy with warnings denied, and tests. The component directory remains an empty foundation for later waves; the E2E harness now includes a pointer-drag reversal regression test. The host is not the pinned four-core performance-certification machine, so future performance budgets remain baseline evidence rather than release certification.
 
 No package manifest, lockfile, root config, or shared CI file was modified while preparing this proposal.
 
 ## Integrator verification after proposal
 
-The integrator applied the root changes centrally. The resulting lockfile resolves Vite `6.4.3`, Playwright `1.55.1`, PostCSS `8.5.26`, and nanoid `3.3.18`; `npm audit --audit-level=high` now reports 0 high, 0 critical findings. TypeScript, lint, Prettier, unit, component, e2e, build, and Sites checks are recorded in the Wave 0 gate results.
+The integrator applied the root changes centrally. The resulting lockfile resolves Vite `6.4.3`, Playwright `1.55.1`, PostCSS `8.5.26`, and nanoid `3.3.18`; `npm audit --audit-level=high` reports 0 high, 0 critical findings. TypeScript, lint, Prettier, unit, component, E2E, build, Sites, performance-fixture, browser-baseline, and Rust smoke checks are recorded in the Wave 0 gate results.
