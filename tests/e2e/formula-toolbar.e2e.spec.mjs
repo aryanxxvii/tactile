@@ -58,6 +58,14 @@ test("applies top, middle, and bottom vertical alignment to the active tile", as
   await expect(bottom).toHaveAttribute("aria-pressed", "true");
 });
 
+test("uses the same default ink color for both formatting erasers", async ({ page }) => {
+  await page.goto("/");
+
+  const fillEraser = page.getByRole("button", { name: "No fill", exact: true });
+  const textEraser = page.getByRole("button", { name: "Default ink", exact: true });
+  await expect(fillEraser).toHaveCSS("color", await textEraser.evaluate((element) => getComputedStyle(element).color));
+});
+
 test("keeps the formatting strip centered when the sheet narrows", async ({ page }) => {
   for (const width of [620, 390]) {
     await page.setViewportSize({ width, height: 900 });

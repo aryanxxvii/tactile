@@ -18,7 +18,7 @@ import {
 import { PaperPortal } from "./PaperPortal.jsx";
 
 const FILL_COLORS = [
-  { value: undefined, label: "No fill", color: "transparent", icon: IconEraser },
+  { value: undefined, label: "No fill", color: "var(--default-ink)", icon: IconEraser },
   { value: "yellow", label: "Soft yellow", color: "#f4e7a1" },
   { value: "peach", label: "Peach", color: "#f2d3a5" },
   { value: "mint", label: "Mint", color: "#c9e4d2" },
