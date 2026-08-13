@@ -14,7 +14,7 @@ pub use csv::{
     parse_tactile_link, stream_csv_cells, stringify_csv, CsvCell,
 };
 pub use json::{parse_json, stringify_json, write_json, JsonValue};
-pub use zip::{ZipArchive, ZipCompression, ZipEntryInfo, ZipWriter};
+pub use zip::{crc32, ZipArchive, ZipCompression, ZipEntryInfo, ZipWriter};
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -23,7 +23,6 @@ use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const PORTABLE_FORMAT: &str = "tactile";
 pub const CURRENT_PORTABLE_VERSION: u64 = 4;
@@ -290,7 +289,7 @@ pub struct TactileLink {
 }
 
 pub fn safe_archive_path(path: &str, max_path_bytes: usize) -> PortableResult<String> {
-    if path.is_empty() || path.as_bytes().len() > max_path_bytes || path.contains('\0') {
+    if path.is_empty() || path.len() > max_path_bytes || path.contains('\0') {
         return Err(PortableError::new(
             PortableErrorCode::InvalidPath,
             format!("archive path is empty or exceeds {max_path_bytes} bytes"),
@@ -464,19 +463,6 @@ fn collection<'a>(
             format!("{label} must be an object or array"),
         )),
     }
-}
-
-fn required_string<'a>(value: &'a JsonValue, field: &str) -> PortableResult<&'a str> {
-    value
-        .get(field)
-        .and_then(JsonValue::as_str)
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| {
-            PortableError::new(
-                PortableErrorCode::MalformedPackage,
-                format!("required field {field} is missing or not a string"),
-            )
-        })
 }
 
 fn validate_id_set<'a>(
@@ -946,17 +932,9 @@ impl PortableImportResult {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct PortableImportOptions {
     pub limits: PortableLimits,
-}
-
-impl Default for PortableImportOptions {
-    fn default() -> Self {
-        Self {
-            limits: PortableLimits::default(),
-        }
-    }
 }
 
 fn archive_file_path(

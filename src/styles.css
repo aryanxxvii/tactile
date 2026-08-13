@@ -4995,7 +4995,10 @@ kbd {
   border: 1px solid var(--line-strong);
   border-radius: 5px;
   color: var(--ink, #181816);
-  background: var(--paper-elevated, #fffefa);
+  /* Keep the navigator a real surface even when it is portaled out of the
+     themed app subtree or a custom theme supplies only partial tokens. */
+  background-color: var(--paper-elevated, #fffefa);
+  background-image: none;
   box-shadow: 0 6px 16px color-mix(in srgb, var(--elevation-shadow) 78%, transparent), inset 0 1px 0 var(--surface-highlight);
   font-family: var(--font-ui, "Public Sans Variable", "Segoe UI Variable", Arial, sans-serif);
   font-size: 9px;

@@ -1,4 +1,7 @@
 const APPLICATION_TITLE_PREFIX: &str = "Tactile — ";
+pub mod assets;
+pub mod portable;
+
 const DEFAULT_WINDOW_TITLE: &str = "Tactile — Home";
 
 fn native_window_title(document_title: &str) -> String {

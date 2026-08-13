@@ -142,7 +142,7 @@ fn v4_unknown_fields_and_native_resources_round_trip() {
             .workspace
             .get("objects")
             .and_then(JsonValue::array_value)
-            .and_then(|objects| objects.get(0))
+            .and_then(|objects| objects.first())
             .and_then(|object| object.get("x-object-plugin"))
             .and_then(|value| value.get("panel"))
             .and_then(JsonValue::as_str),
@@ -176,7 +176,7 @@ fn v4_unknown_fields_and_native_resources_round_trip() {
         .expect("markdown bytes"),
         b"## Native notes\n\nPortable Markdown stays UTF-8: r\xc3\xa9sum\xc3\xa9.\n"
     );
-    assert_eq!(
+    assert!(
         fs::read(
             imported
                 .asset("asset-ref")
@@ -187,7 +187,6 @@ fn v4_unknown_fields_and_native_resources_round_trip() {
         )
         .err()
         .is_some(),
-        true,
         "asset paths are rooted through the import result"
     );
     let asset_path = imported
@@ -262,8 +261,10 @@ fn csv_links_and_addresses_are_preserved_without_scanning_metadata() {
 #[test]
 fn malformed_and_oversized_packages_fail_before_destination_creation() {
     let bytes = export_fixture();
-    let mut limits = portable::PortableLimits::default();
-    limits.max_entries = 1;
+    let limits = portable::PortableLimits {
+        max_entries: 1,
+        ..portable::PortableLimits::default()
+    };
     let destination = temp_path("oversized");
     let token = CancellationToken::new();
     let mut control = OperationControl::new(&token);
