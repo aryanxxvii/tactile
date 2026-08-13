@@ -13,9 +13,12 @@
 
 mod error;
 mod records;
+mod sqlite;
 
 pub use error::{StorageError, StorageErrorCode, StorageResult};
 pub use records::{RecordKey, RecordMutation, RecordTable, Transaction};
+#[allow(unused_imports)]
+pub use sqlite::SqliteStorage;
 
 use std::collections::BTreeSet;
 use std::convert::TryFrom;

@@ -1,6 +1,7 @@
 const APPLICATION_TITLE_PREFIX: &str = "Tactile — ";
 pub mod assets;
 pub mod portable;
+pub mod storage;
 
 const DEFAULT_WINDOW_TITLE: &str = "Tactile — Home";
 

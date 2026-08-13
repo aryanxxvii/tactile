@@ -15,6 +15,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+rusqlite = { version = "0.32", features = ["bundled"] }
 
 [dev-dependencies]
 serde_json = "1"
@@ -23,4 +24,3 @@ serde_json = "1"
 # Tauri's CLI enables this for production builds that embed the asset protocol.
 # Keep the feature available even though the root package does not own a Tauri script.
 custom-protocol = ["tauri/custom-protocol"]
-

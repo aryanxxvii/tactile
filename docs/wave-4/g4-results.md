@@ -7,7 +7,7 @@ Date: 2026-08-14
 | Packet | Result | Evidence |
 | --- | --- | --- |
 | E01 | Implemented | Tauri 2 shell, strict production/loopback development CSP, zero-permission main capability, native title synchronization, and scaffold security tests. |
-| E02 | Implemented as a recovery scaffold | Record-oriented WAL, acknowledged transactions, atomic checkpoints, torn-tail recovery, migration rollback, portable cache rebuild, and typed path-safe errors. The current implementation is dependency-free and does not yet provide the workflow's required `rusqlite` WAL database. |
+| E02 | Implemented | Record-oriented recovery scaffold plus a private `rusqlite` WAL service with durable metadata, transactional records, acknowledged commits, checkpoints, and typed path-safe errors. |
 | E03 | Implemented | Streaming v4 JSON/CSV/ZIP import/export, ZIP safety limits, unknown-field preservation, direct metadata lookup, staged extraction, cancellation/progress, and native asset streaming. |
 | E04 | Implemented | Typed Tauri IPC contracts, compact deltas, stale-ack rejection, runtime detection/factory, native asset handles, and dialog boundary tests. |
 
@@ -27,4 +27,4 @@ Date: 2026-08-14
 
 ## Gate status
 
-G4 remains open. The repository has local evidence for the native packets, but the required Windows/macOS/Ubuntu native smoke matrix has not run in CI yet, and E02 still needs the production SQLite/WAL service specified by the workflow. Cross-platform native WebView performance certification is also not locally available. These are release blockers, not waived criteria.
+G4 remains open. The repository has local evidence for the native packets, but the required Windows/macOS/Ubuntu native smoke matrix has not run in CI yet. Cross-platform native WebView performance certification is also not locally available. These are release blockers, not waived criteria.
