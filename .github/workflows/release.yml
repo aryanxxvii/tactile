@@ -1,0 +1,281 @@
+name: Release packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish a draft GitHub release (only when dispatching from a v* tag)
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_AUDIT: "false"
+
+jobs:
+  package:
+    name: Package ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            os: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+            rust-targets: x86_64-pc-windows-msvc
+            bundles: msi
+            expected: msi
+          - platform: macos-universal
+            os: macos-14
+            rust-target: universal-apple-darwin
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            bundles: dmg
+            expected: dmg
+          - platform: linux-x64
+            os: ubuntu-24.04
+            rust-target: x86_64-unknown-linux-gnu
+            rust-targets: x86_64-unknown-linux-gnu
+            bundles: appimage,deb
+            expected: appimage,deb
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - name: Cache Rust dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Linux bundling dependencies
+        if: matrix.platform == 'linux-x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential \
+            file \
+            libayatana-appindicator3-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Inspect Apple release prerequisites
+        if: matrix.platform == 'macos-universal'
+        id: apple-prereqs
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          signing_ready=false
+          notarization_ready=false
+
+          if [[ -n "${APPLE_CERTIFICATE:-}" && -n "${APPLE_CERTIFICATE_PASSWORD:-}" && -n "${APPLE_SIGNING_IDENTITY:-}" ]]; then
+            signing_ready=true
+          fi
+
+          if [[ "$signing_ready" == true && -n "${APPLE_ID:-}" && -n "${APPLE_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]; then
+            notarization_ready=true
+          fi
+
+          echo "signing_ready=$signing_ready" >> "$GITHUB_OUTPUT"
+          echo "notarization_ready=$notarization_ready" >> "$GITHUB_OUTPUT"
+
+          if [[ "$notarization_ready" == true ]]; then
+            echo 'Apple signing and notarization prerequisites are configured.' >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$signing_ready" == true ]]; then
+            echo 'Apple signing is configured; notarization credentials are absent, so the signed DMG will remain unnotarized.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Apple signing/notarization credentials are absent; the universal DMG will be uploaded as unsigned.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # OWNER ACTION: configure the six APPLE_* repository/environment secrets above when
+      # Developer ID signing and notarization are approved. No placeholder secret is used.
+      - name: Import Apple signing certificate
+        if: matrix.platform == 'macos-universal' && steps.apple-prereqs.outputs.signing_ready == 'true'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Build Tauri bundle
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ steps.apple-prereqs.outputs.signing_ready == 'true' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+        run: npx --yes @tauri-apps/cli@2.11.5 build --target ${{ matrix.rust-target }} --bundles ${{ matrix.bundles }}
+
+      - name: Sign macOS DMG
+        if: matrix.platform == 'macos-universal' && steps.apple-prereqs.outputs.signing_ready == 'true'
+        id: mac-sign
+        shell: bash
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dmgs=(src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg)
+          if [[ "${#dmgs[@]}" -ne 1 ]]; then
+            echo "Expected one universal DMG, found ${#dmgs[@]}." >&2
+            exit 1
+          fi
+          codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "${dmgs[0]}"
+          codesign --verify --verbose=2 "${dmgs[0]}"
+          echo 'signed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Notarize and staple macOS DMG
+        if: matrix.platform == 'macos-universal' && steps.apple-prereqs.outputs.notarization_ready == 'true'
+        id: mac-notarize
+        shell: bash
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dmgs=(src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg)
+          if [[ "${#dmgs[@]}" -ne 1 ]]; then
+            echo "Expected one universal DMG, found ${#dmgs[@]}." >&2
+            exit 1
+          fi
+          xcrun notarytool submit "${dmgs[0]}" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple "${dmgs[0]}"
+          xcrun stapler validate "${dmgs[0]}"
+          echo 'notarized=true' >> "$GITHUB_OUTPUT"
+
+      - name: Set macOS artifact status label
+        if: matrix.platform == 'macos-universal'
+        id: release-label
+        shell: bash
+        env:
+          SIGNING_READY: ${{ steps.apple-prereqs.outputs.signing_ready }}
+          NOTARIZED: ${{ steps.mac-notarize.outputs.notarized }}
+        run: |
+          set -euo pipefail
+          suffix=unsigned
+          if [[ "${SIGNING_READY:-false}" == true ]]; then
+            suffix=signed-unnotarized
+          fi
+          if [[ "${NOTARIZED:-false}" == true ]]; then
+            suffix=signed-notarized
+          fi
+          echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
+          echo "macOS artifact label: $suffix" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stage release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/release/stage-artifacts.mjs \
+            --platform '${{ matrix.platform }}' \
+            --source 'src-tauri/target/${{ matrix.rust-target }}/release/bundle' \
+            --output release-artifacts \
+            --artifact-suffix '${{ steps.release-label.outputs.suffix }}'
+
+      - name: Validate release artifacts
+        shell: bash
+        run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected '${{ matrix.expected }}'
+
+      - name: Upload platform artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactile-${{ matrix.platform }}
+          path: release-artifacts
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish release assets
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') &&
+      (github.event_name == 'push' || inputs.publish_release == true)
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Download platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: tactile-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Validate release matrix
+        run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,appimage,deb
+
+      - name: Generate SHA-256 checksums
+        run: node scripts/release/create-checksums.mjs --dir release-artifacts --output release-artifacts/SHA256SUMS.txt
+
+      - name: Verify SHA-256 checksums and artifact coverage
+        run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,appimage,deb --checksums release-artifacts/SHA256SUMS.txt
+
+      - name: Upload assembled release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactile-release-${{ github.ref_name }}
+          path: release-artifacts
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create or update draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release-artifacts/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release-artifacts/* \
+              --draft \
+              --generate-notes \
+              --title "Tactile $GITHUB_REF_NAME"
+          fi
