@@ -1462,6 +1462,13 @@ input:focus-visible,
   line-height: 1.18;
   text-overflow: ellipsis;
   white-space: nowrap;
+  user-select: text;
+  cursor: text;
+}
+
+.cell-value::selection {
+  color: var(--selection-foreground, var(--ink)) !important;
+  background: var(--selection-background, var(--accent-soft)) !important;
 }
 
 .object-statusbar {
