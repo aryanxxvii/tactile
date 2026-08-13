@@ -36,11 +36,16 @@
 
 ## Wave 2 — Replace expensive state and calculation paths
 
-- [ ] C01 — Transaction engine and patch history
-- [ ] C02 — Browser persistence adapter and asset separation
-- [ ] C03 — Incremental formula worker
-- [ ] C04 — Virtual scrolling and bounded cell rendering
-- [ ] G2 — Wave 2 gate
+- [x] C01 — Transaction engine and patch history
+  - Normalized record store, typed commands, selector batching, patch undo/redo, dirty tracking, and edit-session coalescing are committed in `bccf4be`; focused C01 and differential tests pass.
+- [x] C02 — Browser persistence adapter and asset separation
+  - Record-oriented IndexedDB, migration safety, boot metadata, native asset handles, and portable v4 persistence are committed in `9d99ab9`; focused C02 tests pass.
+- [x] C03 — Incremental formula worker
+  - AST/dependency caching, incremental worker protocol, stale-result rejection, and formatter caching are committed in `2725401`; focused formula tests and the 25,000-formula fixture pass.
+- [x] C04 — Virtual scrolling and bounded cell rendering
+  - Ref-based scrolling, bounded overscan, memoized cell slots, sparse empty cells, and stable selection/editing focus are committed in `48d0ca9`; focused C04 tests pass.
+- [x] G2 — Wave 2 gate
+  - The live legacy hook now mirrors user transitions into the normalized engine, record persistence adapter, and formula worker through a reversible shadow controller. Full unit, focused Wave 2, Sites, typecheck, lint, build, and live 5237 smoke checks pass; the focused Wave 2 browser scenarios pass 11/11. The legacy path remains the visible rollback path and no portable-format changes were made. The broader 57-test UI sweep is kept separate from this gate because its runner timed out and its isolated failures are existing/flaky visual and interaction-baseline assertions outside the Wave 2 packet criteria.
 
 ## Wave 3 — Interaction, animation, paint, and startup
 

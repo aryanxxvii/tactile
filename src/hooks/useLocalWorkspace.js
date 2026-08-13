@@ -21,6 +21,7 @@ import {
   reorderFormulaForAxis,
 } from "../sheet/structure.js";
 import { loadWorkspace, loadWorkspaceCache, saveWorkspace } from "../storage.js";
+import { createWave2Shadow } from "../core/engine/shadow.js";
 
 function initialWorkspace() {
   return normalizeWorkspace(loadWorkspaceCache() || createBlankWorkspace());
@@ -140,6 +141,7 @@ export function useLocalWorkspace() {
   const [hydrated, setHydrated] = useState(false);
   const saveTimer = useRef(null);
   const historyRef = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
+  const wave2ShadowRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,6 +164,20 @@ export function useLocalWorkspace() {
       setSaveState(persisted ? "saved" : "saved in local cache");
     }, 120);
     return () => window.clearTimeout(saveTimer.current);
+  }, [hydrated, workspace]);
+
+  useEffect(() => {
+    if (!hydrated || wave2ShadowRef.current) return undefined;
+    wave2ShadowRef.current = createWave2Shadow(workspace);
+    return () => {
+      wave2ShadowRef.current?.dispose();
+      wave2ShadowRef.current = null;
+    };
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || !wave2ShadowRef.current) return;
+    wave2ShadowRef.current.reconcile(workspace);
   }, [hydrated, workspace]);
 
   const commitWorkspace = useCallback((updater, historyKey = "workspace") => {
