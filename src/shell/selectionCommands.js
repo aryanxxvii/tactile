@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { materializeCell, usedSheetBounds } from "../model.js";
 import { cellAddress, coordinatesFromAddress, moveAddress } from "../sheet/coordinates.js";
 import { cellIdsInRange, pasteChanges, rangeLabel, serializeRange } from "../sheet/ranges.js";
@@ -10,6 +10,10 @@ function isTypingTarget(target) {
 
 function isGridTarget(target) {
   return Boolean(target?.closest?.(".sheet-grid-shell"));
+}
+
+function isSheetCellTarget(target) {
+  return Boolean(target?.closest?.(".sheet-cell"));
 }
 
 function clipboardMethodAvailable(method) {
@@ -34,32 +38,44 @@ export function useSelectionCommands({
 }) {
   const [selectedByObject, setSelectedByObject] = useState({});
   const [rangeByObject, setRangeByObject] = useState({});
+  const selectedByObjectRef = useRef({});
+  const rangeByObjectRef = useRef({});
 
   const resetSelection = useCallback(() => {
+    selectedByObjectRef.current = {};
+    rangeByObjectRef.current = {};
     setSelectedByObject({});
     setRangeByObject({});
   }, []);
 
   const selectedCellFor = useCallback((object) => {
-    const address = selectedByObject[object.id] || "A1";
+    const address = selectedByObjectRef.current[object.id] || "A1";
     const coordinates = coordinatesFromAddress(address) || { row: 0, column: 0 };
     return materializeCell(object, coordinates.row, coordinates.column);
-  }, [selectedByObject]);
+  }, []);
 
   const selectAddress = useCallback((objectId, address) => {
-    setSelectedByObject((current) => ({ ...current, [objectId]: address }));
-    setRangeByObject((current) => ({
-      ...current,
+    const nextSelected = { ...selectedByObjectRef.current, [objectId]: address };
+    const nextRanges = {
+      ...rangeByObjectRef.current,
       [objectId]: { anchor: address, focus: address },
-    }));
+    };
+    selectedByObjectRef.current = nextSelected;
+    rangeByObjectRef.current = nextRanges;
+    setSelectedByObject(nextSelected);
+    setRangeByObject(nextRanges);
   }, []);
 
   const selectRange = useCallback((objectId, anchor, focus, activeAddress = focus) => {
-    setSelectedByObject((current) => ({ ...current, [objectId]: activeAddress }));
-    setRangeByObject((current) => ({
-      ...current,
+    const nextSelected = { ...selectedByObjectRef.current, [objectId]: activeAddress };
+    const nextRanges = {
+      ...rangeByObjectRef.current,
       [objectId]: { anchor, focus },
-    }));
+    };
+    selectedByObjectRef.current = nextSelected;
+    rangeByObjectRef.current = nextRanges;
+    setSelectedByObject(nextSelected);
+    setRangeByObject(nextRanges);
   }, []);
 
   const openSelectedEmbeddedObject = useCallback(() => {
@@ -89,22 +105,21 @@ export function useSelectionCommands({
     const activeLayer = layers[layers.length - 1];
     const activeObject = workspace.objects[activeLayer.objectId];
     if (activeObject?.type !== "sheet") return;
+    const currentAddress = selectedByObjectRef.current[activeObject.id] || "A1";
     const next = moveAddress(
-      selectedByObject[activeObject.id] || "A1",
+      currentAddress,
       rowDelta,
       columnDelta,
       activeObject.rows,
       activeObject.columns,
     );
     if (extend) {
-      const anchor = rangeByObject[activeObject.id]?.anchor
-        || selectedByObject[activeObject.id]
-        || "A1";
+      const anchor = rangeByObjectRef.current[activeObject.id]?.anchor || currentAddress;
       selectRange(activeObject.id, anchor, next);
     } else {
       selectAddress(activeObject.id, next);
     }
-  }, [layers, rangeByObject, selectAddress, selectRange, selectedByObject, workspace.objects]);
+  }, [layers, selectAddress, selectRange, workspace.objects]);
 
   const pasteTextIntoActiveCell = useCallback((object, cell, text) => {
     const pasted = pasteChanges(cell.address, text);
@@ -117,7 +132,7 @@ export function useSelectionCommands({
     const object = workspace.objects[activeLayer.objectId];
     if (object?.type !== "sheet") return;
     const cell = selectedCellFor(object);
-    const selection = rangeByObject[object.id] || { anchor: cell.address, focus: cell.address };
+    const selection = rangeByObjectRef.current[object.id] || { anchor: cell.address, focus: cell.address };
     if (mode === "copy" || mode === "cut") {
       if (!clipboardMethodAvailable("writeText")) return;
       try {
@@ -156,7 +171,7 @@ export function useSelectionCommands({
         showNotice("Could not read the clipboard");
       }
     }
-  }, [clearCells, createEmbeddedFile, layers, pasteTextIntoActiveCell, rangeByObject, selectedCellFor, showNotice, workspace.objects]);
+  }, [clearCells, createEmbeddedFile, layers, pasteTextIntoActiveCell, selectedCellFor, showNotice, workspace.objects]);
 
   const handlePaste = useCallback(async (event) => {
     if (event.defaultPrevented || isTypingTarget(event.target)) return;
@@ -190,9 +205,9 @@ export function useSelectionCommands({
     const object = workspace.objects[activeLayer.objectId];
     if (object?.type !== "sheet") return;
     const cell = selectedCellFor(object);
-    const selection = rangeByObject[object.id] || { anchor: cell.address, focus: cell.address };
+    const selection = rangeByObjectRef.current[object.id] || { anchor: cell.address, focus: cell.address };
     clearCells(object.id, cellIdsInRange(selection));
-  }, [clearCells, layers, rangeByObject, selectedCellFor, workspace.objects]);
+  }, [clearCells, layers, selectedCellFor, workspace.objects]);
 
   const selectUsedSheet = useCallback(() => {
     const activeLayer = layers[layers.length - 1];
@@ -202,9 +217,9 @@ export function useSelectionCommands({
     const end = bounds.rows && bounds.columns
       ? cellAddress(bounds.rows - 1, bounds.columns - 1)
       : "A1";
-    const activeAddress = selectedByObject[object.id] || "A1";
+    const activeAddress = selectedByObjectRef.current[object.id] || "A1";
     selectRange(object.id, "A1", end, activeAddress);
-  }, [layers, selectRange, selectedByObject, workspace.objects]);
+  }, [layers, selectRange, workspace.objects]);
 
   const handleKeyboard = useCallback((event, settingsOpen, closeSettings, closeTopLayer, expandTopLayer) => {
     if (isTypingTarget(event.target) || event.defaultPrevented) return;
@@ -263,6 +278,7 @@ export function useSelectionCommands({
       clearSelectedCell();
       return;
     }
+    if (!isSheetCellTarget(event.target)) return;
     if (event.key === "ArrowUp") {
       event.preventDefault();
       moveSelection(-1, 0, event.shiftKey);
