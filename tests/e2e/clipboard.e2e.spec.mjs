@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 const cellLocator = (page, address) => page.locator(`[data-cell-address="${address}"]`).first();
+const clipboardImageBase64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
 function clipboardWorkspace() {
   const now = new Date().toISOString();
@@ -89,6 +91,35 @@ async function setClipboard(page, text) {
   await page.evaluate((value) => navigator.clipboard.writeText(value), text);
 }
 
+async function setClipboardImage(page) {
+  await page.evaluate(async (encoded) => {
+    const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": new Blob([bytes], { type: "image/png" }) })]);
+  }, clipboardImageBase64);
+}
+
+async function pasteClipboardImage(page, address = "B2") {
+  await page.evaluate(
+    ({ cellAddress, encoded }) => {
+      const cell = document.querySelector(`[data-cell-address="${cellAddress}"]`);
+      const transfer = new DataTransfer();
+      const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+      transfer.items.add(new File([bytes], "clipboard-image.png", { type: "image/png" }));
+      cell.dispatchEvent(
+        new ClipboardEvent("paste", {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: transfer,
+        }),
+      );
+    },
+    {
+      cellAddress: address,
+      encoded: clipboardImageBase64,
+    },
+  );
+}
+
 async function selectionSnapshot(page) {
   return page.evaluate(() => ({
     active: document.querySelector('.sheet-cell[aria-selected="true"]')?.dataset.cellAddress || null,
@@ -146,6 +177,48 @@ test("pastes a rectangular TSV from the keyboard and selects that rectangle", as
       inRangeCount: 3,
       status: "B2:C3",
     });
+});
+
+test("pastes a clipboard image into the selected cell as a linked local image object", async ({ page }) => {
+  await page.goto("/");
+  await importClipboardWorkspace(page);
+
+  await cellLocator(page, "B2").click();
+  await pasteClipboardImage(page);
+
+  await expect.poll(() => cellValue(page, "B2")).toBe("clipboard-image");
+  await expect
+    .poll(async () => page.locator('[data-cell-address="B2"]').getAttribute("aria-label"))
+    .toContain("embedded object");
+
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+  const imageRow = page.locator(".files-tree-row[data-object-id]").filter({ hasText: "clipboard-image" });
+  await expect(imageRow).toBeVisible();
+  await imageRow.locator(".files-tree-open").click();
+
+  await expect(page.locator('[data-object-type="image"]')).toBeVisible();
+  await expect(page.locator('[data-object-type="image"] img')).toHaveAttribute("src", /^data:image\/png;base64,/);
+});
+
+test("pastes an image from the clipboard with Control+V as a linked local image object", async ({ page }) => {
+  await page.goto("/");
+  await grantClipboard(page);
+  await importClipboardWorkspace(page);
+  await setClipboardImage(page);
+
+  await cellLocator(page, "B2").click();
+  await page.keyboard.press("Control+V");
+
+  await expect.poll(() => cellValue(page, "B2")).toBe("image");
+  await expect
+    .poll(async () => page.locator('[data-cell-address="B2"]').getAttribute("aria-label"))
+    .toContain("embedded object");
+
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+  const imageRow = page.locator(".files-tree-row[data-object-id]").filter({ hasText: "image" });
+  await expect(imageRow).toBeVisible();
+  await imageRow.locator(".files-tree-open").click();
+  await expect(page.locator('[data-object-type="image"] img')).toHaveAttribute("src", /^data:image\/png;base64,/);
 });
 
 test("pastes TSV through the cell context menu and selects the pasted shape", async ({ page }) => {
