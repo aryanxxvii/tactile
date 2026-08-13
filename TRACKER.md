@@ -49,7 +49,10 @@
 
 ## Wave 3 — Interaction, animation, paint, and startup
 
-- [ ] D01 — Local edit sessions
+- [x] D01 — Local edit sessions
+  - Local drafts now cover sheet cells, the formula bar, object titles, and Markdown; commits are deferred to logical edit-session boundaries while formula previews use the worker without mutating the workspace.
+  - First printable input seeds an empty cell, focus/caret state is preserved, and the active sheet is supplied for neighboring-reference previews.
+  - Committed in `a6345e0`; 71/71 unit tests, typecheck, lint, and production build pass (lint retains existing warnings only).
 - [ ] D02 — Transient gestures
 - [ ] D03 — In & Out lifecycle and compositing
 - [ ] D04 — CSS consolidation and code splitting
