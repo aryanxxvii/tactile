@@ -457,6 +457,61 @@ test("Files context-menu Delete removes the object link and protects Home and St
   await expect(protectedDelete).toContainText("Current start");
 });
 
+test("Files context-menu Rename validates names and preserves live object links", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+
+  const childRow = page.locator('.files-tree-row[data-object-id="child"]');
+  await childRow.click({ button: "right" });
+  const menu = page.getByRole("menu", { name: "Actions for Child sheet" });
+  await expect(menu.getByRole("menuitem", { name: "Rename", exact: true })).toBeVisible();
+  await menu.getByRole("menuitem", { name: "Rename", exact: true }).click();
+
+  const renameDialog = page.getByRole("dialog", { name: "Rename object" });
+  const nameInput = renameDialog.getByRole("textbox", { name: "Object name" });
+  await expect(nameInput).toBeFocused();
+
+  await nameInput.fill("   ");
+  await nameInput.press("Enter");
+  await expect(renameDialog.getByRole("alert")).toHaveText("Name cannot be empty.");
+  await expect(childRow.locator(".files-tree-title")).toHaveText("Child sheet");
+
+  await nameInput.fill("HOME");
+  await nameInput.press("Enter");
+  await expect(renameDialog.getByRole("alert")).toHaveText('An object named "Home" already exists.');
+  await expect(childRow.locator(".files-tree-title")).toHaveText("Child sheet");
+
+  await nameInput.fill("Renamed child");
+  await nameInput.press("Enter");
+  await expect(renameDialog).toHaveCount(0);
+  await expect(childRow.locator(".files-tree-title")).toHaveText("Renamed child");
+
+  await page.getByRole("dialog", { name: "Files" }).getByRole("button", { name: "Close Files" }).click();
+  await expect(page.locator('[data-object-id="home"][data-cell-address="A1"]')).toHaveAttribute(
+    "aria-label",
+    "A1, Renamed child, embedded object",
+  );
+
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+  await page.locator('.files-tree-row[data-object-id="child"]').click();
+  await expect(page.locator(".spatial-layer").getByRole("textbox", { name: "Object title" })).toHaveValue(
+    "Renamed child",
+  );
+  await expect(page).toHaveURL(/route=home-child/);
+  expect(
+    await page.evaluate(() => {
+      const segment = window.history.state?.tactileStack?.at(-1);
+      return {
+        objectId: segment?.objectId,
+        linkId: segment?.linkId,
+        sourceObjectId: segment?.sourceObjectId,
+        sourceAddress: segment?.sourceAddress,
+      };
+    }),
+  ).toEqual({ objectId: "child", linkId: "home-child", sourceObjectId: "home", sourceAddress: "A1" });
+});
+
 test("Files context commands use active Paper tokens for enabled text and icons", async ({ page }) => {
   await page.goto("/");
   const workspace = filesWorkspace();

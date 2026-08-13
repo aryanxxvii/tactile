@@ -282,6 +282,35 @@ export function searchFilesIndex(index, query, category = "all", limit = 100) {
   return index?.search ? index.search(query, category, limit) : [];
 }
 
+export function validateObjectTitle(index, objectId, value) {
+  const title = String(value ?? "").trim();
+  const normalizedTitle = normalizeSearchText(title);
+  if (!normalizedTitle) {
+    return {
+      valid: false,
+      code: "empty",
+      title,
+      message: "Name cannot be empty.",
+    };
+  }
+
+  const duplicate = index?.entries?.find((entry) => (
+    entry.objectId !== String(objectId)
+      && normalizeSearchText(entry.title) === normalizedTitle
+  ));
+  if (duplicate) {
+    return {
+      valid: false,
+      code: "duplicate",
+      title,
+      duplicateObjectId: duplicate.objectId,
+      message: `An object named "${duplicate.title}" already exists.`,
+    };
+  }
+
+  return { valid: true, code: "", title, message: "" };
+}
+
 export function fileRouteForObject(index, objectId, locationIndex = 0) {
   const entry = index?.entryByObjectId?.get(String(objectId));
   return entry?.locations?.[locationIndex] || null;

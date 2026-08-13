@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildFilesIndex, normalizeSearchText } from "../src/shell/filesIndex.js";
+import { buildFilesIndex, normalizeSearchText, validateObjectTitle } from "../src/shell/filesIndex.js";
 import {
   createBlankWorkspace,
   createCellRecord,
@@ -142,6 +142,19 @@ test("Files deletion removes canonical descendants and aliases while protecting 
   assert.equal(buildFilesIndex(startedInLeaf).entryByObjectId.get("branch").deleteReason, "Contains current start");
   assert.equal(buildFilesIndex(startedInLeaf).entryByObjectId.get("leaf").canDelete, false);
   assert.strictEqual(deleteObjectFromWorkspace(startedInLeaf, "branch"), startedInLeaf);
+});
+
+test("Files rename validation trims names and rejects empty or duplicate titles", () => {
+  const index = buildFilesIndex(filesWorkspace());
+
+  assert.equal(validateObjectTitle(index, "child", "  ").code, "empty");
+  assert.equal(validateObjectTitle(index, "child", " HOME ").code, "duplicate");
+  assert.deepEqual(validateObjectTitle(index, "child", "  Project notes  "), {
+    valid: true,
+    code: "",
+    title: "Project notes",
+    message: "",
+  });
 });
 
 test("Files distinguishes ordinary Tiles, the root Home Tiles, and the selected Start object", () => {

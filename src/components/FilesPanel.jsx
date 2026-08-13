@@ -6,6 +6,7 @@ import {
   IconCopy,
   IconHome,
   IconPalette,
+  IconPencil,
   IconPin,
   IconPinned,
   IconSearch,
@@ -21,6 +22,7 @@ import {
   readObjectDragData,
   writeObjectDragData,
 } from "../shell/objectDrag.js";
+import { validateObjectTitle } from "../shell/filesIndex.js";
 import { FILES_MAX_WIDTH, FILES_MIN_WIDTH } from "../shell/useShellState.js";
 
 const FILTERS = [
@@ -168,7 +170,111 @@ function parentRouteFor(location) {
   };
 }
 
-function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onSetHome, onToggle, onCustomize, onCopyPath, onDelete }) {
+function FilesRenamePopover({ entry, index, x, y, themeSource, onClose, onCommit }) {
+  const popoverRef = useRef(null);
+  const inputRef = useRef(null);
+  const [draft, setDraft] = useState(() => entry.title);
+  const [error, setError] = useState(null);
+  const [position, setPosition] = useState({ left: x, top: y });
+
+  useLayoutEffect(() => {
+    const updatePosition = () => {
+      const popoverBox = popoverRef.current?.getBoundingClientRect();
+      if (!popoverBox) return;
+      const left = Math.min(Math.max(8, x), Math.max(8, window.innerWidth - popoverBox.width - 8));
+      const top = Math.min(Math.max(8, y), Math.max(8, window.innerHeight - popoverBox.height - 8));
+      setPosition({ left, top });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [x, y]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const closeOutside = (event) => {
+      if (!popoverRef.current?.contains(event.target)) onClose?.();
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [onClose]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const result = validateObjectTitle(index, entry.objectId, draft);
+    if (!result.valid) {
+      setError(result);
+      inputRef.current?.focus();
+      return;
+    }
+    onCommit?.(result.title);
+  };
+
+  return (
+    <PaperPortal className="tactile-context-menu-layer" themeSource={themeSource}>
+      <div
+        ref={popoverRef}
+        className="files-rename-popover"
+        role="dialog"
+        aria-labelledby="files-rename-title"
+        style={{ left: position.left, top: position.top }}
+        onContextMenu={(event) => event.preventDefault()}
+      >
+        <form className="files-rename-form" onSubmit={submit}>
+          <div className="files-rename-heading">
+            <IconPencil size={14} stroke={1.7} aria-hidden="true" />
+            <strong id="files-rename-title">Rename object</strong>
+          </div>
+          <label className="files-rename-field">
+            <span>Object name</span>
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                if (error) setError(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onClose?.();
+                }
+              }}
+              aria-label="Object name"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "files-rename-error" : undefined}
+              spellCheck="false"
+              autoComplete="off"
+            />
+          </label>
+          {error ? (
+            <small id="files-rename-error" className="files-rename-error" role="alert">
+              {error.message}
+            </small>
+          ) : null}
+          <div className="files-rename-actions">
+            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="submit" className="is-primary">Rename</button>
+          </div>
+        </form>
+      </div>
+    </PaperPortal>
+  );
+}
+
+function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onRename, onSetHome, onToggle, onCustomize, onCopyPath, onDelete }) {
   const parentRoute = parentRouteFor(menu.location);
   const [position, setPosition] = useState({ left: menu.x, top: menu.y });
 
@@ -231,6 +337,10 @@ function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onSetHo
         <IconChevronRight size={14} stroke={1.7} />
         <span>Open</span>
         <kbd>↵</kbd>
+      </button>
+      <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Rename" onClick={onRename} data-context-action="rename">
+        <IconPencil size={14} stroke={1.7} />
+        <span>Rename</span>
       </button>
       <button
         className="files-context-menu-item"
@@ -457,6 +567,7 @@ export function FilesPanel({
   const [customizingKey, setCustomizingKey] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [dropTargetKey, setDropTargetKey] = useState("");
+  const [renameState, setRenameState] = useState(null);
   const [resizing, setResizing] = useState(false);
   const customizerRef = useRef(null);
   const resizeRef = useRef(null);
@@ -537,6 +648,8 @@ export function FilesPanel({
     if (!route) return;
     setContextMenu(null);
     setDropTargetKey("");
+    setRenameState(null);
+    setDropTargetKey("");
     onOpenRoute?.(route);
     if (!pinned) onClose?.();
   };
@@ -580,6 +693,7 @@ export function FilesPanel({
       : (sourceBox?.bottom || panelBox.top + 24);
     setSelectedId(row.entry.objectId);
     setCustomizingKey(null);
+    setRenameState(null);
     setContextMenu({
       ...row,
       x: clientX,
@@ -592,6 +706,19 @@ export function FilesPanel({
     const current = contextMenu;
     setContextMenu(null);
     onSetHome?.(current.entry.objectId, current.location);
+  };
+
+  const handleContextRename = () => {
+    if (!contextMenu) return;
+    const current = contextMenu;
+    setContextMenu(null);
+    setCustomizingKey(null);
+    setRenameState({
+      objectId: current.entry.objectId,
+      title: current.entry.title,
+      x: current.x,
+      y: current.y,
+    });
   };
 
   const handleContextCustomize = () => {
@@ -625,6 +752,10 @@ export function FilesPanel({
   const handlePanelKeyDown = (event) => {
     if (event.key === "Escape") {
       event.preventDefault();
+      if (renameState) {
+        setRenameState(null);
+        return;
+      }
       if (contextMenu) {
         setContextMenu(null);
         return;
@@ -897,6 +1028,7 @@ export function FilesPanel({
             themeSource={panelRef.current}
             onClose={() => setContextMenu(null)}
             onOpen={(route) => openRoute(route || contextMenu.location)}
+            onRename={handleContextRename}
             onSetHome={handleSetHome}
             onToggle={() => {
               toggleExpanded(contextMenu.entry.objectId);
@@ -905,6 +1037,20 @@ export function FilesPanel({
             onCustomize={handleContextCustomize}
             onCopyPath={handleContextCopyPath}
             onDelete={handleContextDelete}
+          />
+        ) : null}
+        {renameState ? (
+          <FilesRenamePopover
+            entry={index.entryByObjectId.get(renameState.objectId) || { objectId: renameState.objectId, title: renameState.title }}
+            index={index}
+            x={renameState.x}
+            y={renameState.y}
+            themeSource={panelRef.current}
+            onClose={() => setRenameState(null)}
+            onCommit={(title) => {
+              onUpdateObject?.(renameState.objectId, { title });
+              setRenameState(null);
+            }}
           />
         ) : null}
       </aside>
