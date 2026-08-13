@@ -14,6 +14,7 @@ export const SHEET_METRICS = {
 };
 
 const SUSPENDED_SHEET_VIEW = new Map();
+const MAX_DIRECTIONAL_AHEAD = 8;
 
 function rememberSheetViewport(viewStateKey, viewport) {
   if (!viewStateKey || !viewport) return;
@@ -39,6 +40,45 @@ function numericMetric(value, fallback, min = 0) {
   return Number.isFinite(metric) ? Math.max(min, metric) : fallback;
 }
 
+function finiteCoordinate(value, fallback = 0) {
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : fallback;
+}
+
+function nativeScrollPosition(element) {
+  if (!element) return { scrollLeft: 0, scrollTop: 0 };
+  const clientWidth = Math.max(0, finiteCoordinate(element.clientWidth));
+  const clientHeight = Math.max(0, finiteCoordinate(element.clientHeight));
+  const maxScrollLeft = Math.max(0, finiteCoordinate(element.scrollWidth) - clientWidth);
+  const maxScrollTop = Math.max(0, finiteCoordinate(element.scrollHeight) - clientHeight);
+  return {
+    scrollLeft: clamp(finiteCoordinate(element.scrollLeft), 0, maxScrollLeft),
+    scrollTop: clamp(finiteCoordinate(element.scrollTop), 0, maxScrollTop),
+  };
+}
+
+function axisMax(value, geometry) {
+  const requestedCount = Math.max(0, Math.floor(finiteCoordinate(value)));
+  const geometryCount = geometry
+    ? Math.max(0, (geometry.offsets?.length || 1) - 1)
+    : requestedCount;
+  return Math.min(requestedCount, geometryCount) - 1;
+}
+
+function overscanInsets(value) {
+  if (typeof value === "number") {
+    const amount = numericMetric(value, 0);
+    return { top: amount, bottom: amount, left: amount, right: amount };
+  }
+  const all = numericMetric(value?.all ?? value?.overscan, 0);
+  return {
+    top: numericMetric(value?.top, all),
+    bottom: numericMetric(value?.bottom, all),
+    left: numericMetric(value?.left, all),
+    right: numericMetric(value?.right, all),
+  };
+}
+
 export function buildAxisGeometry(indexMap, overrides, fallback, min, max) {
   const sizes = indexMap.map((index) => numericSize(overrides?.[index], fallback, min, max));
   const offsets = [0];
@@ -51,7 +91,7 @@ export function firstVisiblePosition(offsets, coordinate) {
   if (!itemCount) return 0;
   let low = 0;
   let high = itemCount - 1;
-  const target = Math.max(0, coordinate);
+  const target = Math.max(0, finiteCoordinate(coordinate));
   while (low < high) {
     const middle = Math.floor((low + high) / 2);
     if (offsets[middle + 1] > target) high = middle;
@@ -69,34 +109,42 @@ export function buildVirtualRange(
   viewport,
   overscan = 0,
 ) {
-  const { rowHeaderWidth, columnHeaderHeight } = metrics;
-  const rowMax = Math.max(0, rowCount - 1);
-  const columnMax = Math.max(0, columnCount - 1);
-  const padding = Math.max(0, Number(overscan) || 0);
+  const rowHeaderWidth = numericMetric(metrics?.rowHeaderWidth, 0);
+  const columnHeaderHeight = numericMetric(metrics?.columnHeaderHeight, 0);
+  const rowMax = axisMax(rowCount, rowGeometry);
+  const columnMax = axisMax(columnCount, columnGeometry);
+  if (rowMax < 0 || columnMax < 0) {
+    return { rowStart: 0, rowEnd: -1, columnStart: 0, columnEnd: -1 };
+  }
+  const padding = overscanInsets(overscan);
+  const scrollTop = Math.max(0, finiteCoordinate(viewport?.scrollTop));
+  const scrollLeft = Math.max(0, finiteCoordinate(viewport?.scrollLeft));
+  const height = Math.max(0, finiteCoordinate(viewport?.height));
+  const width = Math.max(0, finiteCoordinate(viewport?.width));
   return {
     rowStart: clamp(
-      firstVisiblePosition(rowGeometry.offsets, (viewport?.scrollTop || 0) - columnHeaderHeight) - padding,
+      firstVisiblePosition(rowGeometry.offsets, scrollTop - columnHeaderHeight) - padding.top,
       0,
       rowMax,
     ),
     rowEnd: clamp(
       firstVisiblePosition(
         rowGeometry.offsets,
-        (viewport?.scrollTop || 0) + (viewport?.height || 0) - columnHeaderHeight,
-      ) + padding,
+        scrollTop + height - columnHeaderHeight,
+      ) + padding.bottom,
       0,
       rowMax,
     ),
     columnStart: clamp(
-      firstVisiblePosition(columnGeometry.offsets, (viewport?.scrollLeft || 0) - rowHeaderWidth) - padding,
+      firstVisiblePosition(columnGeometry.offsets, scrollLeft - rowHeaderWidth) - padding.left,
       0,
       columnMax,
     ),
     columnEnd: clamp(
       firstVisiblePosition(
         columnGeometry.offsets,
-        (viewport?.scrollLeft || 0) + (viewport?.width || 0) - rowHeaderWidth,
-      ) + padding,
+        scrollLeft + width - rowHeaderWidth,
+      ) + padding.right,
       0,
       columnMax,
     ),
@@ -120,14 +168,35 @@ export function rangeContains(range, visibleRange) {
 }
 
 export function expandedRange(range, rowCount, columnCount, padding) {
-  const rowMax = Math.max(0, rowCount - 1);
-  const columnMax = Math.max(0, columnCount - 1);
+  const rowMax = axisMax(rowCount);
+  const columnMax = axisMax(columnCount);
   const amount = Math.max(0, Number(padding) || 0);
+  if (!range || rowMax < 0 || columnMax < 0) {
+    return { rowStart: 0, rowEnd: -1, columnStart: 0, columnEnd: -1 };
+  }
   return {
     rowStart: clamp(range.rowStart - amount, 0, rowMax),
     rowEnd: clamp(range.rowEnd + amount, 0, rowMax),
     columnStart: clamp(range.columnStart - amount, 0, columnMax),
     columnEnd: clamp(range.columnEnd + amount, 0, columnMax),
+  };
+}
+
+export function directionalOverscan(metrics, delta, baseOverscan) {
+  const base = numericMetric(baseOverscan, 0);
+  const rowHeight = Math.max(1, numericMetric(metrics?.rowHeight, SHEET_METRICS.rowHeight));
+  const columnWidth = Math.max(1, numericMetric(metrics?.columnWidth, SHEET_METRICS.columnWidth));
+  const scrollTop = finiteCoordinate(delta?.scrollTop);
+  const scrollLeft = finiteCoordinate(delta?.scrollLeft);
+  const ahead = (distance, itemSize) => Math.min(
+    base + MAX_DIRECTIONAL_AHEAD,
+    base + Math.ceil(Math.abs(distance) / itemSize),
+  );
+  return {
+    top: scrollTop < 0 ? ahead(scrollTop, rowHeight) : base,
+    bottom: scrollTop > 0 ? ahead(scrollTop, rowHeight) : base,
+    left: scrollLeft < 0 ? ahead(scrollLeft, columnWidth) : base,
+    right: scrollLeft > 0 ? ahead(scrollLeft, columnWidth) : base,
   };
 }
 
@@ -138,10 +207,10 @@ function initialViewportFor(viewStateKey) {
     // In & Out closes. Reuse its last measured viewport so the first paint
     // after that move keeps the same virtual row window instead of briefly
     // rendering only the default fallback.
-    width: saved?.width || 900,
-    height: saved?.height || 500,
-    scrollLeft: saved?.scrollLeft || 0,
-    scrollTop: saved?.scrollTop || 0,
+    width: Math.max(1, finiteCoordinate(saved?.width, 900)),
+    height: Math.max(1, finiteCoordinate(saved?.height, 500)),
+    scrollLeft: Math.max(0, finiteCoordinate(saved?.scrollLeft)),
+    scrollTop: Math.max(0, finiteCoordinate(saved?.scrollTop)),
   };
 }
 
@@ -198,6 +267,8 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   );
   const scrollRef = useRef(null);
   const memoryFrameRef = useRef(null);
+  const pendingViewportRef = useRef(null);
+  const syncViewportRef = useRef(null);
   const initialViewport = useMemo(() => initialViewportFor(viewStateKey), [viewStateKey]);
   const scrollPositionRef = useRef({
     scrollLeft: initialViewport.scrollLeft,
@@ -226,14 +297,14 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     viewportForRange(viewport),
     0,
   ), [columnGeometry, columnIndexMap.length, metrics, rowGeometry, rowIndexMap.length, viewportForRange]);
-  const buildRenderRange = useCallback((viewport) => buildVirtualRange(
+  const buildRenderRange = useCallback((viewport, overscan = renderOverscan) => buildVirtualRange(
     rowGeometry,
     columnGeometry,
     rowIndexMap.length,
     columnIndexMap.length,
     metrics,
     viewportForRange(viewport),
-    renderOverscan,
+    overscan,
   ), [columnGeometry, columnIndexMap.length, metrics, renderOverscan, rowGeometry, rowIndexMap.length, viewportForRange]);
   const initialRange = useMemo(
     () => buildRenderRange({
@@ -251,31 +322,38 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     return true;
   }, []);
 
-  const syncScrollStyles = useCallback((element) => {
+  const syncScrollStyles = useCallback((element, position = nativeScrollPosition(element)) => {
     if (!element) return;
-    const scrollLeft = Number(element.scrollLeft) || 0;
-    const scrollTop = Number(element.scrollTop) || 0;
-    scrollPositionRef.current = { scrollLeft, scrollTop };
-    element.style.setProperty("--sheet-scroll-x", `${scrollLeft}px`);
-    element.style.setProperty("--sheet-scroll-y", `${scrollTop}px`);
+    scrollPositionRef.current = position;
+    element.style.setProperty("--sheet-scroll-x", `${position.scrollLeft}px`);
+    element.style.setProperty("--sheet-scroll-y", `${position.scrollTop}px`);
   }, []);
 
   const scheduleViewportMemory = useCallback((viewport) => {
-    if (!viewStateKey || memoryFrameRef.current != null) return;
+    if (!viewStateKey) return;
+    pendingViewportRef.current = viewport;
+    if (memoryFrameRef.current != null) return;
     memoryFrameRef.current = window.requestAnimationFrame(() => {
       memoryFrameRef.current = null;
-      rememberSheetViewport(viewStateKey, viewport);
+      const latest = pendingViewportRef.current;
+      pendingViewportRef.current = null;
+      rememberSheetViewport(viewStateKey, latest);
     });
   }, [viewStateKey]);
 
   const syncViewport = useCallback((element, { forceRange = false, immediateRange = false } = {}) => {
     if (!element) return;
-    syncScrollStyles(element);
+    const previousPosition = scrollPositionRef.current;
+    const position = nativeScrollPosition(element);
+    const delta = {
+      scrollLeft: position.scrollLeft - previousPosition.scrollLeft,
+      scrollTop: position.scrollTop - previousPosition.scrollTop,
+    };
+    syncScrollStyles(element, position);
     const next = {
       width: Math.max(1, element.clientWidth || viewportSizeRef.current.width || 900),
       height: Math.max(1, element.clientHeight || viewportSizeRef.current.height || 500),
-      scrollLeft: scrollPositionRef.current.scrollLeft,
-      scrollTop: scrollPositionRef.current.scrollTop,
+      ...position,
     };
     const previousSize = viewportSizeRef.current;
     const sizeChanged = previousSize.width !== next.width || previousSize.height !== next.height;
@@ -288,47 +366,52 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     scheduleViewportMemory(next);
 
     const visibleRange = buildVisibleRange(next);
-    if (!forceRange && rangeContains(rangeRef.current, visibleRange)) return;
-    const nextRange = buildRenderRange(next);
+    const nextRange = buildRenderRange(next, directionalOverscan(metrics, delta, renderOverscan));
+    if (!forceRange
+      && rangeContains(rangeRef.current, visibleRange)
+      && rangeContains(rangeRef.current, nextRange)) return;
     const update = () => commitRange(nextRange);
     if (immediateRange) flushSync(update);
     else update();
-  }, [buildRenderRange, buildVisibleRange, commitRange, scheduleViewportMemory, syncScrollStyles]);
+  }, [buildRenderRange, buildVisibleRange, commitRange, metrics, renderOverscan, scheduleViewportMemory, syncScrollStyles]);
+
+  syncViewportRef.current = syncViewport;
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element) return undefined;
     const saved = viewStateKey ? SUSPENDED_SHEET_VIEW.get(viewStateKey) : null;
     if (saved) {
-      element.scrollLeft = saved.scrollLeft || 0;
-      element.scrollTop = saved.scrollTop || 0;
+      element.scrollLeft = Math.max(0, finiteCoordinate(saved.scrollLeft));
+      element.scrollTop = Math.max(0, finiteCoordinate(saved.scrollTop));
     }
-    syncScrollStyles(element);
-    return undefined;
-  }, [syncScrollStyles, viewStateKey]);
 
-  useLayoutEffect(() => {
-    const element = scrollRef.current;
-    if (!element) return undefined;
-    syncViewport(element, { forceRange: true });
+    const handleNativeScroll = () => {
+      syncViewportRef.current?.(element, { immediateRange: true });
+    };
+    handleNativeScroll();
+    element.addEventListener("scroll", handleNativeScroll, { passive: true });
+
     const observer = typeof ResizeObserver === "function"
-      ? new ResizeObserver(() => syncViewport(element))
+      ? new ResizeObserver(() => syncViewportRef.current?.(element))
       : null;
     observer?.observe(element);
-    return () => observer?.disconnect();
-  }, [syncViewport]);
+    return () => {
+      observer?.disconnect();
+      element.removeEventListener("scroll", handleNativeScroll);
+    };
+  }, [viewStateKey]);
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element) return undefined;
-    const syncScrollPosition = () => syncScrollStyles(element);
-    syncScrollPosition();
-    element.addEventListener("scroll", syncScrollPosition, { passive: true });
-    return () => element.removeEventListener("scroll", syncScrollPosition);
-  }, [syncScrollStyles]);
+    syncViewportRef.current?.(element);
+    return undefined;
+  }, [range]);
 
   useEffect(() => () => {
     if (memoryFrameRef.current != null) window.cancelAnimationFrame(memoryFrameRef.current);
+    pendingViewportRef.current = null;
   }, []);
 
   const onScroll = useCallback((event) => {
