@@ -107,6 +107,8 @@ export function useSheetGridGestures({
   const selectionScrollFrameRef = useRef(null);
   const selectionViewportLockRef = useRef(false);
   const focusFrameRef = useRef(null);
+  const resizeFrameRef = useRef(null);
+  const axisDragFrameRef = useRef(null);
 
   const releaseSelectionViewportLock = useCallback(() => {
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
@@ -436,34 +438,6 @@ export function useSheetGridGestures({
     stopSelectionAutoScroll();
   }, [stopSelectionAutoScroll]);
 
-  useEffect(() => {
-    const moveResize = (event) => {
-      const active = resizeRef.current;
-      if (!active) return;
-      const delta = active.axis === "column"
-        ? event.clientX - active.start
-        : event.clientY - active.start;
-      const minimum = active.axis === "column" ? 56 : 24;
-      const maximum = active.axis === "column" ? 420 : 96;
-      const nextSizes = { ...active.baseMap };
-      active.targets.forEach((target) => {
-        nextSizes[target] = Math.max(minimum, Math.min(maximum, active.values[target] + delta));
-      });
-      onUpdateObject?.(active.axis === "column"
-        ? { columnWidths: nextSizes }
-        : { rowHeights: nextSizes });
-    };
-    const endResize = () => { resizeRef.current = null; };
-    window.addEventListener("pointermove", moveResize);
-    window.addEventListener("pointerup", endResize);
-    window.addEventListener("pointercancel", endResize);
-    return () => {
-      window.removeEventListener("pointermove", moveResize);
-      window.removeEventListener("pointerup", endResize);
-      window.removeEventListener("pointercancel", endResize);
-    };
-  }, [onUpdateObject]);
-
   const startSelection = useCallback((event, cell) => {
     if (event.button !== 0 || formulaEditingCellId) return;
     // Let the browser own drags that begin on a cell's value text. A grid
@@ -581,19 +555,67 @@ export function useSheetGridGestures({
   const startResize = useCallback((event, axis, index) => {
     event.preventDefault();
     event.stopPropagation();
+    if (resizeRef.current) return;
     const targets = axisResizeTargets(axis, index);
     const values = Object.fromEntries(targets.map((target) => [
       target,
       axis === "column" ? columnSizeForIndex(target) : rowSizeForIndex(target),
     ]));
-    resizeRef.current = {
+    const captureTarget = event.currentTarget;
+    const active = {
       axis,
       start: axis === "column" ? event.clientX : event.clientY,
       targets,
       values,
       baseMap: { ...(axis === "column" ? object.columnWidths : object.rowHeights) },
+      pointerId: event.pointerId,
+      captureTarget,
+      preview: null,
     };
-  }, [axisResizeTargets, columnSizeForIndex, object.columnWidths, object.rowHeights, rowSizeForIndex]);
+    resizeRef.current = active;
+    if (event.pointerId != null) captureTarget.setPointerCapture?.(event.pointerId);
+
+    const moveResize = (moveEvent) => {
+      if (moveEvent.pointerId !== active.pointerId) return;
+      const delta = active.axis === "column"
+        ? moveEvent.clientX - active.start
+        : moveEvent.clientY - active.start;
+      const minimum = active.axis === "column" ? 56 : 24;
+      const maximum = active.axis === "column" ? 420 : 96;
+      const nextSizes = { ...active.baseMap };
+      active.targets.forEach((target) => {
+        nextSizes[target] = Math.max(minimum, Math.min(maximum, active.values[target] + delta));
+      });
+      active.preview = nextSizes;
+      if (resizeFrameRef.current != null) return;
+      resizeFrameRef.current = window.requestAnimationFrame(() => {
+        resizeFrameRef.current = null;
+        if (!resizeRef.current?.preview || !active.captureTarget) return;
+        active.captureTarget.dataset.resizePreview = JSON.stringify(active.preview);
+      });
+    };
+    const endResize = (endEvent) => {
+      if (endEvent.pointerId !== active.pointerId || resizeRef.current !== active) return;
+      if (resizeFrameRef.current != null) {
+        window.cancelAnimationFrame(resizeFrameRef.current);
+        resizeFrameRef.current = null;
+      }
+      delete active.captureTarget.dataset.resizePreview;
+      if (endEvent.type === "pointerup" && active.preview) {
+        onUpdateObject?.(active.axis === "column"
+          ? { columnWidths: active.preview }
+          : { rowHeights: active.preview });
+      }
+      try { active.captureTarget.releasePointerCapture?.(active.pointerId); } catch { /* already released */ }
+      window.removeEventListener("pointermove", moveResize, true);
+      window.removeEventListener("pointerup", endResize, true);
+      window.removeEventListener("pointercancel", endResize, true);
+      resizeRef.current = null;
+    };
+    window.addEventListener("pointermove", moveResize, true);
+    window.addEventListener("pointerup", endResize, true);
+    window.addEventListener("pointercancel", endResize, true);
+  }, [axisResizeTargets, columnSizeForIndex, object.columnWidths, object.rowHeights, onUpdateObject, rowSizeForIndex]);
 
   const resizeAxisWithKeyboard = useCallback((axis, index, delta) => {
     const targets = axisResizeTargets(axis, index);
@@ -610,10 +632,52 @@ export function useSheetGridGestures({
   const startAxisDrag = useCallback((event, axis, index) => {
     if (event.button !== 0 || event.target.closest(".column-resize-handle, .row-resize-handle, .column-group-toggle, .row-group-toggle")) return;
     event.preventDefault();
+    if (axisDragRef.current) return;
     const scroller = scrollRef.current;
     if (scroller) selectionScrollRef.current = { left: scroller.scrollLeft, top: scroller.scrollTop };
-    axisDragRef.current = { axis, index, startX: event.clientX, startY: event.clientY, moved: false };
-  }, [scrollRef]);
+    const active = {
+      axis,
+      index,
+      originIndex: index,
+      targetIndex: index,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+      pointerId: event.pointerId,
+      captureTarget: event.currentTarget,
+    };
+    axisDragRef.current = active;
+    if (event.pointerId != null) event.currentTarget.setPointerCapture?.(event.pointerId);
+
+    const moveAxis = (moveEvent) => {
+      if (moveEvent.pointerId !== active.pointerId) return;
+      const delta = active.axis === "column" ? moveEvent.clientX - active.startX : moveEvent.clientY - active.startY;
+      if (Math.abs(delta) < 8) return;
+      active.moved = true;
+      const target = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY)
+        .find((element) => element.classList?.contains(active.axis === "column" ? "column-header" : "row-header"));
+      const targetIndex = Number(target?.dataset.axisIndex);
+      if (Number.isInteger(targetIndex)) active.targetIndex = targetIndex;
+    };
+    const endAxisDrag = (endEvent) => {
+      if (endEvent.pointerId !== active.pointerId || axisDragRef.current !== active) return;
+      if (axisDragFrameRef.current != null) {
+        window.cancelAnimationFrame(axisDragFrameRef.current);
+        axisDragFrameRef.current = null;
+      }
+      if (endEvent.type === "pointerup" && active.moved && active.targetIndex !== active.originIndex) {
+        onMoveAxis?.(active.axis, active.originIndex, active.targetIndex);
+      }
+      try { active.captureTarget.releasePointerCapture?.(active.pointerId); } catch { /* already released */ }
+      window.removeEventListener("pointermove", moveAxis, true);
+      window.removeEventListener("pointerup", endAxisDrag, true);
+      window.removeEventListener("pointercancel", endAxisDrag, true);
+      axisDragRef.current = null;
+    };
+    window.addEventListener("pointermove", moveAxis, true);
+    window.addEventListener("pointerup", endAxisDrag, true);
+    window.addEventListener("pointercancel", endAxisDrag, true);
+  }, [onMoveAxis, scrollRef]);
 
   const restoreSelectionScroll = useCallback(() => {
     const saved = selectionScrollRef.current;
@@ -636,34 +700,6 @@ export function useSheetGridGestures({
     const scroller = scrollRef.current;
     if (scroller) selectionScrollRef.current = { left: scroller.scrollLeft, top: scroller.scrollTop };
   }, [scrollRef]);
-
-  useEffect(() => {
-    const moveAxis = (event) => {
-      const active = axisDragRef.current;
-      if (!active) return;
-      const delta = active.axis === "column" ? event.clientX - active.startX : event.clientY - active.startY;
-      if (Math.abs(delta) < 8) return;
-      active.moved = true;
-      const target = document.elementsFromPoint(event.clientX, event.clientY)
-        .find((element) => element.classList?.contains(active.axis === "column" ? "column-header" : "row-header"));
-      const targetIndex = Number(target?.dataset.axisIndex);
-      if (Number.isInteger(targetIndex) && targetIndex !== active.index) {
-        onMoveAxis?.(active.axis, active.index, targetIndex);
-        active.index = targetIndex;
-        active.startX = event.clientX;
-        active.startY = event.clientY;
-      }
-    };
-    const endAxisDrag = () => { axisDragRef.current = null; };
-    window.addEventListener("pointermove", moveAxis);
-    window.addEventListener("pointerup", endAxisDrag);
-    window.addEventListener("pointercancel", endAxisDrag);
-    return () => {
-      window.removeEventListener("pointermove", moveAxis);
-      window.removeEventListener("pointerup", endAxisDrag);
-      window.removeEventListener("pointercancel", endAxisDrag);
-    };
-  }, [onMoveAxis]);
 
   const toggleRowGroup = useCallback((groupId, rowGroups) => {
     const target = rowGroups.find((group) => group.id === groupId);
