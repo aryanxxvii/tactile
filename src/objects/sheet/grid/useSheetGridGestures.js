@@ -14,6 +14,21 @@ function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, 
   return null;
 }
 
+const EDGE_SCROLL_BAND = 32;
+const EDGE_SCROLL_MAX_STEP = 42;
+
+function edgeScrollStep(coordinate, start, end) {
+  if (!Number.isFinite(coordinate) || !Number.isFinite(start) || !Number.isFinite(end)) return 0;
+  const distance = coordinate < start + EDGE_SCROLL_BAND
+    ? start + EDGE_SCROLL_BAND - coordinate
+    : coordinate > end - EDGE_SCROLL_BAND
+      ? coordinate - (end - EDGE_SCROLL_BAND)
+      : 0;
+  if (distance <= 0) return 0;
+  return Math.min(EDGE_SCROLL_MAX_STEP, Math.max(4, Math.round(distance * 0.7)))
+    * (coordinate < start + EDGE_SCROLL_BAND ? -1 : 1);
+}
+
 function domCellAddressAtPoint(event, objectId) {
   if (!Number.isFinite(event?.clientX) || !Number.isFinite(event?.clientY)) return null;
   return document
@@ -88,6 +103,8 @@ export function useSheetGridGestures({
   const gestureCallbacksRef = useRef(null);
   const gestureGeometryRef = useRef(null);
   const moveSelectionGestureRef = useRef(null);
+  const selectionPointerRef = useRef(null);
+  const selectionScrollFrameRef = useRef(null);
 
   gestureGeometryRef.current = {
     scrollRef,
@@ -124,6 +141,11 @@ export function useSheetGridGestures({
       && !selectionDragRef.current
       && activeElement instanceof Element
       && Boolean(activeElement.closest(".sheet-grid-shell"));
+    // A drag owns its viewport while it is live. Letting the active-cell
+    // effect scroll the surface here makes the endpoint jump to whichever
+    // virtual cell happened to render first. Edge scrolling below is the
+    // only scroll path during a range gesture.
+    if (selectionDragRef.current) return;
     const { rowHeaderWidth, columnHeaderHeight } = metrics;
     const selectedColumnPosition = columnPositionForIndex(selectedCoordinates.column);
     if (!Number.isInteger(selectedColumnPosition)) return;
@@ -223,6 +245,82 @@ export function useSheetGridGestures({
     });
   }, []);
 
+  const clampedPointerEvent = useCallback((event) => {
+    const geometry = gestureGeometryRef.current;
+    const scroller = geometry?.scrollRef?.current;
+    if (!scroller || !Number.isFinite(event?.clientX) || !Number.isFinite(event?.clientY)) return event;
+    const bounds = scroller.getBoundingClientRect();
+    const layoutWidth = scroller.clientWidth || bounds.width;
+    const layoutHeight = scroller.clientHeight || bounds.height;
+    const scaleX = layoutWidth > 0 ? bounds.width / layoutWidth : 1;
+    const scaleY = layoutHeight > 0 ? bounds.height / layoutHeight : 1;
+    const bodyLeft = bounds.left + geometry.metrics.rowHeaderWidth * scaleX;
+    const bodyTop = bounds.top + geometry.metrics.columnHeaderHeight * scaleY;
+    const bodyRight = bounds.left + layoutWidth * scaleX;
+    const bodyBottom = bounds.top + layoutHeight * scaleY;
+    return {
+      ...event,
+      clientX: Math.max(bodyLeft + 0.5 * scaleX, Math.min(bodyRight - 0.5 * scaleX, event.clientX)),
+      clientY: Math.max(bodyTop + 0.5 * scaleY, Math.min(bodyBottom - 0.5 * scaleY, event.clientY)),
+    };
+  }, []);
+
+  const updateSelectionAtPoint = useCallback((event, clampToBody = false) => {
+    const callbacks = gestureCallbacksRef.current;
+    const point = clampToBody ? clampedPointerEvent(event) : event;
+    const address = cellAddressAtPoint(point)
+      || domCellAddressAtPoint(point, callbacks?.object?.id);
+    if (address) moveSelectionGestureRef.current?.({ address });
+    return address;
+  }, [cellAddressAtPoint, clampedPointerEvent]);
+
+  const stopSelectionAutoScroll = useCallback(() => {
+    if (selectionScrollFrameRef.current != null) {
+      window.cancelAnimationFrame(selectionScrollFrameRef.current);
+      selectionScrollFrameRef.current = null;
+    }
+  }, []);
+
+  const scheduleSelectionAutoScroll = useCallback(() => {
+    if (selectionScrollFrameRef.current != null) return;
+    const tick = () => {
+      selectionScrollFrameRef.current = null;
+      const drag = selectionDragRef.current;
+      const pointer = selectionPointerRef.current;
+      const scroller = scrollRef.current;
+      if (!drag || !pointer || !scroller) return;
+
+      const bounds = scroller.getBoundingClientRect();
+      const layoutWidth = scroller.clientWidth || bounds.width;
+      const layoutHeight = scroller.clientHeight || bounds.height;
+      const scaleX = layoutWidth > 0 ? bounds.width / layoutWidth : 1;
+      const scaleY = layoutHeight > 0 ? bounds.height / layoutHeight : 1;
+      const bodyLeft = bounds.left + metrics.rowHeaderWidth * scaleX;
+      const bodyTop = bounds.top + metrics.columnHeaderHeight * scaleY;
+      const bodyRight = bounds.left + layoutWidth * scaleX;
+      const bodyBottom = bounds.top + layoutHeight * scaleY;
+      const deltaX = edgeScrollStep(pointer.clientX, bodyLeft, bodyRight);
+      const deltaY = edgeScrollStep(pointer.clientY, bodyTop, bodyBottom);
+      const maxLeft = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      const nextLeft = Math.max(0, Math.min(maxLeft, scroller.scrollLeft + deltaX));
+      const nextTop = Math.max(0, Math.min(maxTop, scroller.scrollTop + deltaY));
+      if (nextLeft === scroller.scrollLeft && nextTop === scroller.scrollTop) {
+        updateSelectionAtPoint(pointer, true);
+        return;
+      }
+
+      scroller.scrollTo({ left: nextLeft, top: nextTop, behavior: "auto" });
+      // Native scrolling updates this in the scroll listener, but writing it
+      // here keeps sticky rails in the same frame as the drag hit-test.
+      scroller.style.setProperty("--sheet-scroll-x", `${nextLeft}px`);
+      scroller.style.setProperty("--sheet-scroll-y", `${nextTop}px`);
+      updateSelectionAtPoint(pointer, true);
+      selectionScrollFrameRef.current = window.requestAnimationFrame(tick);
+    };
+    selectionScrollFrameRef.current = window.requestAnimationFrame(tick);
+  }, [metrics, scrollRef, updateSelectionAtPoint]);
+
   const startFormulaReference = useCallback((event, cell) => {
     if (event.button !== 0 || !editingCellId || cell.id === editingCellId) return;
     event.preventDefault();
@@ -256,13 +354,17 @@ export function useSheetGridGestures({
       const activeGesture = selectionDrag || fill || formulaReference;
       if (!activeGesture) return;
       if (activeGesture.pointerId != null && event?.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
+      if (selectionDrag) stopSelectionAutoScroll();
       if (selectionDrag && event?.type === "pointerup") {
-        const callbacks = gestureCallbacksRef.current;
-        const address = cellAddressAtPoint(event)
-          || domCellAddressAtPoint(event, callbacks?.object?.id);
+        selectionPointerRef.current = {
+          clientX: event.clientX,
+          clientY: event.clientY,
+        };
+        const address = updateSelectionAtPoint(event)
+          || selectionDrag.focus;
         if (address && address !== selectionDrag.focus) {
           selectionDrag.focus = address;
-          callbacks?.onSelectRange?.(selectionDrag.anchor, address);
+          gestureCallbacksRef.current?.onSelectRange?.(selectionDrag.anchor, address);
         }
       }
       if (formulaReference && event?.type === "pointerup") {
@@ -280,6 +382,7 @@ export function useSheetGridGestures({
         }
       }
       selectionDragRef.current = null;
+      selectionPointerRef.current = null;
       formulaReferenceDragRef.current = null;
       const target = fillTargetRef.current;
       fillDragRef.current = null;
@@ -303,7 +406,11 @@ export function useSheetGridGestures({
       window.removeEventListener("pointerup", finishPointerGesture, true);
       window.removeEventListener("pointercancel", finishPointerGesture, true);
     };
-  }, [cellAddressAtPoint, updateFormulaReference]);
+  }, [cellAddressAtPoint, stopSelectionAutoScroll, updateFormulaReference, updateSelectionAtPoint]);
+
+  useEffect(() => () => {
+    stopSelectionAutoScroll();
+  }, [stopSelectionAutoScroll]);
 
   useEffect(() => {
     const moveResize = (event) => {
@@ -353,6 +460,10 @@ export function useSheetGridGestures({
         captureTarget,
         captured: false,
       };
+      selectionPointerRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
     }
   }, [editingCellId, onSelect, onSelectRange, scrollRef, selectedAddress, selectionRange?.anchor]);
 
@@ -376,17 +487,26 @@ export function useSheetGridGestures({
       if (!activeGesture) return;
       if (activeGesture.pointerId != null && event.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
       captureGesturePointer(activeGesture, event);
-      const callbacks = gestureCallbacksRef.current;
-      const address = cellAddressAtPoint(event)
-        || domCellAddressAtPoint(event, callbacks?.object?.id);
-      if (address) {
-        if (formulaReferenceDragRef.current) moveFormulaReference({ address });
-        else moveSelectionGestureRef.current?.({ address });
+      if (selectionDragRef.current) {
+        selectionPointerRef.current = {
+          clientX: event.clientX,
+          clientY: event.clientY,
+        };
+        updateSelectionAtPoint(event, true);
+        scheduleSelectionAutoScroll();
+      } else {
+        const callbacks = gestureCallbacksRef.current;
+        const address = cellAddressAtPoint(event)
+          || domCellAddressAtPoint(event, callbacks?.object?.id);
+        if (address) {
+          if (formulaReferenceDragRef.current) moveFormulaReference({ address });
+          else moveSelectionGestureRef.current?.({ address });
+        }
       }
     };
     window.addEventListener("pointermove", moveSelectionFromPointer, true);
     return () => window.removeEventListener("pointermove", moveSelectionFromPointer, true);
-  }, [cellAddressAtPoint, moveFormulaReference]);
+  }, [cellAddressAtPoint, moveFormulaReference, scheduleSelectionAutoScroll, updateSelectionAtPoint]);
 
   const startCellEditing = useCallback((cellId, initialValue = "") => {
     setEditingCellId(cellId);

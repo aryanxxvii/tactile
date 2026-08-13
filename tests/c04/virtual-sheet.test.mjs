@@ -70,6 +70,46 @@ test("virtual ranges rebase in a bounded band instead of following every scroll 
   });
 });
 
+test("horizontal virtual ranges keep a 65-column sheet inside its axis bounds", () => {
+  const rows = Array.from({ length: 256 }, (_, index) => index);
+  const columns = Array.from({ length: 65 }, (_, index) => index);
+  const rowGeometry = buildAxisGeometry(rows, undefined, 31, 24, 96);
+  const columnGeometry = buildAxisGeometry(columns, undefined, 126, 56, 420);
+  const metrics = { rowHeaderWidth: 34, columnHeaderHeight: 25 };
+  const viewport = { width: 900, height: 500, scrollLeft: 0, scrollTop: 0 };
+  const maxScrollLeft = columnGeometry.total - viewport.width;
+  const range = buildVirtualRange(
+    rowGeometry,
+    columnGeometry,
+    rows.length,
+    columns.length,
+    metrics,
+    { ...viewport, scrollLeft: maxScrollLeft },
+    5,
+  );
+
+  assert.equal(range.columnEnd, columns.length - 1);
+  assert.ok(range.columnStart >= 0);
+  assert.ok(range.columnEnd < columns.length);
+  assert.ok(range.rowStart >= 0);
+  assert.ok(range.rowEnd < rows.length);
+  assert.equal(
+    rangeContains(
+      range,
+      buildVirtualRange(
+        rowGeometry,
+        columnGeometry,
+        rows.length,
+        columns.length,
+        metrics,
+        { ...viewport, scrollLeft: maxScrollLeft },
+        0,
+      ),
+    ),
+    true,
+  );
+});
+
 test("selection projection uses numeric bounds without normalizing each cell", () => {
   const range = { rowStart: 2, rowEnd: 5, columnStart: 3, columnEnd: 7 };
   assert.equal(numericRangeContains(range, 2, 3), true);

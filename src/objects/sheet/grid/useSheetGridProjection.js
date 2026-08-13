@@ -92,32 +92,46 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
     () => rangeValues(virtualSheet.range.rowStart, virtualSheet.range.rowEnd).map((position) => ({
       position,
       row: virtualSheet.rowIndexMap[position],
-    })).filter((entry) => Number.isInteger(entry.row)),
-    [virtualSheet.range.rowEnd, virtualSheet.range.rowStart, virtualSheet.rowIndexMap],
+    })).filter((entry) => Number.isInteger(entry.row)
+      && entry.row >= 0
+      && entry.row < object.rows),
+    [object.rows, virtualSheet.range.rowEnd, virtualSheet.range.rowStart, virtualSheet.rowIndexMap],
   );
   const pinnedVisibleRows = useMemo(() => {
     const selectedPosition = virtualSheet.rowPositionForIndex(selectedCoordinates.row);
-    if (!Number.isInteger(selectedPosition) || visibleRows.some((entry) => entry.row === selectedCoordinates.row)) {
+    const selectedRowIsInBounds = Number.isInteger(selectedCoordinates.row)
+      && selectedCoordinates.row >= 0
+      && selectedCoordinates.row < object.rows;
+    if (!selectedRowIsInBounds
+      || !Number.isInteger(selectedPosition)
+      || visibleRows.some((entry) => entry.row === selectedCoordinates.row)) {
       return visibleRows;
     }
     return [...visibleRows, { position: selectedPosition, row: selectedCoordinates.row }]
       .sort((left, right) => left.position - right.position);
-  }, [selectedCoordinates.row, virtualSheet.rowPositionForIndex, visibleRows]);
+  }, [object.rows, selectedCoordinates.row, virtualSheet.rowPositionForIndex, visibleRows]);
   const visibleColumns = useMemo(
     () => rangeValues(virtualSheet.range.columnStart, virtualSheet.range.columnEnd).map((position) => ({
       position,
       column: virtualSheet.columnIndexMap[position],
-    })).filter((entry) => Number.isInteger(entry.column)),
-    [virtualSheet.columnIndexMap, virtualSheet.range.columnEnd, virtualSheet.range.columnStart],
+    })).filter((entry) => Number.isInteger(entry.column)
+      && entry.column >= 0
+      && entry.column < object.columns),
+    [object.columns, virtualSheet.columnIndexMap, virtualSheet.range.columnEnd, virtualSheet.range.columnStart],
   );
   const pinnedVisibleColumns = useMemo(() => {
     const selectedPosition = virtualSheet.columnPositionForIndex(selectedCoordinates.column);
-    if (!Number.isInteger(selectedPosition) || visibleColumns.some((entry) => entry.column === selectedCoordinates.column)) {
+    const selectedColumnIsInBounds = Number.isInteger(selectedCoordinates.column)
+      && selectedCoordinates.column >= 0
+      && selectedCoordinates.column < object.columns;
+    if (!selectedColumnIsInBounds
+      || !Number.isInteger(selectedPosition)
+      || visibleColumns.some((entry) => entry.column === selectedCoordinates.column)) {
       return visibleColumns;
     }
     return [...visibleColumns, { position: selectedPosition, column: selectedCoordinates.column }]
       .sort((left, right) => left.position - right.position);
-  }, [selectedCoordinates.column, virtualSheet.columnPositionForIndex, visibleColumns]);
+  }, [object.columns, selectedCoordinates.column, virtualSheet.columnPositionForIndex, visibleColumns]);
 
   return {
     selectedCoordinates,

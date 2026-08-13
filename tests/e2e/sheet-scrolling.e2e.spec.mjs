@@ -116,3 +116,52 @@ test("refreshes the virtual slice before the first frame after a direct large of
   });
   expect(state.scrollTop).toBeGreaterThan(0);
 });
+
+test("keeps a horizontally rebased virtual window bounded at the sheet edge", async ({ page }) => {
+  await page.goto("/");
+
+  const state = await page
+    .locator("[data-sheet-scroll]")
+    .last()
+    .evaluate(async (element) => {
+      element.scrollLeft = element.scrollWidth - element.clientWidth;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const canvas = element.querySelector(".virtual-sheet-canvas");
+      const canvasBox = canvas?.getBoundingClientRect();
+      const slots = [...element.querySelectorAll(".virtual-cell-slot")];
+      const columns = slots.map((slot) => Number(slot.dataset.column));
+      const rows = slots.map((slot) => Number(slot.dataset.row));
+      return {
+        scrollLeft: element.scrollLeft,
+        maxScrollLeft: Math.max(0, element.scrollWidth - element.clientWidth),
+        mountedCells: slots.length,
+        minColumn: Math.min(...columns),
+        maxColumn: Math.max(...columns),
+        minRow: Math.min(...rows),
+        maxRow: Math.max(...rows),
+        inCanvasBounds: slots.every((slot) => {
+          const style = getComputedStyle(slot);
+          const left = Number.parseFloat(style.left);
+          const top = Number.parseFloat(style.top);
+          const width = Number.parseFloat(style.width);
+          const height = Number.parseFloat(style.height);
+          return (
+            left >= 0 &&
+            top >= 0 &&
+            left + width <= (canvasBox?.width || 0) + 0.01 &&
+            top + height <= (canvasBox?.height || 0) + 0.01
+          );
+        }),
+      };
+    });
+
+  expect(state).toMatchObject({
+    minColumn: 0,
+    maxColumn: 63,
+    minRow: 0,
+    inCanvasBounds: true,
+  });
+  expect(state.scrollLeft).toBeGreaterThanOrEqual(state.maxScrollLeft - 20);
+  expect(state.maxRow).toBeLessThan(256);
+  expect(state.mountedCells).toBeLessThan(1000);
+});
