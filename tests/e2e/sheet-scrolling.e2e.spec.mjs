@@ -87,6 +87,77 @@ test("keeps the bounded window and both sticky rails aligned on the first frame 
   expect(state.mountedCells).toBeLessThan(1000);
 });
 
+test("keeps active and hovered first-column cells behind the row rail after deep jumps", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+
+  for (const row of [64, 192]) {
+    await sheet.evaluate((element, targetRow) => {
+      const cellHeight = Number.parseFloat(getComputedStyle(element).getPropertyValue("--cell-height")) || 30;
+      const cellGap = Number.parseFloat(getComputedStyle(element).getPropertyValue("--cell-gap")) || 1;
+      element.scrollTo({ top: targetRow * (cellHeight + cellGap), left: 0, behavior: "auto" });
+    }, row);
+
+    const activeCell = sheet.locator(`[data-cell-address="A${row + 1}"]`).first();
+    const hoveredCell = sheet.locator(`[data-cell-address="A${row + 2}"]`).first();
+    await expect(activeCell).toBeVisible();
+    await expect(hoveredCell).toBeVisible();
+    await activeCell.click();
+    await hoveredCell.hover();
+
+    const state = await page.evaluate(
+      ({ activeAddress, hoveredAddress }) => {
+        const numericZIndex = (element) => {
+          const value = getComputedStyle(element).zIndex;
+          return value === "auto" ? 0 : Number(value);
+        };
+        const railFor = (cell) =>
+          document.querySelector(`.row-header[data-axis-index="${cell.closest(".virtual-cell-slot")?.dataset.row}"]`);
+        const seamState = (address) => {
+          const cell = document.querySelector(`[data-cell-address="${address}"]`);
+          const rail = cell ? railFor(cell) : null;
+          if (!cell || !rail) return null;
+          const cellBox = cell.getBoundingClientRect();
+          const railBox = rail.getBoundingClientRect();
+          const sampleX = Math.min(railBox.right - 0.25, cellBox.left - 0.25);
+          const sampleY = cellBox.top + cellBox.height / 2;
+          const hit =
+            sampleX >= railBox.left && sampleX <= railBox.right ? document.elementFromPoint(sampleX, sampleY) : null;
+          return {
+            railZIndex: numericZIndex(rail),
+            slotZIndex: numericZIndex(cell.closest(".virtual-cell-slot")),
+            outlineLeft: getComputedStyle(cell, "::after").left,
+            railHit: hit?.closest(".row-header")?.dataset.axisIndex || null,
+            row: cell.closest(".virtual-cell-slot")?.dataset.row || null,
+          };
+        };
+        return {
+          active: seamState(activeAddress),
+          hovered: seamState(hoveredAddress),
+        };
+      },
+      { activeAddress: `A${row + 1}`, hoveredAddress: `A${row + 2}` },
+    );
+    expect(state.active).toMatchObject({
+      railZIndex: expect.any(Number),
+      slotZIndex: expect.any(Number),
+      outlineLeft: "0px",
+      railHit: String(row),
+      row: String(row),
+    });
+    expect(state.hovered).toMatchObject({
+      railZIndex: expect.any(Number),
+      slotZIndex: expect.any(Number),
+      railHit: String(row + 1),
+      row: String(row + 1),
+    });
+    expect(state.active.railZIndex).toBeGreaterThan(state.active.slotZIndex);
+    expect(state.hovered.railZIndex).toBeGreaterThan(state.hovered.slotZIndex);
+  }
+});
+
 test("refreshes the virtual slice before the first frame after a direct large offset jump", async ({ page }) => {
   await page.goto("/");
 

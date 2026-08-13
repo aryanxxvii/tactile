@@ -3834,6 +3834,12 @@ kbd {
   backface-visibility: hidden;
 }
 
+/* Keep the sticky row-number rail as the viewport edge above every data-cell
+   lift, including active outlines and hover shadows in a rebased window. */
+.row-header.virtual-sheet-header {
+  z-index: 60;
+}
+
 /* Keep the column label lane in a native sticky layer. The old transform-only
    rail could reveal a clipped top edge during the first few scroll pixels
    before React had written the latest scroll offset to the CSS variable. */
@@ -4872,7 +4878,7 @@ kbd {
 }
 
 .sheet-cell.is-selected::after {
-  inset: -1px;
+  inset: 0;
   box-sizing: border-box;
   border-width: 1.5px;
   border-radius: calc(var(--cell-radius) + 2px);
