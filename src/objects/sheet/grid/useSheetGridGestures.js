@@ -471,6 +471,10 @@ export function useSheetGridGestures({
     // text selection can be painted, while clicks still select the cell.
     const selectingText = event.target instanceof Element
       && event.target.closest(".cell-value");
+    const nativeSelection = typeof window !== "undefined" ? window.getSelection() : null;
+    const selectionBelongsToCell = nativeSelection?.anchorNode
+      && event.currentTarget.contains(nativeSelection.anchorNode);
+    if (!selectingText || !selectionBelongsToCell) nativeSelection?.removeAllRanges();
     event.currentTarget.focus({ preventScroll: true });
     const anchor = event.shiftKey
       ? (selectionRange?.anchor || selectedAddress)

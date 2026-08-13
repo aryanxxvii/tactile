@@ -19,6 +19,18 @@ function cellEventData({ cellId, address, row, column, value, formula, embedObje
   };
 }
 
+function clearNativeSelectionWhenLeavingCell(event) {
+  if (typeof window === "undefined") return;
+  const selection = window.getSelection?.();
+  if (!selection || selection.isCollapsed || !selection.anchorNode) return;
+
+  const anchorElement = selection.anchorNode.nodeType === Node.ELEMENT_NODE
+    ? selection.anchorNode
+    : selection.anchorNode.parentElement;
+  const selectedCell = anchorElement?.closest?.(".sheet-cell");
+  if (selectedCell !== event.currentTarget) selection.removeAllRanges();
+}
+
 export const SheetCell = memo(function SheetCell({
   objectId,
   cellId,
@@ -109,6 +121,7 @@ export const SheetCell = memo(function SheetCell({
       onDragLeave={onObjectDragLeave}
       onDrop={(event) => onObjectDrop?.(event, address)}
       onPointerDown={(event) => {
+        clearNativeSelectionWhenLeavingCell(event);
         const cell = eventCell();
         if (formulaEditingCellId) {
           event.preventDefault();
