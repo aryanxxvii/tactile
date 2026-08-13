@@ -543,6 +543,8 @@ test("opening Files keeps the bottom dock above the workspace scrim", async ({ p
       const style = getComputedStyle(element);
       const rect = element.getBoundingClientRect();
       return {
+        left: rect.left,
+        right: rect.right,
         bottom: rect.bottom,
         top: rect.top,
         zIndex: style.zIndex,
@@ -551,14 +553,30 @@ test("opening Files keeps the bottom dock above the workspace scrim", async ({ p
         filter: style.filter,
       };
     };
+    const paper = getComputedStyle(document.querySelector(".object-statusbar")).backgroundColor;
+    const barRect = bar.getBoundingClientRect();
+    const undoRect = document.querySelector('.app-dock-history button[aria-label="Undo"]')?.getBoundingClientRect();
+    const sampleXs = [
+      barRect.left + 1,
+      undoRect ? Math.max(barRect.left + 1, undoRect.left - 8) : barRect.left + 1,
+      undoRect ? undoRect.left + undoRect.width / 2 : barRect.left + 1,
+      barRect.right - 1,
+    ];
     return {
       filesOpen: Boolean(app?.querySelector(".files-layer")),
+      viewportWidth: innerWidth,
+      paper,
       layer: read(layer),
       scrim: read(scrim),
       bar: read(bar),
       dock: read(dock),
       barBlocked: bar?.hasAttribute("inert") || false,
       dockPointerEvents: getComputedStyle(dock).pointerEvents,
+      scrimVisibleInDockLane: sampleXs.map((x) =>
+        document
+          .elementsFromPoint(x, barRect.top + barRect.height / 2)
+          .some((element) => element.matches(".files-scrim")),
+      ),
     };
   });
 
@@ -566,15 +584,27 @@ test("opening Files keeps the bottom dock above the workspace scrim", async ({ p
   expect(transientState.layer.bottom).toBeCloseTo(transientState.bar.top, 1);
   expect(transientState.scrim.bottom).toBeCloseTo(transientState.bar.top, 1);
   expect(Number(transientState.bar.zIndex)).toBeGreaterThan(Number(transientState.layer.zIndex));
-  expect(transientState.bar).toMatchObject({ background: "rgba(0, 0, 0, 0)", opacity: "1", filter: "none" });
+  expect(transientState.bar).toMatchObject({
+    left: 0,
+    right: transientState.viewportWidth,
+    background: transientState.paper,
+    opacity: "1",
+    filter: "none",
+  });
   expect(transientState.dock).toMatchObject({ background: "rgba(0, 0, 0, 0)", opacity: "1", filter: "none" });
   expect(transientState.barBlocked).toBe(false);
   expect(transientState.dockPointerEvents).toBe("auto");
+  expect(transientState.scrimVisibleInDockLane).toEqual([false, false, false, false]);
 
   await page.getByRole("dialog", { name: "Files" }).getByRole("button", { name: "Pin Files sidebar" }).click();
   await expect(page.locator(".files-scrim")).toHaveCSS("opacity", "0");
   await expect(page.locator(".files-layer")).toHaveClass(/is-pinned/);
   await expect(page.locator(".tactile-app")).toHaveAttribute("data-files-pinned", "true");
+  await expect(page.locator(".app-bottom-bar")).toHaveCSS("background-color", transientState.paper);
+  await expect(page.locator(".app-dock")).toHaveCSS("pointer-events", "auto");
+
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+  await expect(page.locator(".files-layer")).toHaveCount(0);
 });
 
 test("embedded sheet icons use the linked object's Files color", async ({ page }) => {
