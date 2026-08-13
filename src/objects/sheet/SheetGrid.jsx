@@ -149,6 +149,8 @@ export function SheetGrid({
         onAttachFile={contextMenu.attachFile}
         onCopy={contextMenu.copyCell}
         onPaste={contextMenu.pasteCell}
+        canCopy={contextMenu.canCopy}
+        canPaste={contextMenu.canPaste}
       />
     </div>
   );

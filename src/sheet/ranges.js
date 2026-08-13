@@ -147,9 +147,11 @@ export function pasteChanges(startAddress, text) {
   const start = coordinatesFromAddress(startAddress);
   if (!start) return { changes: [], endAddress: startAddress };
   const grid = parseClipboardGrid(text);
+  const width = Math.max(0, ...grid.map((row) => row.length));
   const changes = [];
   grid.forEach((values, rowOffset) => {
-    values.forEach((value, columnOffset) => {
+    for (let columnOffset = 0; columnOffset < width; columnOffset += 1) {
+      const value = values[columnOffset] ?? "";
       const row = start.row + rowOffset;
       const column = start.column + columnOffset;
       changes.push({
@@ -158,10 +160,10 @@ export function pasteChanges(startAddress, text) {
           ? { formula: value, value: "", embed: null }
           : { value, formula: "", embed: null },
       });
-    });
+    }
   });
   const finalRow = start.row + Math.max(0, grid.length - 1);
-  const finalColumn = start.column + Math.max(0, Math.max(0, ...grid.map((row) => row.length)) - 1);
+  const finalColumn = start.column + Math.max(0, width - 1);
   return {
     changes,
     endAddress: cellAddress(finalRow, finalColumn),

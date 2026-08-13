@@ -121,9 +121,17 @@ export function App() {
         inOut.expandTopLayer,
       );
     };
+    const handlePaste = (event) => {
+      if (shell.filesOpen || shell.settingsOpen) return;
+      selection.handlePaste(event);
+    };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [inOut.closeTopLayer, inOut.expandTopLayer, selection.handleKeyboard, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.openFiles, shell.settingsOpen]);
+    window.addEventListener("paste", handlePaste);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("paste", handlePaste);
+    };
+  }, [inOut.closeTopLayer, inOut.expandTopLayer, selection.handleKeyboard, selection.handlePaste, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.openFiles, shell.settingsOpen]);
 
   const objectPaths = useMemo(() => inOut.layers.map((_, index) => {
     const rootLayer = inOut.layers[0];

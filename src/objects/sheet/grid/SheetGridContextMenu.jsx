@@ -24,6 +24,8 @@ export function SheetGridContextMenu({
   onAttachFile,
   onCopy,
   onPaste,
+  canCopy,
+  canPaste,
 }) {
   return (
     <CellContextMenu
@@ -32,6 +34,8 @@ export function SheetGridContextMenu({
       onCreate={(type) => onCreateEmbedded?.(menu.cell, type, menu.sourceElement)}
       onCopy={onCopy}
       onPaste={onPaste}
+      canCopy={canCopy}
+      canPaste={canPaste}
       onClear={() => {
         const activeRange = rangeContains(normalizedSelection, menu.cell.row, menu.cell.column)
           ? normalizedSelection

@@ -37,6 +37,7 @@ function MenuItem({ icon: Icon, label, shortcut, disabled, onSelect }) {
       className="cell-menu-item"
       type="button"
       role="menuitem"
+      aria-label={label}
       disabled={disabled}
       onClick={onSelect}
     >
@@ -171,6 +172,8 @@ export function CellContextMenu({
   onAttachFile,
   onOpenFloating,
   onOpenFull,
+  canCopy = true,
+  canPaste = true,
   canClear,
   canSort,
   onSort,
@@ -284,8 +287,8 @@ export function CellContextMenu({
           </>
         )}
         <div className="cell-menu-separator" role="separator" />
-        <MenuItem icon={IconCopy} label="Copy" shortcut="Ctrl C" onSelect={invoke(onCopy)} />
-        <MenuItem icon={IconClipboard} label="Paste" shortcut="Ctrl V" onSelect={invoke(onPaste)} />
+        <MenuItem icon={IconCopy} label="Copy" shortcut="Ctrl C" disabled={!canCopy} onSelect={invoke(onCopy)} />
+        <MenuItem icon={IconClipboard} label="Paste" shortcut="Ctrl V" disabled={!canPaste} onSelect={invoke(onPaste)} />
         <MenuItem icon={IconTrash} label="Clear contents" shortcut="Del" disabled={!canClear} onSelect={invoke(onClear)} />
         <div className="cell-menu-separator" role="separator" />
         <MenuSubmenu icon={IconArrowsSort} label="Sort & filter">

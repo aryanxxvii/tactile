@@ -36,6 +36,37 @@ test("range clipboard uses spreadsheet-compatible TSV", () => {
   assert.equal(pasted.changes[3].patch.formula, "=SUM(C3:D3)");
 });
 
+test("pasted TSV stays rectangular when a row has missing trailing cells", () => {
+  const pasted = pasteChanges("B2", "one\ttwo\nthree");
+
+  assert.equal(pasted.endAddress, "C3");
+  assert.deepEqual(
+    pasted.changes.map((change) => [change.cellId, change.patch.value]),
+    [
+      ["r2c2", "one"],
+      ["r2c3", "two"],
+      ["r3c2", "three"],
+      ["r3c3", ""],
+    ],
+  );
+});
+
+test("whole-column clipboard ranges preserve their full TSV shape", () => {
+  const sheet = createSheetObject({ id: "column-clipboard" });
+  sheet.cells.r1c2 = createCellRecord(0, 1, { value: "B1" });
+  sheet.cells.r2c2 = createCellRecord(1, 1, { value: "B2" });
+  sheet.cells.r256c2 = createCellRecord(255, 1, { value: "B256" });
+  const text = serializeRange(sheet, { anchor: "B1", focus: "B256" });
+  const pasted = pasteChanges("D1", text);
+
+  assert.equal(text.split("\n").length, 256);
+  assert.equal(pasted.changes.length, 256);
+  assert.equal(pasted.endAddress, "D256");
+  assert.equal(pasted.changes[0].patch.value, "B1");
+  assert.equal(pasted.changes[1].patch.value, "B2");
+  assert.equal(pasted.changes.at(-1).patch.value, "B256");
+});
+
 test("fill adjusts relative formula references and keeps absolutes", () => {
   assert.equal(shiftFormulaReferences("=A1+$B$2+C$3+$D4", 2, 1), "=B3+$B$2+D$3+$D6");
   const sheet = createSheetObject({ id: "sheet" });

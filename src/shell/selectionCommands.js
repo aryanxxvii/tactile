@@ -3,6 +3,24 @@ import { materializeCell, usedSheetBounds } from "../model.js";
 import { cellAddress, coordinatesFromAddress, moveAddress } from "../sheet/coordinates.js";
 import { cellIdsInRange, pasteChanges, rangeLabel, serializeRange } from "../sheet/ranges.js";
 
+function isTypingTarget(target) {
+  const tagName = target?.tagName;
+  return tagName === "INPUT" || tagName === "TEXTAREA" || target?.isContentEditable;
+}
+
+function isGridTarget(target) {
+  return Boolean(target?.closest?.(".sheet-grid-shell"));
+}
+
+function clipboardMethodAvailable(method) {
+  return typeof navigator !== "undefined" && typeof navigator.clipboard?.[method] === "function";
+}
+
+function imageFileFromClipboard(data) {
+  const imageItem = Array.from(data?.items || []).find((item) => item.type?.startsWith("image/"));
+  return imageItem?.getAsFile?.() || null;
+}
+
 export function useSelectionCommands({
   workspace,
   layers,
@@ -88,6 +106,12 @@ export function useSelectionCommands({
     }
   }, [layers, rangeByObject, selectAddress, selectRange, selectedByObject, workspace.objects]);
 
+  const pasteTextIntoActiveCell = useCallback((object, cell, text) => {
+    const pasted = pasteChanges(cell.address, text);
+    updateCells(object.id, pasted.changes, "paste");
+    selectRange(object.id, cell.address, pasted.endAddress, cell.address);
+  }, [selectRange, updateCells]);
+
   const clipboardSelectedCell = useCallback(async (mode) => {
     const activeLayer = layers[layers.length - 1];
     const object = workspace.objects[activeLayer.objectId];
@@ -95,10 +119,16 @@ export function useSelectionCommands({
     const cell = selectedCellFor(object);
     const selection = rangeByObject[object.id] || { anchor: cell.address, focus: cell.address };
     if (mode === "copy" || mode === "cut") {
-      await navigator.clipboard?.writeText(serializeRange(object, selection));
+      if (!clipboardMethodAvailable("writeText")) return;
+      try {
+        await navigator.clipboard.writeText(serializeRange(object, selection));
+      } catch {
+        showNotice("Could not write to the clipboard");
+        return;
+      }
       if (mode === "cut") clearCells(object.id, cellIdsInRange(selection));
       showNotice(`${mode === "cut" ? "Cut" : "Copied"} ${rangeLabel(selection)}`);
-    } else if (navigator.clipboard?.readText) {
+    } else if (clipboardMethodAvailable("readText")) {
       if (navigator.clipboard.read) {
         try {
           const clipboardItems = await navigator.clipboard.read();
@@ -119,12 +149,41 @@ export function useSelectionCommands({
           // Browsers may deny image clipboard reads; the text fallback remains available.
         }
       }
-      const text = await navigator.clipboard.readText();
-      const pasted = pasteChanges(cell.address, text);
-      updateCells(object.id, pasted.changes, "paste");
-      selectRange(object.id, cell.address, pasted.endAddress);
+      try {
+        const text = await navigator.clipboard.readText();
+        pasteTextIntoActiveCell(object, cell, text);
+      } catch {
+        showNotice("Could not read the clipboard");
+      }
     }
-  }, [clearCells, createEmbeddedFile, layers, rangeByObject, selectRange, selectedCellFor, showNotice, updateCells, workspace.objects]);
+  }, [clearCells, createEmbeddedFile, layers, pasteTextIntoActiveCell, rangeByObject, selectedCellFor, showNotice, workspace.objects]);
+
+  const handlePaste = useCallback(async (event) => {
+    if (event.defaultPrevented || isTypingTarget(event.target)) return;
+    const activeLayer = layers[layers.length - 1];
+    const object = workspace.objects[activeLayer?.objectId];
+    if (object?.type !== "sheet") return;
+    const cell = selectedCellFor(object);
+    const imageFile = imageFileFromClipboard(event.clipboardData);
+    const clipboardTypes = Array.from(event.clipboardData?.types || []);
+    const text = typeof event.clipboardData?.getData === "function"
+      ? event.clipboardData.getData("text/plain")
+      : "";
+    const hasText = clipboardTypes.includes("text/plain") || Boolean(text);
+    if (!imageFile && !hasText) return;
+    event.preventDefault();
+    if (imageFile) {
+      try {
+        const asset = await readLocalFile(imageFile);
+        const created = createEmbeddedFile(object.id, cell.id, asset);
+        if (created) showNotice("Pasted image into the selected tile");
+      } catch {
+        showNotice("Could not paste the image");
+      }
+      return;
+    }
+    pasteTextIntoActiveCell(object, cell, text);
+  }, [createEmbeddedFile, layers, pasteTextIntoActiveCell, selectedCellFor, showNotice, workspace.objects]);
 
   const clearSelectedCell = useCallback(() => {
     const activeLayer = layers[layers.length - 1];
@@ -148,9 +207,7 @@ export function useSelectionCommands({
   }, [layers, selectRange, selectedByObject, workspace.objects]);
 
   const handleKeyboard = useCallback((event, settingsOpen, closeSettings, closeTopLayer, expandTopLayer) => {
-    const tagName = event.target?.tagName;
-    const isTyping = tagName === "INPUT" || tagName === "TEXTAREA" || event.target?.isContentEditable;
-    if (isTyping || event.defaultPrevented) return;
+    if (isTypingTarget(event.target) || event.defaultPrevented) return;
 
     const command = event.ctrlKey || event.metaKey;
     if (command && event.key.toLowerCase() === "z") {
@@ -175,6 +232,7 @@ export function useSelectionCommands({
       return;
     }
     if (command && event.key.toLowerCase() === "v") {
+      if (isGridTarget(event.target)) return;
       event.preventDefault();
       clipboardSelectedCell("paste");
       return;
@@ -231,6 +289,7 @@ export function useSelectionCommands({
     moveSelection,
     clipboardSelectedCell,
     clearSelectedCell,
+    handlePaste,
     selectUsedSheet,
     handleKeyboard,
   };

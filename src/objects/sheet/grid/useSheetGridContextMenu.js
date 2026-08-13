@@ -1,6 +1,10 @@
 import { useCallback, useRef, useState } from "react";
 import { pasteChanges, rangeContains, serializeRange } from "../../../sheet/ranges.js";
 
+function clipboardMethodAvailable(method) {
+  return typeof navigator !== "undefined" && typeof navigator.clipboard?.[method] === "function";
+}
+
 export function useSheetGridContextMenu({ object, normalizedSelection, onCellsChange, onSelectRange, onCreateFile }) {
   const [menu, setMenu] = useState(null);
   const fileInputRef = useRef(null);
@@ -33,15 +37,24 @@ export function useSheetGridContextMenu({ object, normalizedSelection, onCellsCh
     const activeRange = rangeContains(normalizedSelection, menu.cell.row, menu.cell.column)
       ? normalizedSelection
       : { anchor: menu.cell.address, focus: menu.cell.address };
-    await navigator.clipboard?.writeText(serializeRange(object, activeRange));
+    if (!clipboardMethodAvailable("writeText")) return;
+    try {
+      await navigator.clipboard.writeText(serializeRange(object, activeRange));
+    } catch {
+      // Clipboard permissions can be revoked between menu render and action.
+    }
   }, [menu, normalizedSelection, object]);
 
   const pasteCell = useCallback(async () => {
-    if (!menu || !navigator.clipboard?.readText) return;
-    const text = await navigator.clipboard.readText();
-    const pasted = pasteChanges(menu.cell.address, text);
-    onCellsChange?.(pasted.changes, "paste");
-    onSelectRange?.(menu.cell.address, pasted.endAddress);
+    if (!menu || !clipboardMethodAvailable("readText")) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      const pasted = pasteChanges(menu.cell.address, text);
+      onCellsChange?.(pasted.changes, "paste");
+      onSelectRange?.(menu.cell.address, pasted.endAddress, menu.cell.address);
+    } catch {
+      // Clipboard permissions can be revoked between menu render and action.
+    }
   }, [menu, onCellsChange, onSelectRange]);
 
   const attachFile = useCallback(() => {
@@ -67,6 +80,8 @@ export function useSheetGridContextMenu({ object, normalizedSelection, onCellsCh
     openContextMenu,
     copyCell,
     pasteCell,
+    canCopy: clipboardMethodAvailable("writeText"),
+    canPaste: clipboardMethodAvailable("readText"),
     attachFile,
     handleFileChange,
   };
