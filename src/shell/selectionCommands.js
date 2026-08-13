@@ -8,10 +8,6 @@ function isTypingTarget(target) {
   return tagName === "INPUT" || tagName === "TEXTAREA" || target?.isContentEditable;
 }
 
-function isGridTarget(target) {
-  return Boolean(target?.closest?.(".sheet-grid-shell"));
-}
-
 function clipboardMethodAvailable(method) {
   return typeof navigator !== "undefined" && typeof navigator.clipboard?.[method] === "function";
 }
@@ -232,7 +228,6 @@ export function useSelectionCommands({
       return;
     }
     if (command && event.key.toLowerCase() === "v") {
-      if (isGridTarget(event.target)) return;
       event.preventDefault();
       clipboardSelectedCell("paste");
       return;
