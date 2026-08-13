@@ -72,10 +72,10 @@
 
 ## Wave 4 — Native Tauri platform
 
-- [ ] E01 — Tauri scaffold, build, and security shell
-- [ ] E02 — Rust storage, recovery, and migrations
-- [ ] E03 — Rust import/export and assets
-- [ ] E04 — Frontend Tauri persistence adapter
+- [x] E01 — Tauri scaffold, build, and security shell
+- [x] E02 — Rust storage, recovery, and migrations (recovery scaffold; SQLite/WAL remains a gate blocker)
+- [x] E03 — Rust import/export and assets
+- [x] E04 — Frontend Tauri persistence adapter
 - [ ] G4 — Wave 4 gate
 
 ## Wave 5 — Acquisition and release readiness
