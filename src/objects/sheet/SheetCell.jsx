@@ -256,6 +256,11 @@ export function SheetCell({
           <span className="cell-value">{shownValue || " "}</span>
         </span>
       )}
+      {inFormulaRange ? (
+        <svg className="formula-reference-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <rect x="1" y="1" width="98" height="98" rx="7" pathLength="100" />
+        </svg>
+      ) : null}
       {formulaHintOpen ? (
         <div className="formula-suggestions cell-formula-suggestions" role="listbox" aria-label={`Formula suggestions for ${cell.address}`}>
           <div className="formula-suggestions-label">Functions</div>
