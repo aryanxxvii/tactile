@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Tactile",
+  "version": "0.0.0",
+  "identifier": "com.tactile.workspace",
+  "build": {
+    "beforeDevCommand": "npm run dev -- --host 127.0.0.1",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist/client"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Tactile — Home",
+        "width": 1440,
+        "height": 960,
+        "minWidth": 960,
+        "minHeight": 640,
+        "create": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; img-src 'self' asset: blob: data:; media-src 'self' asset: blob:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:",
+      "devCsp": "default-src 'self'; base-uri 'none'; connect-src 'self' http://localhost:5173 ws://localhost:5173; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; img-src 'self' asset: blob: data:; media-src 'self' asset: blob:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:",
+      "freezePrototype": true,
+      "assetProtocol": {
+        "enable": false
+      },
+      "capabilities": ["main"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "icon": []
+  }
+}
