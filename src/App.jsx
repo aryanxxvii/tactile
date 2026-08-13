@@ -173,6 +173,7 @@ export function App() {
   const visibleLayers = inOut.layers.slice(visibleLayerStart);
   const topLayer = inOut.layers.at(-1);
   const floatingLayerActive = topLayer?.phase === "floating";
+  const dockBlocked = shell.settingsOpen || floatingLayerActive;
   const parentLayerSuspended = visibleLayers.length > 1;
   const parentContextVisible = parentLayerSuspended && topLayer?.phase !== "full";
   const filesSidebarWidth = shell.filesPinned && shell.filesOpen && viewport.width > 620
@@ -234,7 +235,7 @@ export function App() {
 
   return (
     <div
-      className={`tactile-app ${shell.filesPinned && shell.filesOpen ? "files-is-pinned" : ""} ${floatingLayerActive ? "has-floating-layer" : ""}`}
+      className={`tactile-app ${shell.filesPinned && shell.filesOpen ? "files-is-pinned" : ""} ${floatingLayerActive ? "has-floating-layer" : ""} ${shell.settingsOpen ? "settings-open" : ""}`}
       data-paper-scheme
       data-files-pinned={shell.filesPinned ? "true" : undefined}
       data-files-resizing={shell.filesResizing ? "true" : undefined}
@@ -279,7 +280,12 @@ export function App() {
         ))}
       </div>
 
-      <div className="app-bottom-bar" aria-label="Tactile bottom bar">
+      <div
+        className="app-bottom-bar"
+        aria-label="Tactile bottom bar"
+        inert={dockBlocked || undefined}
+        data-interaction-blocked={dockBlocked ? "true" : undefined}
+      >
         <AppDock
           path={activeDockPath}
           onNavigatePath={(item) => inOut.navigateToRoute(item.route, { mode: "full" })}

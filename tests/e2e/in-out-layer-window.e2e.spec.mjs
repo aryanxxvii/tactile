@@ -176,11 +176,13 @@ test("renders only the active parent and child during nested In & Out navigation
   await cellLocator(page, "home", "A1").click();
   await expect(page.locator('[data-layer-object="layer-two"]')).toHaveAttribute("data-spatial-phase", "floating");
   await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
+  await expect(page.locator(".app-bottom-bar")).toHaveAttribute("inert", "");
+  await expect(page.locator(".app-bottom-bar")).toHaveCSS("pointer-events", "none");
   await expect(page.locator(".base-object-layer .object-header-parent")).toHaveCount(0);
   await expect(page.locator(".object-header-parent")).toHaveCount(1);
   await expect
     .poll(() => page.locator(".app-dock-path").evaluate((element) => getComputedStyle(element).cursor))
-    .toBe("pointer");
+    .toBe("default");
 
   const advanceDelay = nestedAdvanceDelay(page, "layer-two", "layer-three");
   await cellLocator(page, "layer-two", "A1").click();
@@ -208,7 +210,7 @@ test("renders only the active parent and child during nested In & Out navigation
   await expect(page.locator('.base-object-layer [data-object-id="home"]')).not.toHaveCount(0);
 });
 
-test("keeps the bottom dock opaque and interactive while a child floats", async ({ page }) => {
+test("keeps the bottom dock visible but inert while a child floats", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);
 
@@ -233,24 +235,13 @@ test("keeps the bottom dock opaque and interactive while a child floats", async 
   });
   expect(dockState.background).toBe(dockState.parentStatusbarBackground);
   expect(dockState).toMatchObject({
-    pointerEvents: "auto",
-    cursor: "auto",
+    pointerEvents: "none",
+    cursor: "default",
     dockBackground: "rgba(0, 0, 0, 0)",
     dockOpacity: "1",
     dockFilter: "none",
   });
-
-  const dockBox = await page.locator(".app-bottom-bar").boundingBox();
-  if (!dockBox) throw new Error("The bottom dock lane is not measurable");
-  await page.mouse.click(dockBox.x + dockBox.width - 16, dockBox.y + dockBox.height / 2);
-  await expect(floatingChild).toHaveAttribute("data-spatial-phase", "floating");
-
-  const filesButton = page.getByRole("button", { name: "Browse files", exact: true });
-  await filesButton.click();
-  await expect(page.getByRole("dialog", { name: "Files" })).toBeVisible();
-  await expect(floatingChild).toHaveAttribute("data-spatial-phase", "floating");
-  await filesButton.click();
-  await expect(page.getByRole("dialog", { name: "Files" })).toHaveCount(0);
+  await expect(page.locator(".app-bottom-bar")).toHaveAttribute("inert", "");
 
   const backdrop = page.locator('[data-layer-object="layer-two"] .transition-backdrop');
   const backdropBox = await backdrop.boundingBox();

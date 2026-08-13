@@ -5180,13 +5180,32 @@ kbd {
 }
 
 .tactile-app.has-floating-layer .app-bottom-bar {
-  pointer-events: auto;
-  cursor: auto;
+  pointer-events: none;
+  cursor: default;
   background: var(--paper);
 }
 
-.tactile-app.has-floating-layer .app-dock-path {
-  cursor: pointer;
+.tactile-app.settings-open .app-bottom-bar {
+  pointer-events: none;
+  cursor: default;
+}
+
+.app-bottom-bar[data-interaction-blocked="true"] .app-dock {
+  pointer-events: none;
+}
+
+.app-bottom-bar[data-interaction-blocked="true"] .app-dock button:hover,
+.app-bottom-bar[data-interaction-blocked="true"] .app-dock button:focus-visible {
+  outline: 0;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+}
+
+.tactile-app.has-floating-layer .app-dock-path,
+.tactile-app.has-floating-layer .app-dock button,
+.tactile-app.settings-open .app-dock button {
+  cursor: default;
 }
 
 .tactile-app.has-floating-layer .files-layer {

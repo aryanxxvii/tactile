@@ -150,4 +150,9 @@ test("Settings keeps the workspace sharp behind its panel", async ({ page }) => 
   await page.getByRole("button", { name: "Settings" }).click();
   await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible();
   await expect(page.locator(".settings-scrim")).toHaveCSS("backdrop-filter", "none");
+  const dock = page.locator(".app-bottom-bar");
+  await expect(dock).toHaveAttribute("inert", "");
+  await expect(dock).toHaveAttribute("data-interaction-blocked", "true");
+  await expect(dock).toHaveCSS("pointer-events", "none");
+  await expect(page.locator('[role="tooltip"]')).toHaveCount(0);
 });
