@@ -33,8 +33,8 @@ export function SheetGrid({
   });
   const gestures = useSheetGridGestures({
     object,
-    selectedAddress,
-    selectionRange,
+    selectedAddress: projection.selectedAddress,
+    selectionRange: projection.normalizedSelection,
     selectedCoordinates: projection.selectedCoordinates,
     normalizedSelection: projection.normalizedSelection,
     scrollRef: projection.scrollRef,
@@ -80,7 +80,7 @@ export function SheetGrid({
       <SheetGridCanvas
         object={object}
         workspaceObjects={workspaceObjects}
-        selectedAddress={selectedAddress}
+        selectedAddress={projection.selectedAddress}
         normalizedSelection={projection.normalizedSelection}
         fillPreviewRange={projection.fillPreviewRange}
         formulaValues={projection.formulaValues}

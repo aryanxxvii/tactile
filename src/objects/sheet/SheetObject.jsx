@@ -2,9 +2,9 @@ import { IconBrackets, IconTable } from "@tabler/icons-react";
 import { FormulaBar } from "../../components/FormulaBar.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { createId, materializeCell } from "../../model.js";
-import { coordinatesFromAddress } from "../../sheet/coordinates.js";
 import { cellIdsInRange, rangeLabel, rangeSize } from "../../sheet/ranges.js";
 import { SheetGrid } from "./SheetGrid.jsx";
+import { canonicalSheetSelection } from "./grid/selectionGeometry.js";
 
 export function SheetObject({
   object,
@@ -29,10 +29,20 @@ export function SheetObject({
   sheetMetrics,
   onCreateFile,
 }) {
-  const selectedCoordinates = coordinatesFromAddress(selectedAddress) || { row: 0, column: 0 };
+  const canonicalSelection = canonicalSheetSelection({
+    selectedAddress,
+    selectionRange,
+    rows: object.rows,
+    columns: object.columns,
+  });
+  const {
+    selectedAddress: canonicalSelectedAddress,
+    selectedCoordinates,
+    range: canonicalRange,
+  } = canonicalSelection;
   const selectedCell = materializeCell(object, selectedCoordinates.row, selectedCoordinates.column);
-  const selectedRangeLabel = rangeLabel(selectionRange);
-  const selectedRangeSize = rangeSize(selectionRange);
+  const selectedRangeLabel = rangeLabel(canonicalRange);
+  const selectedRangeSize = rangeSize(canonicalRange);
   const hasConditionalFormat = (object.conditionalFormats || []).some((rule) => rule.range === selectedRangeLabel);
 
   const handleFormulaChange = (value) => {
@@ -45,7 +55,7 @@ export function SheetObject({
   };
 
   const handleFormat = (patch) => {
-    const changes = cellIdsInRange(selectionRange).map((targetCellId) => {
+    const changes = cellIdsInRange(canonicalRange).map((targetCellId) => {
       const currentStyle = object.cells?.[targetCellId]?.style || {};
       return {
         cellId: targetCellId,
@@ -92,8 +102,8 @@ export function SheetObject({
         <SheetGrid
           object={object}
           workspaceObjects={workspaceObjects}
-          selectedAddress={selectedCell?.address || "A1"}
-          selectionRange={selectionRange}
+          selectedAddress={canonicalSelectedAddress}
+          selectionRange={canonicalRange}
           onSelect={onSelectAddress}
           onSelectRange={onSelectRange}
           onCellChange={onUpdateCell}
