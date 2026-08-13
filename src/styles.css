@@ -1306,7 +1306,7 @@ input:focus-visible,
 .sheet-cell.is-selected::after {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: 0;
   z-index: 3;
   border: 2px solid var(--accent);
   border-radius: calc(var(--cell-radius) + 1px);
@@ -3851,20 +3851,17 @@ kbd {
 
 .virtual-cell-slot {
   contain: layout;
+  /* Keep each data tile in a local paint band below the sticky identifiers.
+     Hover and active slots can still rise above neighboring data tiles. */
+  z-index: 1;
 }
 
-/* Let the first row lift across the sticky column rail without letting paint
-   containment clip its top edge. The tile remains in the normal grid flow;
-   only its hover/focus elevation crosses the rail. */
-.virtual-cell-slot[data-row="0"] {
-  z-index: 40;
-  contain: layout;
+.virtual-cell-slot:hover {
+  z-index: 2;
 }
 
-/* The active cell's outline intentionally extends one pixel into the seam.
-   Raise the slot itself so a neighboring tile cannot paint over that edge. */
 .virtual-cell-slot.is-active-cell-slot {
-  z-index: 50;
+  z-index: 3;
 }
 
 .object-statusbar {
@@ -3997,26 +3994,8 @@ kbd {
     var(--cell-shadow);
 }
 
-/* The sticky column-header rail sits above the sheet by default. Let the
-   first row use the same lift as every other tile, but paint it above that
-   rail so the animation remains fully visible. */
-.virtual-cell-slot[data-row="0"] .sheet-cell:hover {
-  z-index: 24;
-  transform: translateY(-2px);
-}
-
-.virtual-cell-slot[data-row="0"] .sheet-cell.is-embedded:hover {
-  z-index: 24;
-  transform: translateY(-3px);
-}
-
-.virtual-cell-slot[data-row="0"] .sheet-cell.is-selected {
-  z-index: 24;
-  transform: translateY(-1px);
-}
-
 .sheet-cell.is-selected::after {
-  inset: -1px;
+  inset: 0;
   box-sizing: border-box;
   border-width: 1.5px;
   border-radius: calc(var(--cell-radius) + 2px);
@@ -4872,7 +4851,7 @@ kbd {
 }
 
 .sheet-cell.is-selected::after {
-  inset: -1px;
+  inset: 0;
   box-sizing: border-box;
   border-width: 1.5px;
   border-radius: calc(var(--cell-radius) + 2px);
