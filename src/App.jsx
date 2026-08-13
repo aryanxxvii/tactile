@@ -63,6 +63,8 @@ export function App() {
     height: window.innerHeight,
   }));
   const pasteProxyRef = useRef(null);
+  const pasteRequestRef = useRef(null);
+  const pasteRequestTimeoutRef = useRef(null);
   useEffect(() => {
     const handleResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", handleResize);
@@ -118,15 +120,27 @@ export function App() {
       }
       const historyShortcut = command && (event.key.toLowerCase() === "z" || event.key.toLowerCase() === "y");
       const typingTarget = event.target?.closest?.("input, textarea, [contenteditable=\"true\"]");
+      const isPasteProxy = event.target?.dataset?.tactilePasteProxy === "true";
+      const nativeTypingTarget = typingTarget && !isPasteProxy;
       if (shell.filesOpen && !(historyShortcut && !typingTarget)) return;
       const activeGridCell = document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]');
       const gridSurface = event.target?.closest?.(".sheet-grid-shell") || activeGridCell;
-      if ((event.key === "Control" || event.key === "Meta") && gridSurface && !typingTarget && !shell.filesOpen && !shell.settingsOpen) {
+      if ((event.key === "Control" || event.key === "Meta") && gridSurface && !nativeTypingTarget && !shell.filesOpen && !shell.settingsOpen) {
         pasteProxyRef.current?.focus({ preventScroll: true });
         return;
       }
-      if (command && event.key.toLowerCase() === "v" && gridSurface && !typingTarget && !shell.filesOpen && !shell.settingsOpen) {
+      if (command && event.key.toLowerCase() === "v" && gridSurface && !nativeTypingTarget && !shell.filesOpen && !shell.settingsOpen) {
+        const request = { handled: false };
+        pasteRequestRef.current = request;
+        if (pasteRequestTimeoutRef.current != null) window.clearTimeout(pasteRequestTimeoutRef.current);
+        pasteRequestTimeoutRef.current = window.setTimeout(() => {
+          if (pasteRequestRef.current === request) pasteRequestRef.current = null;
+        }, 1500);
         pasteProxyRef.current?.focus({ preventScroll: true });
+        // Native ClipboardEvent data is preferred, but some preview/webview
+        // hosts do not dispatch that event for a focused grid cell. Start an
+        // async clipboard read from this user gesture as a coordinated fallback.
+        void selection.clipboardSelectedCell("paste", request);
         return;
       }
       selection.handleKeyboard(
@@ -140,17 +154,28 @@ export function App() {
     const handlePaste = (event) => {
       if (shell.filesOpen || shell.settingsOpen) return;
       const proxy = event.target?.dataset?.tactilePasteProxy === "true" ? event.target : null;
-      Promise.resolve(selection.handlePaste(event)).finally(() => {
+      const request = pasteRequestRef.current;
+      Promise.resolve(selection.handlePaste(event, request)).finally(() => {
         if (proxy) proxy.value = "";
+        if (request?.handled && pasteRequestRef.current === request) pasteRequestRef.current = null;
       });
     };
+    const handleKeyUp = (event) => {
+      if (event.key !== "Control" && event.key !== "Meta") return;
+      if (document.activeElement?.dataset?.tactilePasteProxy !== "true") return;
+      if (pasteRequestRef.current) return;
+      document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]')?.focus({ preventScroll: true });
+    };
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("paste", handlePaste);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("paste", handlePaste);
+      if (pasteRequestTimeoutRef.current != null) window.clearTimeout(pasteRequestTimeoutRef.current);
     };
-  }, [inOut.closeTopLayer, inOut.expandTopLayer, selection.handleKeyboard, selection.handlePaste, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.openFiles, shell.settingsOpen]);
+  }, [inOut.closeTopLayer, inOut.expandTopLayer, selection.clipboardSelectedCell, selection.handleKeyboard, selection.handlePaste, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.openFiles, shell.settingsOpen]);
 
   const objectPaths = useMemo(() => inOut.layers.map((_, index) => {
     const rootLayer = inOut.layers[0];

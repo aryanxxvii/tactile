@@ -134,6 +134,36 @@ async function cellValue(page, address) {
   return (await cellLocator(page, address).locator(".cell-value").textContent()).trim();
 }
 
+async function pressControlShortcut(page, key) {
+  await page.keyboard.down("Control");
+  await page.keyboard.press(key);
+  await page.keyboard.up("Control");
+}
+
+test("copies Hello from B4 and pastes it directly into selected C4", async ({ page }) => {
+  await page.goto("/");
+  await grantClipboard(page);
+  await importClipboardWorkspace(page);
+
+  await cellLocator(page, "B4").dblclick();
+  const editor = page.locator(".formula-editor");
+  await editor.fill("Hello");
+  await editor.press("Enter");
+  await expect.poll(() => cellValue(page, "B4")).toBe("Hello");
+
+  await cellLocator(page, "B4").click();
+  await pressControlShortcut(page, "C");
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("Hello");
+
+  await cellLocator(page, "C4").click();
+  await pressControlShortcut(page, "V");
+
+  await expect.poll(() => cellValue(page, "C4")).toBe("Hello");
+  await expect
+    .poll(() => selectionSnapshot(page))
+    .toMatchObject({ active: "C4", focused: "C4", editing: false, status: "C4" });
+});
+
 test("pastes a single value directly into the selected cell without opening its editor", async ({ page }) => {
   await page.goto("/");
   await grantClipboard(page);
@@ -141,9 +171,7 @@ test("pastes a single value directly into the selected cell without opening its 
   await setClipboard(page, "single value");
 
   await cellLocator(page, "C6").click();
-  await page.keyboard.down("Control");
-  await page.keyboard.press("V");
-  await page.keyboard.up("Control");
+  await pressControlShortcut(page, "V");
 
   await expect.poll(() => cellValue(page, "C6")).toBe("single value");
   await expect
@@ -155,6 +183,22 @@ test("pastes a single value directly into the selected cell without opening its 
       inRangeCount: 0,
       status: "C6",
     });
+});
+
+test("falls back to the clipboard API when a native paste event does not reach the app", async ({ page }) => {
+  await page.goto("/");
+  await grantClipboard(page);
+  await importClipboardWorkspace(page);
+  await setClipboard(page, "fallback value");
+
+  await cellLocator(page, "D6").click();
+  await page.locator('[data-tactile-paste-proxy="true"]').evaluate((element) => {
+    element.addEventListener("paste", (event) => event.stopPropagation(), { once: true });
+  });
+  await pressControlShortcut(page, "V");
+
+  await expect.poll(() => cellValue(page, "D6")).toBe("fallback value");
+  await expect.poll(() => selectionSnapshot(page)).toMatchObject({ active: "D6", focused: "D6" });
 });
 
 test("pastes a rectangular TSV from the keyboard and selects that rectangle", async ({ page }) => {
@@ -209,7 +253,7 @@ test("pastes an image from the clipboard with Control+V as a linked local image 
   await setClipboardImage(page);
 
   await cellLocator(page, "B2").click();
-  await page.keyboard.press("Control+V");
+  await pressControlShortcut(page, "V");
 
   await expect.poll(() => cellValue(page, "B2")).toBe("image");
   await expect
@@ -308,7 +352,7 @@ test("pastes a clipboard image while the formula editor is active into the selec
   await editor.click();
   await setClipboardImage(page);
 
-  await editor.press("Control+V");
+  await pressControlShortcut(page, "V");
 
   await expect.poll(() => cellValue(page, "B2")).toBe("image");
   await expect(page.locator('[data-cell-address="B2"]')).toHaveAttribute("aria-label", /embedded object/);

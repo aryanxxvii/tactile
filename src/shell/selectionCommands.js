@@ -4,6 +4,7 @@ import { cellAddress, coordinatesFromAddress, moveAddress } from "../sheet/coord
 import { cellIdsInRange, pasteChanges, rangeLabel, serializeRange } from "../sheet/ranges.js";
 
 function isTypingTarget(target) {
+  if (target?.dataset?.tactilePasteProxy === "true") return false;
   const tagName = target?.tagName;
   return tagName === "INPUT" || tagName === "TEXTAREA" || target?.isContentEditable;
 }
@@ -58,6 +59,10 @@ function clipboardMethodAvailable(method) {
 function imageFileFromClipboard(data) {
   const imageItem = Array.from(data?.items || []).find((item) => item.type?.startsWith("image/"));
   return imageItem?.getAsFile?.() || null;
+}
+
+function clipboardItemType(item, prefix) {
+  return item?.types?.find((type) => type.startsWith(prefix));
 }
 
 export function useSelectionCommands({
@@ -164,7 +169,7 @@ export function useSelectionCommands({
     focusSheetCell(object.id, cell.address);
   }, [selectRange, updateCells]);
 
-  const clipboardSelectedCell = useCallback(async (mode) => {
+  const clipboardSelectedCell = useCallback(async (mode, pasteRequest = null) => {
     const activeLayer = layers[layers.length - 1];
     const object = workspace.objects[activeLayer.objectId];
     if (object?.type !== "sheet") return;
@@ -180,14 +185,18 @@ export function useSelectionCommands({
       }
       if (mode === "cut") clearCells(object.id, cellIdsInRange(selection));
       showNotice(`${mode === "cut" ? "Cut" : "Copied"} ${rangeLabel(selection)}`);
-    } else if (clipboardMethodAvailable("readText")) {
-      if (navigator.clipboard.read) {
+    } else {
+      let clipboardReadFailed = false;
+      if (clipboardMethodAvailable("read")) {
         try {
           const clipboardItems = await navigator.clipboard.read();
-          const imageItem = clipboardItems.find((item) => item.types.some((type) => type.startsWith("image/")));
+          if (pasteRequest?.handled) return;
+          const imageItem = clipboardItems.find((item) => clipboardItemType(item, "image/"));
           if (imageItem) {
-            const imageType = imageItem.types.find((type) => type.startsWith("image/"));
+            const imageType = clipboardItemType(imageItem, "image/");
             const blob = await imageItem.getType(imageType);
+            if (pasteRequest?.handled) return;
+            if (pasteRequest) pasteRequest.handled = true;
             const extension = imageType.split("/")[1] || "png";
             const file = new File([blob], `pasted-image-${Date.now()}.${extension}`, { type: imageType });
             const asset = await readLocalFile(file);
@@ -198,20 +207,37 @@ export function useSelectionCommands({
               return;
             }
           }
+          const textItem = clipboardItems.find((item) => clipboardItemType(item, "text/plain"));
+          if (textItem) {
+            const textType = clipboardItemType(textItem, "text/plain");
+            const textBlob = await textItem.getType(textType);
+            const text = await textBlob.text();
+            if (pasteRequest?.handled) return;
+            if (pasteRequest) pasteRequest.handled = true;
+            pasteTextIntoActiveCell(object, cell, text);
+            return;
+          }
         } catch {
-          // Browsers may deny image clipboard reads; the text fallback remains available.
+          clipboardReadFailed = true;
         }
       }
-      try {
-        const text = await navigator.clipboard.readText();
-        pasteTextIntoActiveCell(object, cell, text);
-      } catch {
-        showNotice("Could not read the clipboard");
+      if (clipboardMethodAvailable("readText")) {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (pasteRequest?.handled) return;
+          if (pasteRequest) pasteRequest.handled = true;
+          pasteTextIntoActiveCell(object, cell, text);
+          return;
+        } catch {
+          clipboardReadFailed = true;
+        }
       }
+      if (!pasteRequest?.handled && clipboardReadFailed) showNotice("Could not read the clipboard");
+      focusSheetCell(object.id, cell.address);
     }
   }, [clearCells, createEmbeddedFile, layers, pasteTextIntoActiveCell, selectedCellFor, showNotice, workspace.objects]);
 
-  const handlePaste = useCallback(async (event) => {
+  const handlePaste = useCallback(async (event, pasteRequest = null) => {
     const activeLayer = layers[layers.length - 1];
     const object = workspace.objects[activeLayer?.objectId];
     if (object?.type !== "sheet") return;
@@ -226,6 +252,7 @@ export function useSelectionCommands({
     const hasText = clipboardTypes.includes("text/plain") || Boolean(text);
     if (!imageFile && !hasText) return;
     event.preventDefault();
+    if (pasteRequest) pasteRequest.handled = true;
     if (imageFile) {
       try {
         const asset = await readLocalFile(imageFile);
