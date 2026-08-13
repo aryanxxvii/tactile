@@ -210,6 +210,21 @@ test("renders only the active parent and child during nested In & Out navigation
   await expect(page.locator('.base-object-layer [data-object-id="home"]')).not.toHaveCount(0);
 });
 
+test("opens an embedded tile with Enter just like the In & Out shortcut", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const source = cellLocator(page, "home", "A1");
+  await source.click();
+  await source.press("Enter");
+
+  await expect(page.locator('[data-layer-object="layer-two"]')).toHaveAttribute(
+    "data-spatial-phase",
+    "floating",
+  );
+  await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
+});
+
 test("keeps the bottom dock visible but inert while a child floats", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);

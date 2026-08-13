@@ -337,6 +337,11 @@ export function useSelectionCommands({
       if (!expandTopLayer()) openSelectedEmbeddedObject();
       return;
     }
+    if (event.key === "Enter" && isSheetNavigationTarget(event.target)) {
+      event.preventDefault();
+      if (!expandTopLayer()) openSelectedEmbeddedObject();
+      return;
+    }
     if (event.key === "[" || event.key === "Escape") {
       event.preventDefault();
       closeTopLayer();
