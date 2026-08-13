@@ -6,6 +6,7 @@ import {
   createCellRecord,
   createId,
   createObjectForType,
+  deleteObjectFromWorkspace,
   generatedObjectTitle,
   inferFileObjectType,
   isCellUsed,
@@ -428,6 +429,10 @@ export function useLocalWorkspace() {
     }, `replace-file:${objectId}`);
   }, [commitWorkspace]);
 
+  const deleteObject = useCallback((objectId) => {
+    commitWorkspace((current) => deleteObjectFromWorkspace(current, objectId), `object-delete:${objectId}`);
+  }, [commitWorkspace]);
+
   const insertSheetAxis = useCallback((objectId, axis, index) => {
     commitWorkspace((current) => {
       const object = current.objects[objectId];
@@ -592,6 +597,7 @@ export function useLocalWorkspace() {
     createEmbeddedObject,
     createEmbeddedFile,
     replaceObjectFile,
+    deleteObject,
     insertSheetAxis,
     deleteSheetAxis,
     moveSheetAxis,

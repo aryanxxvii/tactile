@@ -665,6 +665,24 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
     });
   }, [navigateToRoute, workspace.objects]);
 
+  useEffect(() => {
+    if (!workspaceHydrated || !historyReadyRef.current) return;
+    const current = layersRef.current;
+    if (!current.length) return;
+    const currentStack = current.slice(1).map(layerHistoryEntry);
+    const validated = validateNavigationRoute(workspace.objects, currentStack);
+    const currentRootId = current[0]?.objectId;
+    const rootExists = Boolean(currentRootId && workspace.objects?.[currentRootId]);
+    if (rootExists && validated.valid && validated.stack.length === currentStack.length) return;
+
+    const rootObjectId = rootExists
+      ? currentRootId
+      : navigationRootFromHistory(workspace, workspaceRootId);
+    navigationInteractedRef.current = true;
+    writeHistoryStack(validated.stack, true, rootObjectId);
+    syncHistoryStack(validated.stack, rootObjectId, { immediate: true });
+  }, [syncHistoryStack, workspace, workspaceRootId, workspaceHydrated, writeHistoryStack]);
+
   const closeTopLayer = useCallback((layerKey = null) => {
     const current = layersRef.current;
     const top = current[current.length - 1];

@@ -9,6 +9,7 @@ import {
   IconPin,
   IconPinned,
   IconSearch,
+  IconTrash,
   IconX,
 } from "@tabler/icons-react";
 import { OBJECT_ICON_COLORS, ObjectGlyph, iconEmojiValue } from "./ObjectGlyph.jsx";
@@ -161,7 +162,7 @@ function parentRouteFor(location) {
   };
 }
 
-function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onSetHome, onToggle, onCustomize, onCopyPath }) {
+function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onSetHome, onToggle, onCustomize, onCopyPath, onDelete }) {
   const parentRoute = parentRouteFor(menu.location);
   const [position, setPosition] = useState({ left: menu.x, top: menu.y });
 
@@ -258,6 +259,20 @@ function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onSetHo
       <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Copy path" onClick={onCopyPath} data-context-action="copy-path">
         <IconCopy size={14} stroke={1.7} />
         <span>Copy path</span>
+      </button>
+      <div className="files-context-menu-divider" />
+      <button
+        className="files-context-menu-item is-danger"
+        type="button"
+        role="menuitem"
+        aria-label="Delete"
+        onClick={onDelete}
+        disabled={menu.entry.canDelete === false}
+        data-context-action="delete"
+      >
+        <IconTrash size={14} stroke={1.7} />
+        <span>Delete</span>
+        {menu.entry.canDelete === false ? <small>{menu.entry.deleteReason || "Protected"}</small> : null}
       </button>
     </div>
     </PaperPortal>
@@ -402,6 +417,7 @@ export function FilesPanel({
   width = 360,
   onOpenRoute,
   onUpdateObject,
+  onDeleteObject,
   onSetHome,
   onNotice,
   onTogglePinned,
@@ -548,6 +564,13 @@ export function FilesPanel({
     } catch {
       onNotice?.("Could not copy the object path");
     }
+  };
+
+  const handleContextDelete = () => {
+    if (!contextMenu || contextMenu.entry.canDelete === false) return;
+    const current = contextMenu;
+    setContextMenu(null);
+    onDeleteObject?.(current.entry.objectId);
   };
 
   const handlePanelKeyDown = (event) => {
@@ -816,6 +839,7 @@ export function FilesPanel({
             }}
             onCustomize={handleContextCustomize}
             onCopyPath={handleContextCopyPath}
+            onDelete={handleContextDelete}
           />
         ) : null}
       </aside>

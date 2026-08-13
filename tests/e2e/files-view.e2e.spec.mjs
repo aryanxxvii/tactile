@@ -428,6 +428,35 @@ test("Files uses a custom context menu for workspace object actions", async ({ p
   await expect(page).toHaveURL(/route=home-child/);
 });
 
+test("Files context-menu Delete removes the object link and protects Home and Start", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+
+  const childRow = page.locator('.files-tree-row[data-object-id="child"]');
+  await childRow.click();
+  await expect(page).toHaveURL(/route=home-child/);
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+  await childRow.click({ button: "right" });
+  const childMenu = page.getByRole("menu", { name: "Actions for Child sheet" });
+  const deleteAction = childMenu.getByRole("menuitem", { name: "Delete", exact: true });
+  await expect(deleteAction).toBeVisible();
+  await expect(deleteAction).toHaveClass(/is-danger/);
+  await expect(deleteAction).toBeEnabled();
+  await deleteAction.click();
+
+  await expect(childRow).toHaveCount(0);
+  await expect(page).not.toHaveURL(/route=home-child/);
+  await expect(page.locator('[data-object-id="home"][data-cell-address="A1"]')).toHaveAttribute("aria-label", "A1");
+
+  const homeRow = page.locator('.files-tree-row[data-object-id="home"]');
+  await homeRow.click({ button: "right" });
+  const homeMenu = page.getByRole("menu", { name: "Actions for Home" });
+  const protectedDelete = homeMenu.getByRole("menuitem", { name: "Delete", exact: true });
+  await expect(protectedDelete).toBeDisabled();
+  await expect(protectedDelete).toContainText("Current start");
+});
+
 test("Files context commands use active Paper tokens for enabled text and icons", async ({ page }) => {
   await page.goto("/");
   const workspace = filesWorkspace();

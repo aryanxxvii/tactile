@@ -4,6 +4,7 @@ import {
   coordinatesFromCellId,
 } from "./sheet/coordinates.js";
 import {
+  repairObjectTopology,
   repairWorkspaceTopology,
 } from "./core/topology.js";
 import { normalizeIconEmoji } from "./iconEmoji.js";
@@ -354,6 +355,131 @@ export function normalizeWorkspace(input) {
     // once during migration; normalized workspaces keep Home independent from
     // the canonical Files hierarchy thereafter.
     preferredPath: hasDurableTopology ? [] : homePath,
+  });
+}
+
+function homeObjectIds(objects) {
+  return new Set(Object.entries(objects || {})
+    .filter(([objectId, object]) => (
+      objectId === "home"
+      || (object?.type === "sheet" && object?.title === "Home" && !object?.parent)
+    ))
+    .map(([objectId]) => objectId));
+}
+
+function deletionObjectIds(repaired, objectId) {
+  const childrenByParent = new Map();
+  repaired?.canonicalByChild?.forEach((edge, childId) => {
+    const children = childrenByParent.get(edge.sourceObjectId) || [];
+    children.push(String(childId));
+    childrenByParent.set(edge.sourceObjectId, children);
+  });
+
+  const objectIds = new Set([String(objectId)]);
+  const pending = [String(objectId)];
+  while (pending.length) {
+    const parentId = pending.pop();
+    (childrenByParent.get(parentId) || []).forEach((childId) => {
+      if (objectIds.has(childId)) return;
+      objectIds.add(childId);
+      pending.push(childId);
+    });
+  }
+  return objectIds;
+}
+
+function protectedObjectIds(repaired, workspace) {
+  const protectedIds = homeObjectIds(repaired?.objects);
+  let currentId = String(workspace?.homeObjectId || "");
+  while (currentId && !protectedIds.has(currentId)) {
+    protectedIds.add(currentId);
+    currentId = repaired?.canonicalByChild?.get(currentId)?.sourceObjectId || "";
+  }
+  return protectedIds;
+}
+
+export function objectDeletionPlan(workspace, objectId) {
+  const targetId = String(objectId || "");
+  const objects = workspace?.objects || {};
+  if (!targetId || !objects[targetId]) {
+    return {
+      objectId: targetId,
+      objectIds: new Set(),
+      protectedObjectIds: new Set(),
+      canDelete: false,
+      reason: "Object not found",
+    };
+  }
+
+  const repaired = repairObjectTopology(objects);
+  const objectIds = deletionObjectIds(repaired, targetId);
+  const protectedIds = protectedObjectIds(repaired, workspace);
+  const blockedId = [...objectIds].find((id) => protectedIds.has(id));
+  const homeIds = homeObjectIds(repaired.objects);
+  const reason = blockedId === String(workspace?.homeObjectId || "")
+    ? "Current start"
+    : homeIds.has(blockedId)
+      ? "Home"
+      : blockedId
+        ? "Contains current start"
+        : "";
+
+  return {
+    objectId: targetId,
+    objectIds,
+    protectedObjectIds: protectedIds,
+    repaired,
+    canDelete: !blockedId,
+    reason,
+  };
+}
+
+/**
+ * Delete an object and its canonical descendants as one workspace update.
+ * Alias cells pointing into the deleted subtree are cleared as well, while
+ * unrelated objects and shared assets remain intact.
+ */
+export function deleteObjectFromWorkspace(workspace, objectId) {
+  const plan = objectDeletionPlan(workspace, objectId);
+  if (!plan.canDelete) return workspace;
+
+  const sourceObjects = plan.repaired.objects;
+  const removedAssetIds = new Set([...plan.objectIds]
+    .map((id) => sourceObjects[id]?.assetId)
+    .filter(Boolean)
+    .map(String));
+  const objects = {};
+
+  Object.entries(sourceObjects).forEach(([id, object]) => {
+    if (plan.objectIds.has(id)) return;
+    if (object?.type !== "sheet") {
+      objects[id] = object;
+      return;
+    }
+
+    const cells = {};
+    Object.entries(object.cells || {}).forEach(([cellId, cell]) => {
+      if (plan.objectIds.has(String(cell?.embed?.objectId || ""))) return;
+      cells[cellId] = cell;
+    });
+    objects[id] = Object.keys(cells).length === Object.keys(object.cells || {}).length
+      ? object
+      : { ...object, cells };
+  });
+
+  const remainingAssetIds = new Set(Object.values(objects)
+    .map((object) => object?.assetId)
+    .filter(Boolean)
+    .map(String));
+  const assets = Object.fromEntries(Object.entries(workspace.assets || {}).filter(([assetId]) => (
+    !removedAssetIds.has(String(assetId)) || remainingAssetIds.has(String(assetId))
+  )));
+
+  return repairWorkspaceTopology({
+    ...workspace,
+    updatedAt: new Date().toISOString(),
+    objects,
+    assets,
   });
 }
 
