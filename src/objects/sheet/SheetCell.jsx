@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { FORMULA_CATALOG } from "../../sheet/formulas.js";
 
@@ -11,11 +11,39 @@ function formulaQuery(value, caret) {
   return { prefix, start: caret - match[1].length, end: caret };
 }
 
-export function SheetCell({
+function cellEventData({ cellId, address, row, column, value, formula, embedObjectId, embedType, embedLinkId }) {
+  return {
+    id: cellId,
+    address,
+    row,
+    column,
+    value,
+    formula,
+    embed: embedObjectId
+      ? { objectId: embedObjectId, type: embedType, ...(embedLinkId ? { linkId: embedLinkId } : {}) }
+      : null,
+  };
+}
+
+export const SheetCell = memo(function SheetCell({
   objectId,
-  cell,
-  embeddedObject,
+  cellId,
+  address,
+  row,
+  column,
+  value = "",
+  formula = "",
   displayValue,
+  embedObjectId,
+  embedType,
+  embedLinkId,
+  role,
+  styleBold,
+  styleHighlight,
+  styleTextColor,
+  styleAlign,
+  styleVerticalAlign,
+  styleFontSize,
   selected,
   inRange,
   inFormulaRange,
@@ -24,6 +52,8 @@ export function SheetCell({
   inSelectedRow,
   inSelectedColumn,
   editing,
+  onEmbeddedClick,
+  onEmbeddedDoubleClick,
   onSelect,
   onSelectionStart,
   onSelectionMove,
@@ -34,18 +64,15 @@ export function SheetCell({
   onEdit,
   onCommit,
   onValueChange,
-  onOpenObject,
   onContextMenu,
 }) {
   const inputRef = useRef(null);
-  const openTimerRef = useRef(null);
   const [formulaHintQuery, setFormulaHintQuery] = useState(null);
   const [formulaHintIndex, setFormulaHintIndex] = useState(0);
-  const shownValue = displayValue ?? cell.value ?? "";
+  const shownValue = displayValue ?? value;
+  const hasEmbed = Boolean(embedObjectId);
   const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
-  const formulaError = cell.formula && String(shownValue).startsWith("#");
-  const alignment = cell.style?.align;
-  const verticalAlignment = cell.style?.verticalAlign;
+  const formulaError = Boolean(formula && String(shownValue).startsWith("#"));
   const formulaHints = useMemo(() => {
     if (!formulaHintQuery?.prefix) return [];
     const starts = FORMULA_CATALOG.filter((item) => item.name.startsWith(formulaHintQuery.prefix));
@@ -53,9 +80,8 @@ export function SheetCell({
     return [...starts, ...contains].slice(0, 7);
   }, [formulaHintQuery]);
   const formulaHintOpen = editing && Boolean(formulaHints.length);
-  const fontSize = Number(cell.style?.fontSize);
-  const cellStyle = Number.isFinite(fontSize)
-    ? { "--cell-font-size": `${fontSize}px` }
+  const cellStyle = Number.isFinite(styleFontSize)
+    ? { "--cell-font-size": `${styleFontSize}px` }
     : undefined;
 
   useLayoutEffect(() => {
@@ -68,59 +94,17 @@ export function SheetCell({
     }
   }, [editing]);
 
-  useEffect(() => () => {
-    if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
-  }, []);
-
-  const openEmbeddedObject = (event, mode) => {
-    if (!cell.embed) return;
-    const sourceElement = event.currentTarget;
-    onOpenObject({
-      objectId: cell.embed.objectId,
-      linkId: cell.embed.linkId,
-      sourceObjectId: objectId,
-      sourceCellId: cell.id,
-      sourceAddress: cell.address,
-      sourceLabel: shownValue,
-      sourceType: cell.embed.type,
-      sourceElement,
-      mode,
-    });
-  };
-
-  const handleClick = (event) => {
-    if (!cell.embed) return;
-    const sourceElement = event.currentTarget;
-    if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
-    openTimerRef.current = window.setTimeout(() => {
-      openTimerRef.current = null;
-      onOpenObject({
-        objectId: cell.embed.objectId,
-        linkId: cell.embed.linkId,
-        sourceObjectId: objectId,
-        sourceCellId: cell.id,
-        sourceAddress: cell.address,
-        sourceLabel: shownValue,
-        sourceType: cell.embed.type,
-        sourceElement,
-        mode: "floating",
-      });
-    }, 170);
-  };
-
-  const handleDoubleClick = (event) => {
-    if (!cell.embed) {
-      event.preventDefault();
-      event.stopPropagation();
-      onEdit(cell.id);
-      return;
-    }
-    if (openTimerRef.current) {
-      window.clearTimeout(openTimerRef.current);
-      openTimerRef.current = null;
-    }
-    openEmbeddedObject(event, "full");
-  };
+  const eventCell = () => cellEventData({
+    cellId,
+    address,
+    row,
+    column,
+    value,
+    formula,
+    embedObjectId,
+    embedType,
+    embedLinkId,
+  });
 
   const inspectFormulaCaret = (input) => {
     const next = formulaQuery(input.value, input.selectionStart);
@@ -130,52 +114,62 @@ export function SheetCell({
 
   const chooseFormulaHint = (item) => {
     if (!formulaHintQuery) return;
-    const value = cell.formula || cell.value || "";
-    const nextValue = `${value.slice(0, formulaHintQuery.start)}${item.name}(${value.slice(formulaHintQuery.end)}`;
+    const currentInputValue = formula || value || "";
+    const nextValue = `${currentInputValue.slice(0, formulaHintQuery.start)}${item.name}(${currentInputValue.slice(formulaHintQuery.end)}`;
     const nextCaret = formulaHintQuery.start + item.name.length + 1;
-    onValueChange(cell.id, nextValue);
+    onValueChange(cellId, nextValue);
     window.requestAnimationFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.setSelectionRange(nextCaret, nextCaret);
-      inspectFormulaCaret(inputRef.current);
+      if (inputRef.current) inspectFormulaCaret(inputRef.current);
     });
   };
 
   return (
     <div
-      className={`sheet-cell ${selected ? "is-selected" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${editing ? "is-editing" : ""} ${cell.embed ? "is-embedded" : ""} ${cell.role === "heading" ? "is-table-heading" : ""} ${cell.role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${cell.style?.bold ? "is-bold" : ""} ${cell.style?.highlight ? `highlight-${cell.style.highlight}` : ""} ${cell.style?.textColor ? `text-${cell.style.textColor}` : ""} ${alignment ? `align-${alignment}` : ""} ${verticalAlignment ? `align-${verticalAlignment}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
+      className={`sheet-cell ${selected ? "is-selected" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${editing ? "is-editing" : ""} ${hasEmbed ? "is-embedded" : ""} ${role === "heading" ? "is-table-heading" : ""} ${role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${styleBold ? "is-bold" : ""} ${styleHighlight ? `highlight-${styleHighlight}` : ""} ${styleTextColor ? `text-${styleTextColor}` : ""} ${styleAlign ? `align-${styleAlign}` : ""} ${styleVerticalAlign ? `align-${styleVerticalAlign}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
       role="gridcell"
       aria-selected={selected}
-      aria-label={`${cell.address}${shownValue ? `, ${shownValue}` : ""}${cell.embed ? ", embedded object" : ""}`}
+      aria-label={`${address}${shownValue ? `, ${shownValue}` : ""}${hasEmbed ? ", embedded object" : ""}`}
       tabIndex={selected ? 0 : -1}
       data-object-id={objectId}
-      data-cell-address={cell.address}
+      data-cell-address={address}
       style={cellStyle}
       onPointerDown={(event) => {
-        if (formulaEditingCellId && formulaEditingCellId !== cell.id) {
+        const cell = eventCell();
+        if (formulaEditingCellId && formulaEditingCellId !== cellId) {
           onFormulaReferenceStart?.(event, cell);
           return;
         }
         onSelectionStart?.(event, cell);
       }}
       onPointerEnter={() => {
-        if (formulaEditingCellId && formulaEditingCellId !== cell.id) onFormulaReferenceMove?.(cell);
+        const cell = eventCell();
+        if (formulaEditingCellId && formulaEditingCellId !== cellId) onFormulaReferenceMove?.(cell);
         else onSelectionMove?.(cell);
       }}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
+      onClick={hasEmbed ? onEmbeddedClick : undefined}
+      onDoubleClick={(event) => {
+        if (hasEmbed) {
+          onEmbeddedDoubleClick?.(event);
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        onEdit(cellId);
+      }}
       onContextMenu={(event) => {
         event.preventDefault();
-        if (!inRange) onSelect(cell.address);
-        onContextMenu?.(event, cell);
+        if (!inRange) onSelect(address);
+        onContextMenu?.(event, eventCell());
       }}
       onFocus={() => {
-        if (!inRange) onSelect(cell.address);
+        if (!inRange) onSelect(address);
       }}
       onKeyDown={(event) => {
-        if ((event.key === "Enter" || event.key === "F2") && !cell.embed && !editing) {
+        if ((event.key === "Enter" || event.key === "F2") && !hasEmbed && !editing) {
           event.preventDefault();
-          onEdit(cell.id);
+          onEdit(cellId);
           return;
         }
         const isPrintable = event.key.length === 1
@@ -183,10 +177,10 @@ export function SheetCell({
           && !event.metaKey
           && !event.altKey
           && !event.isComposing;
-        const isEmpty = !cell.embed && !cell.value && !cell.formula;
+        const isEmpty = !hasEmbed && !value && !formula;
         if (isPrintable && isEmpty && !editing) {
           event.preventDefault();
-          onEdit(cell.id, event.key);
+          onEdit(cellId, event.key);
         }
       }}
     >
@@ -194,9 +188,9 @@ export function SheetCell({
         <input
           ref={inputRef}
           className="cell-editor"
-          value={cell.formula || cell.value}
+          value={formula || value}
           onChange={(event) => {
-            onValueChange(cell.id, event.target.value);
+            onValueChange(cellId, event.target.value);
             inspectFormulaCaret(event.currentTarget);
           }}
           onFocus={(event) => {
@@ -241,13 +235,13 @@ export function SheetCell({
               onCommit();
             }
           }}
-          aria-label={`Edit ${cell.address}`}
+          aria-label={`Edit ${address}`}
         />
       ) : (
         <span className="cell-content">
-          {cell.embed ? (
+          {hasEmbed ? (
             <ObjectGlyph
-              item={embeddedObject || { type: cell.embed.type }}
+              item={{ type: embedType }}
               className="embed-icon"
               size={14}
               stroke={1.55}
@@ -262,7 +256,7 @@ export function SheetCell({
         </svg>
       ) : null}
       {formulaHintOpen ? (
-        <div className="formula-suggestions cell-formula-suggestions" role="listbox" aria-label={`Formula suggestions for ${cell.address}`}>
+        <div className="formula-suggestions cell-formula-suggestions" role="listbox" aria-label={`Formula suggestions for ${address}`}>
           <div className="formula-suggestions-label">Functions</div>
           {formulaHints.map((item, index) => (
             <button
@@ -285,14 +279,14 @@ export function SheetCell({
           <div className="formula-suggestions-hint"><kbd>↑</kbd><kbd>↓</kbd> choose <kbd>Enter</kbd> insert</div>
         </div>
       ) : null}
-      {selected && !editing && !cell.embed ? (
+      {selected && !editing && !hasEmbed ? (
         <button
           className="cell-fill-handle"
           type="button"
           tabIndex={-1}
-          aria-label={`Fill from ${cell.address}`}
+          aria-label={`Fill from ${address}`}
           data-tooltip="Drag to fill"
-          onPointerDown={(event) => onFillStart?.(event, cell)}
+          onPointerDown={(event) => onFillStart?.(event, eventCell())}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -301,4 +295,4 @@ export function SheetCell({
       ) : null}
     </div>
   );
-}
+});

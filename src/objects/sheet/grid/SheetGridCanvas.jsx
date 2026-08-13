@@ -1,13 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
-import { createCellRecord } from "../../../model.js";
 import { preloadObjectRenderer } from "../../objectRegistry.jsx";
 import { formatFormulaResult } from "../../../sheet/formulas.js";
 import { formatCellValue } from "../../../sheet/formatting.js";
-import { conditionalToneForCell } from "../../../sheet/conditionalFormatting.js";
 import { cellAddress, cellId, columnLabel } from "../../../sheet/coordinates.js";
-import { rangeContains } from "../../../sheet/ranges.js";
-import { SheetCell } from "../SheetCell.jsx";
+import { normalizeRange } from "../../../sheet/ranges.js";
+import { conditionalToneForCoordinates, compileConditionalRules } from "./conditionalRuleProjection.js";
+import { EmbeddedCellSlot, SheetCellSlot } from "./SheetCellSlot.jsx";
+import { cellContextFor, numericRangeContains } from "./cellSlotProjection.js";
 
 export function SheetGridCanvas({
   object,
@@ -56,6 +56,14 @@ export function SheetGridCanvas({
   onToggleColumnGroup,
 }) {
   const { rowHeaderWidth, columnHeaderHeight } = metrics;
+  const conditionalRules = useMemo(
+    () => compileConditionalRules(object.conditionalFormats),
+    [object.conditionalFormats],
+  );
+  const normalizedFormulaReferenceRange = useMemo(
+    () => normalizeRange(formulaReferenceRange?.anchor, formulaReferenceRange?.focus),
+    [formulaReferenceRange?.anchor, formulaReferenceRange?.focus],
+  );
 
   useEffect(() => {
     const embedType = object.cells?.[cellId(selectedCoordinates.row, selectedCoordinates.column)]?.embed?.type;
@@ -115,7 +123,7 @@ export function SheetGridCanvas({
               onPointerDown={(event) => onStartAxisDrag(event, "column", column)}
               onContextMenu={(event) => {
                 event.preventDefault();
-                onContextMenu(event, object.cells?.[cellId(0, column)] || createCellRecord(0, column));
+                onContextMenu(event, cellContextFor(object, 0, column));
               }}
               key={`column-${column}`}
               onClick={() => {
@@ -177,7 +185,7 @@ export function SheetGridCanvas({
               onPointerDown={(event) => onStartAxisDrag(event, "row", row)}
               onContextMenu={(event) => {
                 event.preventDefault();
-                onContextMenu(event, object.cells?.[cellId(row, 0)] || createCellRecord(row, 0));
+                onContextMenu(event, cellContextFor(object, row, 0));
               }}
               key={`row-${row}`}
               onClick={() => {
@@ -227,53 +235,64 @@ export function SheetGridCanvas({
 
         {visibleRows.flatMap(({ row, position }) => visibleColumns.map(({ column, position: columnPosition }) => {
           const id = cellId(row, column);
-          const cell = object.cells[id] || createCellRecord(row, column);
-          const calculatedValue = cell.formula ? formatFormulaResult(formulaValues.get(cell.address)) : cell.value;
-          const embeddedTitle = cell.embed ? workspaceObjects?.[cell.embed.objectId]?.title : "";
-          const displayValue = cell.embed
-            ? embeddedTitle || cell.value || "Embedded object"
-            : formatCellValue(calculatedValue, cell.style);
-          const isActiveCell = selectedAddress === cell.address;
+          const address = cellAddress(row, column);
+          const cell = object.cells?.[id];
+          const rawValue = cell?.value ?? "";
+          const formula = cell?.formula ?? "";
+          const embed = cell?.embed;
+          const calculatedValue = formula ? formatFormulaResult(formulaValues.get(address)) : rawValue;
+          const embeddedTitle = embed ? workspaceObjects?.[embed.objectId]?.title : "";
+          const displayValue = embed
+            ? embeddedTitle || rawValue || "Embedded object"
+            : formatCellValue(calculatedValue, cell?.style);
+          const fontSize = Number(cell?.style?.fontSize);
+          const Slot = embed ? EmbeddedCellSlot : SheetCellSlot;
           return (
-            <div
-              className={`virtual-cell-slot ${isActiveCell ? "is-active-cell-slot" : ""}`}
+            <Slot
               key={id}
-              data-row={row}
-              data-column={column}
-              style={{
-                left: rowHeaderWidth + columnOffsetForPosition(columnPosition),
-                top: columnHeaderHeight + rowOffsetForPosition(position),
-                width: columnSizeForPosition(columnPosition),
-                height: rowSizeForPosition(position),
-              }}
-            >
-              <SheetCell
-                objectId={object.id}
-                cell={cell}
-                embeddedObject={cell.embed ? workspaceObjects?.[cell.embed.objectId] : null}
-                displayValue={displayValue}
-                conditionalTone={conditionalToneForCell(object, cell, calculatedValue)}
-                selected={isActiveCell}
-                inRange={rangeContains(normalizedSelection, row, column)}
-                inFormulaRange={rangeContains(formulaReferenceRange, row, column)}
-                fillPreview={rangeContains(fillPreviewRange, row, column)}
-                inSelectedRow={showActiveRowContext && selectedCoordinates.row === row}
-                inSelectedColumn={showActiveColumnContext && selectedCoordinates.column === column}
-                editing={editingCellId === id}
-                onSelect={onSelect}
-                onSelectionStart={onSelectionStart}
-                onSelectionMove={onSelectionMove}
-                formulaEditingCellId={editingCellId}
-                onFormulaReferenceStart={onFormulaReferenceStart}
-                onFormulaReferenceMove={onFormulaReferenceMove}
-                onFillStart={onFillStart}
-                onEdit={onEdit}
-                onCommit={onCommit}
-                onValueChange={onValueChange}
-                onOpenObject={onOpenObject}
-                onContextMenu={onContextMenu}
-              />
-            </div>
+              objectId={object.id}
+              row={row}
+              column={column}
+              cellId={id}
+              address={address}
+              left={rowHeaderWidth + columnOffsetForPosition(columnPosition)}
+              top={columnHeaderHeight + rowOffsetForPosition(position)}
+              width={columnSizeForPosition(columnPosition)}
+              height={rowSizeForPosition(position)}
+              value={rawValue}
+              formula={formula}
+              displayValue={displayValue}
+              embedObjectId={embed?.objectId || ""}
+              embedType={embed?.type || ""}
+              embedLinkId={embed?.linkId || ""}
+              role={cell?.role || ""}
+              styleBold={Boolean(cell?.style?.bold)}
+              styleHighlight={cell?.style?.highlight || ""}
+              styleTextColor={cell?.style?.textColor || ""}
+              styleAlign={cell?.style?.align || ""}
+              styleVerticalAlign={cell?.style?.verticalAlign || ""}
+              styleFontSize={Number.isFinite(fontSize) ? fontSize : undefined}
+              selected={selectedAddress === address}
+              inRange={numericRangeContains(normalizedSelection, row, column)}
+              inFormulaRange={numericRangeContains(normalizedFormulaReferenceRange, row, column)}
+              fillPreview={numericRangeContains(fillPreviewRange, row, column)}
+              conditionalTone={conditionalToneForCoordinates(conditionalRules, row, column, calculatedValue)}
+              inSelectedRow={showActiveRowContext && selectedCoordinates.row === row}
+              inSelectedColumn={showActiveColumnContext && selectedCoordinates.column === column}
+              editing={editingCellId === id}
+              formulaEditingCellId={editingCellId}
+              onOpenObject={onOpenObject}
+              onSelect={onSelect}
+              onSelectionStart={onSelectionStart}
+              onSelectionMove={onSelectionMove}
+              onFormulaReferenceStart={onFormulaReferenceStart}
+              onFormulaReferenceMove={onFormulaReferenceMove}
+              onFillStart={onFillStart}
+              onEdit={onEdit}
+              onCommit={onCommit}
+              onValueChange={onValueChange}
+              onContextMenu={onContextMenu}
+            />
           );
         }))}
       </div>

@@ -95,6 +95,14 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
     })).filter((entry) => Number.isInteger(entry.row)),
     [virtualSheet.range.rowEnd, virtualSheet.range.rowStart, virtualSheet.rowIndexMap],
   );
+  const pinnedVisibleRows = useMemo(() => {
+    const selectedPosition = virtualSheet.rowPositionForIndex(selectedCoordinates.row);
+    if (!Number.isInteger(selectedPosition) || visibleRows.some((entry) => entry.row === selectedCoordinates.row)) {
+      return visibleRows;
+    }
+    return [...visibleRows, { position: selectedPosition, row: selectedCoordinates.row }]
+      .sort((left, right) => left.position - right.position);
+  }, [selectedCoordinates.row, virtualSheet.rowPositionForIndex, visibleRows]);
   const visibleColumns = useMemo(
     () => rangeValues(virtualSheet.range.columnStart, virtualSheet.range.columnEnd).map((position) => ({
       position,
@@ -102,6 +110,14 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
     })).filter((entry) => Number.isInteger(entry.column)),
     [virtualSheet.columnIndexMap, virtualSheet.range.columnEnd, virtualSheet.range.columnStart],
   );
+  const pinnedVisibleColumns = useMemo(() => {
+    const selectedPosition = virtualSheet.columnPositionForIndex(selectedCoordinates.column);
+    if (!Number.isInteger(selectedPosition) || visibleColumns.some((entry) => entry.column === selectedCoordinates.column)) {
+      return visibleColumns;
+    }
+    return [...visibleColumns, { position: selectedPosition, column: selectedCoordinates.column }]
+      .sort((left, right) => left.position - right.position);
+  }, [selectedCoordinates.column, virtualSheet.columnPositionForIndex, visibleColumns]);
 
   return {
     selectedCoordinates,
@@ -115,8 +131,8 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
     filters,
     rowGroupByStart,
     columnGroupByStart,
-    visibleRows,
-    visibleColumns,
+    visibleRows: pinnedVisibleRows,
+    visibleColumns: pinnedVisibleColumns,
     ...virtualSheet,
   };
 }
