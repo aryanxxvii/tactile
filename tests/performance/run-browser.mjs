@@ -146,7 +146,7 @@ async function typingAction(page) {
   await cell.waitFor({ state: "visible", timeout: 30_000 });
   await cell.click();
   await cell.press("F2");
-  const editor = cell.locator("input.cell-editor");
+  const editor = page.locator(".formula-editor");
   await editor.waitFor({ state: "visible", timeout: 30_000 });
   const initialValue = await editor.inputValue();
   await editor.press("End");
