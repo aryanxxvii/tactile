@@ -373,7 +373,10 @@ function instrumentationSource() {
                 list.getEntries().forEach((entry) => current.longTaskDurations.push(entry.duration));
               }),
           );
-          current.longTaskObserver.observe({ type: "longtask", buffered: true });
+          // A scenario must measure only work that starts after start(). A
+          // buffered observer would attribute fixture-import work to the
+          // following scroll/typing scenario and inflate its p95.
+          current.longTaskObserver.observe({ type: "longtask", buffered: false });
           current.longTasksObservable = true;
         } catch {
           current.longTasksObservable = false;
@@ -389,7 +392,7 @@ function instrumentationSource() {
                 });
               }),
           );
-          current.eventObserver.observe({ type: "event", buffered: true, durationThreshold: 0 });
+          current.eventObserver.observe({ type: "event", buffered: false, durationThreshold: 0 });
           current.inputLatencyObservable = true;
         } catch {
           // Event Timing is not exposed in every browser.

@@ -84,7 +84,9 @@ test("keeps active, hovered, and selected cells below the sticky column identifi
     .toMatchObject({
       overlapExists: true,
       topmostSheetPaint: "column-header",
-      selectionInset: "0px",
+      // The active perimeter is painted one pixel outside the tile slot so it
+      // follows the full molded tile boundary without disappearing at seams.
+      selectionInset: "-1px",
     });
   const firstRowSelection = await inspectPaint("B1");
   expect(firstRowSelection.slotZ).toBeLessThan(firstRowSelection.railZ);
@@ -108,7 +110,7 @@ test("keeps active, hovered, and selected cells below the sticky column identifi
     .toMatchObject({
       overlapExists: true,
       topmostSheetPaint: "column-header",
-      selectionInset: "0px",
+      selectionInset: "-1px",
     });
   const deepSelection = await inspectPaint(deepAddress);
   expect(deepSelection.maxDataSlotZ).toBeLessThan(deepSelection.railZ);
@@ -244,7 +246,7 @@ test("keeps active and hovered first-column cells behind the row rail after deep
     expect(state.active).toMatchObject({
       railZIndex: expect.any(Number),
       slotZIndex: expect.any(Number),
-      outlineLeft: "0px",
+      outlineLeft: "-1px",
       railHit: String(row),
       row: String(row),
     });

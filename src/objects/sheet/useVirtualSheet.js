@@ -275,6 +275,8 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   );
   const scrollRef = useRef(null);
   const memoryFrameRef = useRef(null);
+  const rangeFrameRef = useRef(null);
+  const pendingRangeRef = useRef(null);
   const pendingViewportRef = useRef(null);
   const syncViewportRef = useRef(null);
   const initialViewport = useMemo(() => initialViewportFor(viewStateKey), [viewStateKey]);
@@ -323,10 +325,25 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   );
   const [range, setRange] = useState(initialRange);
   const rangeRef = useRef(range);
-  const commitRange = useCallback((nextRange) => {
+  const commitRange = useCallback((nextRange, immediate = false) => {
     if (rangesEqual(rangeRef.current, nextRange)) return false;
     rangeRef.current = nextRange;
-    setRange(nextRange);
+    if (immediate) {
+      if (rangeFrameRef.current != null) window.cancelAnimationFrame(rangeFrameRef.current);
+      rangeFrameRef.current = null;
+      pendingRangeRef.current = null;
+      flushSync(() => setRange(nextRange));
+      return true;
+    }
+    pendingRangeRef.current = nextRange;
+    if (rangeFrameRef.current == null) {
+      rangeFrameRef.current = window.requestAnimationFrame(() => {
+        rangeFrameRef.current = null;
+        const pendingRange = pendingRangeRef.current;
+        pendingRangeRef.current = null;
+        if (pendingRange) setRange(pendingRange);
+      });
+    }
     return true;
   }, []);
 
@@ -349,7 +366,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     });
   }, [viewStateKey]);
 
-  const syncViewport = useCallback((element, { forceRange = false, immediateRange = false } = {}) => {
+  const syncViewport = useCallback((element, { forceRange = false } = {}) => {
     if (!element) return;
     const previousPosition = scrollPositionRef.current;
     const position = nativeScrollPosition(element);
@@ -378,9 +395,13 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     if (!forceRange
       && rangeContains(rangeRef.current, visibleRange)
       && rangeContains(rangeRef.current, nextRange)) return;
-    const update = () => commitRange(nextRange);
-    if (immediateRange) flushSync(update);
-    else update();
+    // Native scrolling and sticky-header CSS stay immediate. Ordinary wheel
+    // movement commits on the next frame so a burst of events cannot force one
+    // React commit per event. A jump larger than one viewport is flushed now,
+    // so the first paint after a trackpad/wheel jump cannot expose a stale
+    // virtual slice.
+    const largeJump = Math.abs(delta.scrollTop) > next.height || Math.abs(delta.scrollLeft) > next.width;
+    commitRange(nextRange, largeJump);
   }, [buildRenderRange, buildVisibleRange, commitRange, metrics, renderOverscan, scheduleViewportMemory, syncScrollStyles]);
 
   syncViewportRef.current = syncViewport;
@@ -395,7 +416,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     }
 
     const handleNativeScroll = () => {
-      syncViewportRef.current?.(element, { immediateRange: true });
+      syncViewportRef.current?.(element);
     };
     handleNativeScroll();
     element.addEventListener("scroll", handleNativeScroll, { passive: true });
@@ -419,12 +440,14 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
 
   useEffect(() => () => {
     if (memoryFrameRef.current != null) window.cancelAnimationFrame(memoryFrameRef.current);
+    if (rangeFrameRef.current != null) window.cancelAnimationFrame(rangeFrameRef.current);
     pendingViewportRef.current = null;
+    pendingRangeRef.current = null;
   }, []);
 
   const onScroll = useCallback((event) => {
     const element = event?.currentTarget || scrollRef.current;
-    syncViewport(element, { immediateRange: true });
+    syncViewport(element);
   }, [syncViewport]);
 
   const canvasSize = useMemo(() => ({
