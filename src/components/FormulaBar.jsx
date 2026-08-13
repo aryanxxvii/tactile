@@ -166,7 +166,7 @@ function useFormulaWorkerPreview({ value, address, cell, formulaSheet }) {
   return preview;
 }
 
-function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, onChange, onFormulaModeChange }) {
+function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit }) {
   const localInputRef = useRef(null);
   const editorRef = inputRef || localInputRef;
   const session = useLocalDraft(value, onChange);
@@ -310,6 +310,7 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
             commitDraft();
             onFormulaModeChange?.(false);
             editorRef.current?.blur();
+            if (event.key === "Enter") onCommit?.();
           }
         }}
         onBlur={() => {
@@ -357,7 +358,7 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
   );
 }
 
-export function FormulaBar({ address, rangeLabel, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
+export function FormulaBar({ address, rangeLabel, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
   const formulaValue = cell?.formula || cell?.value || "";
 
   return (
@@ -388,6 +389,7 @@ export function FormulaBar({ address, rangeLabel, cell, formulaSheet, inputRef, 
           inputRef={inputRef}
           onChange={(value) => onChange(value)}
           onFormulaModeChange={onFormulaModeChange}
+          onCommit={onCommit}
         />
       </div>
     </div>

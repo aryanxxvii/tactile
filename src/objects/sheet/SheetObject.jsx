@@ -3,6 +3,7 @@ import { IconBrackets, IconTable } from "@tabler/icons-react";
 import { FormulaBar } from "../../components/FormulaBar.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { createId, materializeCell } from "../../model.js";
+import { cellAddress, moveAddress } from "../../sheet/coordinates.js";
 import { cellIdsInRange, rangeLabel, rangeSize } from "../../sheet/ranges.js";
 import { SheetGrid } from "./SheetGrid.jsx";
 import { canonicalSheetSelection } from "./grid/selectionGeometry.js";
@@ -70,6 +71,17 @@ export function SheetObject({
     });
   };
 
+  const moveBelowAfterCommit = () => {
+    if (selectedCoordinates.row >= object.rows - 1) return;
+    onSelectAddress(moveAddress(
+      cellAddress(selectedCoordinates.row, selectedCoordinates.column),
+      1,
+      0,
+      object.rows,
+      object.columns,
+    ));
+  };
+
   const handleFormat = (patch) => {
     const changes = cellIdsInRange(canonicalRange).map((targetCellId) => {
       const currentStyle = object.cells?.[targetCellId]?.style || {};
@@ -112,6 +124,7 @@ export function SheetObject({
           inputRef={formulaEditorRef}
           onChange={handleFormulaChange}
           onFormulaModeChange={setFormulaMode}
+          onCommit={moveBelowAfterCommit}
           onAddressChange={onSelectAddress}
           onFormat={handleFormat}
           onConditionalFormat={handleConditionalFormat}

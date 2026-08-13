@@ -110,3 +110,20 @@ test("Delete and Backspace retain native behavior while the formula editor is ac
   await editor.press("Enter");
   await expect.poll(() => cellValue(page, "A1")).toBe("lph");
 });
+
+test("Enter commits the active edit and selects the cell below without reopening edit mode", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const source = cellLocator(page, "A1");
+  await source.click();
+  await source.press("Enter");
+  const editor = page.locator(".formula-editor");
+  await expect(editor).toBeFocused();
+  await editor.fill("updated");
+  await editor.press("Enter");
+
+  await expect.poll(() => cellValue(page, "A1")).toBe("updated");
+  await expect(page.locator('.sheet-cell[data-cell-address="A2"]')).toHaveAttribute("aria-selected", "true");
+  await expect(editor).not.toBeFocused();
+});
