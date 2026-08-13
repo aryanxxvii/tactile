@@ -4261,9 +4261,10 @@ kbd {
 }
 
 .sheet-cell.is-selected::after {
-  inset: 0;
+  inset: -1px;
+  box-sizing: border-box;
   border-width: 1.5px;
-  border-radius: calc(var(--cell-radius) + 1px);
+  border-radius: calc(var(--cell-radius) + 2px);
 }
 
 .object-statusbar {
@@ -4848,7 +4849,7 @@ kbd {
 }
 
 .sheet-cell.is-selected::after {
-  inset: 0;
+  inset: -1px;
   box-sizing: border-box;
   border-width: 1.5px;
   border-radius: calc(var(--cell-radius) + 2px);
