@@ -1,7 +1,13 @@
 import { useCallback } from "react";
-import { downloadWorkspaceZip, importWorkspaceFile } from "../export.js";
 import { cloneTheme, downloadTheme, themeFromFile } from "../themes.js";
 import { readLocalFile } from "./selectionCommands.js";
+
+let portableCommandsPromise;
+
+function loadPortableCommands() {
+  portableCommandsPromise ||= import("../export.js");
+  return portableCommandsPromise;
+}
 
 export function useWorkspaceCommands({
   workspace,
@@ -27,6 +33,7 @@ export function useWorkspaceCommands({
   const exportWorkspace = useCallback(async () => {
     setExportState("exporting");
     try {
+      const { downloadWorkspaceZip } = await loadPortableCommands();
       await downloadWorkspaceZip(workspace);
       showNotice("Portable .tactile workspace exported");
     } catch (error) {
@@ -45,6 +52,7 @@ export function useWorkspaceCommands({
     event.target.value = "";
     if (!file) return;
     try {
+      const { importWorkspaceFile } = await loadPortableCommands();
       const imported = await importWorkspaceFile(file);
       replaceWorkspace(imported);
       resetSelection();
