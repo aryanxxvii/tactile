@@ -1,0 +1,84 @@
+{
+  "manifest": {
+    "format": "tactile",
+    "formatVersion": 4,
+    "entry": "workspace.json",
+    "workspaceId": "ws-e03",
+    "linkSyntax": "[[tactile:<type>:<object-id>|<title>]]",
+    "x-manifest-plugin": {
+      "preserve": true
+    }
+  },
+  "workspace": {
+    "format": "tactile",
+    "version": 4,
+    "id": "ws-e03",
+    "name": "E03 round trip",
+    "homeObjectId": "sheet-home",
+    "homePath": [],
+    "createdAt": "2026-08-14T00:00:00.000Z",
+    "updatedAt": "2026-08-14T00:00:00.000Z",
+    "activeThemeId": "theme-paper",
+    "settings": {
+      "filesPinned": true,
+      "x-settings-plugin": {
+        "preserve": "settings"
+      }
+    },
+    "x-workspace-plugin": {
+      "schema": "e03.fixture.v1",
+      "preserve": true
+    },
+    "objects": [
+      {
+        "id": "sheet-home",
+        "type": "sheet",
+        "title": "Home",
+        "description": "A sparse sheet.",
+        "rows": 256,
+        "columns": 64,
+        "file": "objects/sheet-home/sheet.csv",
+        "metadata": "objects/sheet-home/sheet.meta.json",
+        "x-object-plugin": {
+          "panel": "milestones"
+        }
+      },
+      {
+        "id": "doc-notes",
+        "type": "markdown",
+        "title": "Native notes",
+        "description": "Markdown stays Markdown.",
+        "file": "objects/doc-notes/content.md",
+        "x-object-plugin": {
+          "keep": true
+        }
+      },
+      {
+        "id": "image-ref",
+        "type": "image",
+        "title": "Reference image",
+        "assetId": "asset-ref",
+        "file": "objects/image-ref/content.png",
+        "asset": {
+          "id": "asset-ref",
+          "fileName": "reference.png",
+          "mime": "image/png",
+          "size": 4,
+          "x-asset-plugin": {
+            "checksum": "fixture-asset-v1"
+          }
+        },
+        "x-object-plugin": {
+          "altPolicy": "title"
+        }
+      }
+    ],
+    "themes": [
+      {
+        "id": "theme-paper",
+        "name": "Paper Future",
+        "file": "themes/theme-paper.json"
+      }
+    ]
+  }
+}
