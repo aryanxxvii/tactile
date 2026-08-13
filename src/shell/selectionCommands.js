@@ -28,6 +28,10 @@ function isSheetCellTarget(target) {
   return Boolean(target?.closest?.(".sheet-cell"));
 }
 
+function isSheetNavigationTarget(target) {
+  return isSheetCellTarget(target) || isGridTarget(target);
+}
+
 function clipboardMethodAvailable(method) {
   return typeof navigator !== "undefined" && typeof navigator.clipboard?.[method] === "function";
 }
@@ -259,8 +263,9 @@ export function useSelectionCommands({
       return;
     }
     if (command && event.key.toLowerCase() === "v") {
-      event.preventDefault();
-      clipboardSelectedCell("paste");
+      // Let the browser emit its native paste event. The window-level paste
+      // handler below can read its DataTransfer even when the async clipboard
+      // API is unavailable or permission-denied, which is common in previews.
       return;
     }
     if (command && event.key.toLowerCase() === "a") {
@@ -289,7 +294,7 @@ export function useSelectionCommands({
       clearSelectedCell();
       return;
     }
-    if (!isSheetCellTarget(event.target)) return;
+    if (!isSheetNavigationTarget(event.target)) return;
     if (event.key === "ArrowUp") {
       event.preventDefault();
       moveSelection(-1, 0, event.shiftKey);

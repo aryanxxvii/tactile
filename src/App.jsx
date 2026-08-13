@@ -115,7 +115,9 @@ export function App() {
         else shell.openFiles(event.target);
         return;
       }
-      if (shell.filesOpen) return;
+      const historyShortcut = command && (event.key.toLowerCase() === "z" || event.key.toLowerCase() === "y");
+      const typingTarget = event.target?.closest?.("input, textarea, [contenteditable=\"true\"]");
+      if (shell.filesOpen && !(historyShortcut && !typingTarget)) return;
       selection.handleKeyboard(
         event,
         shell.settingsOpen,
@@ -264,7 +266,7 @@ export function App() {
   return (
     <div
       className={`tactile-app ${shell.filesPinned && shell.filesOpen ? "files-is-pinned" : ""} ${floatingLayerActive ? "has-floating-layer" : ""} ${shell.settingsOpen ? "settings-open" : ""}`}
-      data-paper-scheme
+        data-paper-scheme
       data-files-pinned={shell.filesPinned ? "true" : undefined}
       data-files-resizing={shell.filesResizing ? "true" : undefined}
       data-reduce-motion={workspace.settings.reduceMotion ? "true" : "false"}
