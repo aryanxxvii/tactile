@@ -105,6 +105,13 @@ export function useSheetGridGestures({
   const moveSelectionGestureRef = useRef(null);
   const selectionPointerRef = useRef(null);
   const selectionScrollFrameRef = useRef(null);
+  const selectionViewportLockRef = useRef(false);
+
+  const releaseSelectionViewportLock = useCallback(() => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      selectionViewportLockRef.current = false;
+    }));
+  }, []);
 
   gestureGeometryRef.current = {
     scrollRef,
@@ -145,7 +152,7 @@ export function useSheetGridGestures({
     // effect scroll the surface here makes the endpoint jump to whichever
     // virtual cell happened to render first. Edge scrolling below is the
     // only scroll path during a range gesture.
-    if (selectionDragRef.current) return;
+    if (selectionDragRef.current || selectionViewportLockRef.current) return;
     const { rowHeaderWidth, columnHeaderHeight } = metrics;
     const selectedColumnPosition = columnPositionForIndex(selectedCoordinates.column);
     if (!Number.isInteger(selectedColumnPosition)) return;
@@ -356,16 +363,22 @@ export function useSheetGridGestures({
       if (activeGesture.pointerId != null && event?.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
       if (selectionDrag) stopSelectionAutoScroll();
       if (selectionDrag && event?.type === "pointerup") {
+        // The final selection update is allowed to replace the virtual window,
+        // but it must not hand the viewport back to the active-cell effect.
+        // That effect would otherwise scroll a completed horizontal range to
+        // the focus cell after the pointer has already established its view.
+        selectionViewportLockRef.current = true;
         selectionPointerRef.current = {
           clientX: event.clientX,
           clientY: event.clientY,
         };
-        const address = updateSelectionAtPoint(event)
+        const address = updateSelectionAtPoint(event, true)
           || selectionDrag.focus;
         if (address && address !== selectionDrag.focus) {
           selectionDrag.focus = address;
           gestureCallbacksRef.current?.onSelectRange?.(selectionDrag.anchor, address);
         }
+        releaseSelectionViewportLock();
       }
       if (formulaReference && event?.type === "pointerup") {
         const callbacks = gestureCallbacksRef.current;
@@ -406,7 +419,7 @@ export function useSheetGridGestures({
       window.removeEventListener("pointerup", finishPointerGesture, true);
       window.removeEventListener("pointercancel", finishPointerGesture, true);
     };
-  }, [cellAddressAtPoint, stopSelectionAutoScroll, updateFormulaReference, updateSelectionAtPoint]);
+  }, [cellAddressAtPoint, releaseSelectionViewportLock, stopSelectionAutoScroll, updateFormulaReference, updateSelectionAtPoint]);
 
   useEffect(() => () => {
     stopSelectionAutoScroll();
@@ -595,14 +608,17 @@ export function useSheetGridGestures({
     const saved = selectionScrollRef.current;
     selectionScrollRef.current = null;
     if (!saved) return;
+    selectionViewportLockRef.current = true;
     window.requestAnimationFrame(() => {
       const scroller = scrollRef.current;
-      if (!scroller) return;
-      scroller.scrollTo({ left: saved.left, top: saved.top, behavior: "auto" });
-      scroller.style.setProperty("--sheet-scroll-x", `${saved.left}px`);
-      scroller.style.setProperty("--sheet-scroll-y", `${saved.top}px`);
+      if (scroller) {
+        scroller.scrollTo({ left: saved.left, top: saved.top, behavior: "auto" });
+        scroller.style.setProperty("--sheet-scroll-x", `${saved.left}px`);
+        scroller.style.setProperty("--sheet-scroll-y", `${saved.top}px`);
+      }
+      releaseSelectionViewportLock();
     });
-  }, [scrollRef]);
+  }, [releaseSelectionViewportLock, scrollRef]);
 
   const startCornerSelection = useCallback((event) => {
     event.preventDefault();

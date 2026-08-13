@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { evaluateSheetFormulas } from "../../../sheet/formulas.js";
-import { cellId, coordinatesFromAddress } from "../../../sheet/coordinates.js";
-import { fillRange, normalizeRange } from "../../../sheet/ranges.js";
+import { cellId } from "../../../sheet/coordinates.js";
+import { fillRange } from "../../../sheet/ranges.js";
+import { boundedAxisEntries, canonicalSheetSelection } from "./selectionGeometry.js";
 import { useVirtualSheet } from "../useVirtualSheet.js";
 
 export function rangeValues(start, end) {
@@ -9,14 +10,16 @@ export function rangeValues(start, end) {
 }
 
 export function useSheetGridProjection({ object, selectedAddress, selectionRange, fillTarget, sheetMetrics }) {
-  const selectedCoordinates = useMemo(
-    () => coordinatesFromAddress(selectedAddress) || { row: 0, column: 0 },
-    [selectedAddress],
+  const canonicalSelection = useMemo(
+    () => canonicalSheetSelection({
+      selectionRange,
+      selectedAddress,
+      rows: object.rows,
+      columns: object.columns,
+    }),
+    [object.columns, object.rows, selectedAddress, selectionRange?.anchor, selectionRange?.focus],
   );
-  const normalizedSelection = useMemo(
-    () => normalizeRange(selectionRange?.anchor || selectedAddress, selectionRange?.focus || selectedAddress),
-    [selectedAddress, selectionRange?.anchor, selectionRange?.focus],
-  );
+  const { selectedAddress: canonicalSelectedAddress, selectedCoordinates, range: normalizedSelection } = canonicalSelection;
   const isFullRowSelection = Boolean(normalizedSelection)
     && normalizedSelection.columnStart === 0
     && normalizedSelection.columnEnd === object.columns - 1
@@ -30,11 +33,11 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
   const fillPreviewRange = useMemo(
     () => fillTarget
       ? fillRange(
-        selectionRange || { anchor: selectedAddress, focus: selectedAddress },
+        normalizedSelection,
         fillTarget,
       )
       : null,
-    [fillTarget, selectedAddress, selectionRange],
+    [fillTarget, normalizedSelection],
   );
   const formulaValues = useMemo(() => evaluateSheetFormulas(object), [object]);
   const rowGroups = Array.isArray(object.rowGroups) ? object.rowGroups : [];
@@ -89,12 +92,12 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
     object.id,
   );
   const visibleRows = useMemo(
-    () => rangeValues(virtualSheet.range.rowStart, virtualSheet.range.rowEnd).map((position) => ({
-      position,
-      row: virtualSheet.rowIndexMap[position],
-    })).filter((entry) => Number.isInteger(entry.row)
-      && entry.row >= 0
-      && entry.row < object.rows),
+    () => boundedAxisEntries(
+      virtualSheet.rowIndexMap,
+      virtualSheet.range.rowStart,
+      virtualSheet.range.rowEnd,
+      object.rows,
+    ).map(({ position, index: row }) => ({ position, row })),
     [object.rows, virtualSheet.range.rowEnd, virtualSheet.range.rowStart, virtualSheet.rowIndexMap],
   );
   const pinnedVisibleRows = useMemo(() => {
@@ -111,12 +114,12 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
       .sort((left, right) => left.position - right.position);
   }, [object.rows, selectedCoordinates.row, virtualSheet.rowPositionForIndex, visibleRows]);
   const visibleColumns = useMemo(
-    () => rangeValues(virtualSheet.range.columnStart, virtualSheet.range.columnEnd).map((position) => ({
-      position,
-      column: virtualSheet.columnIndexMap[position],
-    })).filter((entry) => Number.isInteger(entry.column)
-      && entry.column >= 0
-      && entry.column < object.columns),
+    () => boundedAxisEntries(
+      virtualSheet.columnIndexMap,
+      virtualSheet.range.columnStart,
+      virtualSheet.range.columnEnd,
+      object.columns,
+    ).map(({ position, index: column }) => ({ position, column })),
     [object.columns, virtualSheet.columnIndexMap, virtualSheet.range.columnEnd, virtualSheet.range.columnStart],
   );
   const pinnedVisibleColumns = useMemo(() => {
@@ -135,6 +138,7 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
 
   return {
     selectedCoordinates,
+    selectedAddress: canonicalSelectedAddress,
     normalizedSelection,
     showActiveRowContext,
     showActiveColumnContext,

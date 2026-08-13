@@ -85,6 +85,10 @@ export function SheetGridCanvas({
           role="button"
           tabIndex={0}
           aria-label="Select entire sheet"
+          aria-selected={normalizedSelection?.rowStart === 0
+            && normalizedSelection?.rowEnd === object.rows - 1
+            && normalizedSelection?.columnStart === 0
+            && normalizedSelection?.columnEnd === object.columns - 1}
           onPointerDown={onStartCornerSelection}
           onClick={() => {
             onSelectRange?.("A1", cellAddress(object.rows - 1, object.columns - 1), selectedAddress);
@@ -117,6 +121,7 @@ export function SheetGridCanvas({
               className={`column-header virtual-sheet-header ${columnGroup ? "has-group" : ""} ${showActiveColumnContext && selectedCoordinates.column === column ? "is-active" : ""}`}
               role="columnheader"
               tabIndex={0}
+              aria-selected={showActiveColumnContext && selectedCoordinates.column === column}
               aria-colindex={column + 1}
               aria-label={`Select column ${columnLabel(column)}`}
               data-axis-index={column}
@@ -179,6 +184,7 @@ export function SheetGridCanvas({
               className={`row-header virtual-sheet-header ${rowGroup ? "has-group" : ""} ${showActiveRowContext && selectedCoordinates.row === row ? "is-active" : ""}`}
               role="rowheader"
               tabIndex={0}
+              aria-selected={showActiveRowContext && selectedCoordinates.row === row}
               aria-rowindex={row + 1}
               aria-label={`Select row ${row + 1}`}
               data-axis-index={row}
