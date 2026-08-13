@@ -233,6 +233,7 @@ function validatePackageIndex(index) {
 export async function readPortableV4Package(input, options = {}) {
   let zip;
   try {
+    const JSZip = (await import("jszip")).default;
     zip = await JSZip.loadAsync(input);
   } catch (error) {
     throw new PortableCompatibilityError("MALFORMED_PACKAGE", "The portable bundle is not a readable ZIP package.", { cause: error });
