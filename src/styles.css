@@ -683,6 +683,30 @@ input:focus-visible,
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent), var(--cell-hover-shadow);
 }
 
+.sheet-cell.is-formula-reference::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, var(--accent) 0 5px, transparent 5px 10px) 0 0 / 100% 1px repeat-x,
+    repeating-linear-gradient(90deg, var(--accent) 0 5px, transparent 5px 10px) 0 100% / 100% 1px repeat-x,
+    repeating-linear-gradient(0deg, var(--accent) 0 5px, transparent 5px 10px) 0 0 / 1px 100% repeat-y,
+    repeating-linear-gradient(0deg, var(--accent) 0 5px, transparent 5px 10px) 100% 0 / 1px 100% repeat-y;
+  animation: formula-reference-march 720ms linear infinite;
+}
+
+.sheet-cell.is-selected.is-editing.is-formula-reference::after {
+  display: block;
+}
+
+@keyframes formula-reference-march {
+  to {
+    background-position: 10px 0, -10px 0, 0 -10px, 0 10px;
+  }
+}
+
 .formula-suggestions-label {
   padding: 4px 7px 5px;
   color: var(--faint);

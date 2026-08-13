@@ -210,9 +210,16 @@ export function useSheetGridGestures({
     active.lastLabel = label;
     active.callbacks?.setFormulaReferenceRange?.(range);
     active.callbacks?.onCellChange?.(active.sourceCellId, {
-      formula: `${active.prefix}${label}${active.suffix}`,
+      formula: `${active.prefix}${label},${active.suffix}`,
       value: "",
       embed: null,
+    });
+    window.requestAnimationFrame(() => {
+      const editor = document.querySelector(".cell-editor");
+      if (!editor) return;
+      editor.focus();
+      const caret = active.prefix.length + label.length + 1;
+      editor.setSelectionRange(caret, caret);
     });
   }, []);
 

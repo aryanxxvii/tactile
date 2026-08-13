@@ -52,7 +52,12 @@ test("shows formula hints inside the editing tile and inserts a clicked cell ref
   await expect(editor).toHaveValue("=SUM(");
 
   await page.locator('.sheet-cell[data-cell-address="A2"]').click();
-  await expect(editor).toHaveValue("=SUM(A2");
+  await expect(editor).toHaveValue("=SUM(A2,");
+  await expect(page.locator('.sheet-cell[data-cell-address="A2"]')).toHaveCSS("border-color", /rgb/);
+  const clickedReferenceStyle = await page
+    .locator('.sheet-cell[data-cell-address="A2"]')
+    .evaluate((element) => getComputedStyle(element, "::after").backgroundImage);
+  expect(clickedReferenceStyle).toContain("repeating-linear-gradient");
 });
 
 test("inserts a selected cell range into an in-tile formula", async ({ page }) => {
@@ -72,8 +77,12 @@ test("inserts a selected cell range into an in-tile formula", async ({ page }) =
   await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 4 });
   await page.mouse.up();
 
-  await expect(editor).toHaveValue("=SUM(A2:A4");
+  await expect(editor).toHaveValue("=SUM(A2:A4,");
   await expect(page.locator('.sheet-cell[data-cell-address="A4"]')).toHaveClass(/is-formula-reference/);
+  const rangeReferenceStyle = await page
+    .locator('.sheet-cell[data-cell-address="A4"]')
+    .evaluate((element) => getComputedStyle(element, "::after").backgroundImage);
+  expect(rangeReferenceStyle).toContain("repeating-linear-gradient");
 });
 
 test("applies top, middle, and bottom vertical alignment to the active tile", async ({ page }) => {
