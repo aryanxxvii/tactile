@@ -21,6 +21,107 @@ test("keeps the column label lane intact on the first few scroll pixels", async 
   expect(state.headerBottom).toBeCloseTo(state.scrollTop + state.headerHeight, 1);
 });
 
+test("keeps active, hovered, and selected cells below the sticky column identifiers", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+  await sheet.evaluate((element) => element.scrollTo({ top: 12, left: 0, behavior: "auto" }));
+
+  const inspectPaint = (address) =>
+    sheet.evaluate((element, targetAddress) => {
+      const rail = element.querySelector(".sheet-column-header-rail");
+      const cell = [...element.querySelectorAll(".sheet-cell")].find(
+        (node) => node.dataset.cellAddress === targetAddress,
+      );
+      const slot = cell?.closest(".virtual-cell-slot");
+      if (!rail || !cell || !slot) throw new Error(`The ${targetAddress} paint fixture is not mounted.`);
+
+      const railBox = rail.getBoundingClientRect();
+      const cellBox = cell.getBoundingClientRect();
+      const overlapTop = Math.max(railBox.top, cellBox.top);
+      const overlapBottom = Math.min(railBox.bottom, cellBox.bottom);
+      const overlapExists = overlapBottom > overlapTop;
+      const overlapX = cellBox.left + cellBox.width / 2;
+      const overlapY = (overlapTop + overlapBottom) / 2;
+      const paintedKinds = overlapExists
+        ? document
+            .elementsFromPoint(overlapX, overlapY)
+            .map((node) =>
+              node.closest?.(".column-header") ? "column-header" : node.closest?.(".sheet-cell") ? "sheet-cell" : null,
+            )
+        : [];
+      const zIndex = (node) => Number.parseInt(getComputedStyle(node).zIndex || "0", 10);
+      const dataSlotZs = [...element.querySelectorAll(".virtual-cell-slot")].map(zIndex);
+
+      return {
+        address: targetAddress,
+        overlapExists,
+        topmostSheetPaint: paintedKinds.find(Boolean) || null,
+        railZ: zIndex(rail),
+        slotZ: zIndex(slot),
+        maxDataSlotZ: Math.max(0, ...dataSlotZs),
+        selectionInset: getComputedStyle(cell, "::after").inset,
+      };
+    }, address);
+
+  await sheet.locator('.sheet-cell[data-cell-address="B1"]').hover();
+  await expect
+    .poll(() => inspectPaint("B1"))
+    .toMatchObject({
+      overlapExists: true,
+      topmostSheetPaint: "column-header",
+    });
+  const firstRowHover = await inspectPaint("B1");
+  expect(firstRowHover.maxDataSlotZ).toBeLessThan(firstRowHover.railZ);
+  expect(firstRowHover.slotZ).toBeLessThan(firstRowHover.railZ);
+
+  await sheet.locator('.sheet-cell[data-cell-address="B1"]').click();
+  await sheet.evaluate((element) => element.scrollTo({ top: 12, left: 0, behavior: "auto" }));
+  await expect.poll(() => sheet.evaluate((element) => element.scrollTop)).toBe(12);
+  await expect
+    .poll(() => inspectPaint("B1"))
+    .toMatchObject({
+      overlapExists: true,
+      topmostSheetPaint: "column-header",
+      selectionInset: "0px",
+    });
+  const firstRowSelection = await inspectPaint("B1");
+  expect(firstRowSelection.slotZ).toBeLessThan(firstRowSelection.railZ);
+
+  const deepAddress = "B140";
+  const deepScrollTop = 31 * 139 + 12;
+  await sheet.evaluate((element, target) => {
+    element.scrollTo({ top: Math.min(target, element.scrollHeight - element.clientHeight), left: 0, behavior: "auto" });
+  }, deepScrollTop);
+  await expect.poll(() => sheet.evaluate((element) => element.scrollTop)).toBeGreaterThan(3000);
+
+  const deepCell = sheet.locator(`.sheet-cell[data-cell-address="${deepAddress}"]`);
+  await expect(deepCell).toBeVisible();
+  await deepCell.click();
+  await sheet.evaluate((element, target) => {
+    element.scrollTo({ top: Math.min(target, element.scrollHeight - element.clientHeight), left: 0, behavior: "auto" });
+  }, deepScrollTop);
+  await expect.poll(() => sheet.evaluate((element) => element.scrollTop)).toBeGreaterThan(3000);
+  await expect
+    .poll(() => inspectPaint(deepAddress))
+    .toMatchObject({
+      overlapExists: true,
+      topmostSheetPaint: "column-header",
+      selectionInset: "0px",
+    });
+  const deepSelection = await inspectPaint(deepAddress);
+  expect(deepSelection.maxDataSlotZ).toBeLessThan(deepSelection.railZ);
+  expect(deepSelection.slotZ).toBeLessThan(deepSelection.railZ);
+
+  const deepHover = sheet.locator('.sheet-cell[data-cell-address="B141"]');
+  await expect(deepHover).toBeVisible();
+  await deepHover.hover();
+  const deepHoverPaint = await inspectPaint("B141");
+  expect(deepHoverPaint.slotZ).toBeLessThan(deepHoverPaint.railZ);
+  expect(deepHoverPaint.maxDataSlotZ).toBeLessThan(deepHoverPaint.railZ);
+});
+
 test("keeps the bounded window and both sticky rails aligned on the first frame of a fast wheel jump", async ({
   page,
 }) => {
