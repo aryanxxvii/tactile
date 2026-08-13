@@ -466,12 +466,18 @@ export function useSheetGridGestures({
 
   const startSelection = useCallback((event, cell) => {
     if (event.button !== 0 || formulaEditingCellId) return;
+    // Let the browser own drags that begin on a cell's value text. A grid
+    // selection gesture would otherwise capture the pointer before a partial
+    // text selection can be painted, while clicks still select the cell.
+    const selectingText = event.target instanceof Element
+      && event.target.closest(".cell-value");
     event.currentTarget.focus({ preventScroll: true });
     const anchor = event.shiftKey
       ? (selectionRange?.anchor || selectedAddress)
       : cell.address;
     if (event.shiftKey) onSelectRange?.(anchor, cell.address);
     else onSelect(cell.address);
+    if (selectingText) return;
     focusSelectedGestureCell(object.id, cell.address);
     if (!cell.embed) {
       const captureTarget = scrollRef.current || event.currentTarget;
