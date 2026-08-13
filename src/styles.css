@@ -5674,13 +5674,13 @@ kbd {
 }
 
 /* The Files layer owns only the workspace lane. Keep the 32px bottom dock in
-   its own higher stacking context so the transient workspace scrim can never
-   tint or dim the global controls. */
+   its own higher stacking context and give that lane an opaque Paper surface
+   so the transient workspace scrim cannot show through its transparent gaps. */
 .tactile-app:has(> .files-layer):not(.has-floating-layer):not(.settings-open) .app-bottom-bar {
   z-index: 240;
   opacity: 1;
   filter: none;
-  background: transparent;
+  background: var(--paper);
 }
 
 .files-scrim {
