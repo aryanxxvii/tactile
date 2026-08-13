@@ -89,7 +89,9 @@
 ## Wave 6 — Final integration and legacy removal
 
 - [ ] Z01 — Integration
+  - Main-branch integration is current and the safe listener/path/bracket cleanup is committed, but the legacy `useLocalWorkspace`/shadow path and 89 JavaScript/JSX production files remain; removal needs a dedicated engine-to-React integration pass.
 - [ ] Z02 — Release candidate
+  - Release-candidate evidence remains blocked by strict performance/leak budgets, coverage instrumentation, full-browser completion, and cross-platform native packaging/smoke prerequisites.
 
 ## Final release requirements
 
