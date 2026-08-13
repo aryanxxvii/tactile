@@ -247,6 +247,7 @@ export function SheetGridCanvas({
               <SheetCell
                 objectId={object.id}
                 cell={cell}
+                embeddedObject={cell.embed ? workspaceObjects?.[cell.embed.objectId] : null}
                 displayValue={displayValue}
                 conditionalTone={conditionalToneForCell(object, cell, calculatedValue)}
                 selected={isActiveCell}

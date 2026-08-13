@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { objectTypeFor } from "../objectTypes.js";
+import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 
 export function SheetCell({
   objectId,
   cell,
+  embeddedObject,
   displayValue,
   selected,
   inRange,
@@ -24,7 +25,6 @@ export function SheetCell({
 }) {
   const inputRef = useRef(null);
   const openTimerRef = useRef(null);
-  const EmbedIcon = cell.embed ? objectTypeFor(cell.embed.type).icon : null;
   const shownValue = displayValue ?? cell.value ?? "";
   const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
   const formulaError = cell.formula && String(shownValue).startsWith("#");
@@ -164,7 +164,14 @@ export function SheetCell({
         />
       ) : (
         <span className="cell-content">
-          {EmbedIcon ? <EmbedIcon className="embed-icon" size={14} stroke={1.55} aria-hidden="true" /> : null}
+          {cell.embed ? (
+            <ObjectGlyph
+              item={embeddedObject || { type: cell.embed.type }}
+              className="embed-icon"
+              size={14}
+              stroke={1.55}
+            />
+          ) : null}
           <span className="cell-value">{shownValue || " "}</span>
         </span>
       )}

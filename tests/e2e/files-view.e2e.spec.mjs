@@ -459,6 +459,15 @@ test("Files lets users recolor a default icon or replace it with emoji", async (
   await expect(homeRow.locator(".files-tree-icon.object-glyph-emoji")).toHaveText("🧠");
 });
 
+test("embedded sheet icons use the linked object's Files color", async ({ page }) => {
+  await page.goto("/");
+  const workspace = filesWorkspace();
+  workspace.objects.child.iconColor = "amber";
+  await importWorkspace(page, workspace);
+
+  await expect(page.locator('.sheet-cell[data-cell-address="A1"] .embed-icon')).toHaveCSS("color", "rgb(169, 121, 45)");
+});
+
 test("Files applies hover and focus feedback to the full nested row while keeping palette actions intact", async ({
   page,
 }) => {
