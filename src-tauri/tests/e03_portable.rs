@@ -1,7 +1,9 @@
-#[path = "../src/portable/mod.rs"]
-mod portable;
+#![allow(dead_code, unused_imports)]
+
 #[path = "../src/assets/mod.rs"]
 mod assets;
+#[path = "../src/portable/mod.rs"]
+mod portable;
 
 use std::fs;
 use std::io::Cursor;
@@ -166,20 +168,35 @@ fn v4_unknown_fields_and_native_resources_round_trip() {
         Some("direct lookup")
     );
     assert_eq!(
-        fs::read(imported.file_path("objects/doc-notes/content.md").expect("markdown path"))
-            .expect("markdown bytes"),
+        fs::read(
+            imported
+                .file_path("objects/doc-notes/content.md")
+                .expect("markdown path")
+        )
+        .expect("markdown bytes"),
         b"## Native notes\n\nPortable Markdown stays UTF-8: r\xc3\xa9sum\xc3\xa9.\n"
     );
     assert_eq!(
-        fs::read(imported.asset("asset-ref").expect("asset").relative_path.clone().as_path())
-            .err()
-            .is_some(),
+        fs::read(
+            imported
+                .asset("asset-ref")
+                .expect("asset")
+                .relative_path
+                .clone()
+                .as_path()
+        )
+        .err()
+        .is_some(),
         true,
         "asset paths are rooted through the import result"
     );
-    let asset_path = imported.root.join(&imported.asset("asset-ref").expect("asset").relative_path);
+    let asset_path = imported
+        .root
+        .join(&imported.asset("asset-ref").expect("asset").relative_path);
     assert_eq!(fs::read(asset_path).expect("asset bytes"), vec![0, 1, 2, 3]);
-    assert!(events.iter().any(|event| event.phase == portable::ProgressPhase::Extract));
+    assert!(events
+        .iter()
+        .any(|event| event.phase == portable::ProgressPhase::Extract));
 
     let second_destination = temp_path("round-trip");
     let resources = imported.resource_exports();
@@ -209,12 +226,14 @@ fn v4_unknown_fields_and_native_resources_round_trip() {
         Some("e03.fixture.v1")
     );
     assert_eq!(
-        fs::read(second.root.join(
-            &second
-                .file("objects/image-ref/content.png")
-                .expect("image resource")
-                .relative_path,
-        ))
+        fs::read(
+            second.root.join(
+                &second
+                    .file("objects/image-ref/content.png")
+                    .expect("image resource")
+                    .relative_path,
+            )
+        )
         .expect("binary resource"),
         vec![0, 1, 2, 3]
     );
@@ -268,41 +287,36 @@ fn malformed_and_oversized_packages_fail_before_destination_creation() {
     assert!(!destination.exists());
 }
 
+fn decode_base64(value: &str) -> Vec<u8> {
+    let mut output = Vec::new();
+    let mut accumulator = 0u32;
+    let mut bits = 0u8;
+    for byte in value.bytes() {
+        let digit = match byte {
+            b'A'..=b'Z' => byte - b'A',
+            b'a'..=b'z' => byte - b'a' + 26,
+            b'0'..=b'9' => byte - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            b'=' => break,
+            _ => continue,
+        };
+        accumulator = (accumulator << 6) | u32::from(digit);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            output.push((accumulator >> bits) as u8);
+            accumulator &= (1 << bits) - 1;
+        }
+    }
+    output
+}
+
 #[test]
 fn deflated_zip_entries_stream_through_the_same_boundary() {
-    let bytes: &[u8] = &[
-        80, 75, 3, 4, 20, 0, 0, 0, 8, 0, 77, 8, 14, 93, 25, 98, 245, 60, 67, 0, 0, 0, 0,
-        64, 0, 0, 11, 0, 0, 0, 112, 97, 121, 108, 111, 97, 100, 46, 116, 120, 116, 237,
-        199, 161, 13, 0, 32, 12, 0, 176, 87, 120, 109, 201, 134, 90, 2, 2, 195, 247, 124,
-        129, 106, 93, 179, 102, 199, 169, 177, 227, 246, 138, 28, 233, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238, 238,
-        223, 255, 0, 80, 75, 1, 2, 20, 0, 20, 0, 0, 0, 8, 0, 77, 8, 14, 93, 25, 98,
-        245, 60, 67, 0, 0, 0, 0, 64, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 128, 1, 0, 0, 0, 0, 112, 97, 121, 108, 111, 97, 100, 46, 116, 120,
-        116, 80, 75, 5, 6, 0, 0, 0, 0, 1, 0, 1, 0, 57, 0, 0, 0, 108, 0, 0, 0, 0, 0,
-    ];
+    let bytes = decode_base64(
+        "UEsDBBQAAAAIALUIDl1GAqKeEgAAAGgAAAALAAAAcGF5bG9hZC50eHTLSM3JyVdISU3LSSxJzaAdBwBQSwECFAAUAAAACAC1CA5dRgKinhIAAABoAAAACwAAAAAAAAAAAAAAgAEAAAAAcGF5bG9hZC50eHRQSwUGAAAAAAEAAQA5AAAAOwAAAAAA",
+    );
     let token = CancellationToken::new();
     let mut control = OperationControl::new(&token);
     let mut archive =
@@ -310,8 +324,7 @@ fn deflated_zip_entries_stream_through_the_same_boundary() {
     let decoded = archive
         .read_entry_bytes("payload.txt", &mut control)
         .expect("deflated entry");
-    assert_eq!(decoded.len(), 16 * 1024);
-    assert!(decoded.starts_with(b"deflate payload "));
+    assert_eq!(decoded, b"hello deflate".repeat(8));
 }
 
 #[test]
@@ -340,13 +353,17 @@ fn asset_store_streams_native_handles_and_cleans_cancelled_writes() {
             &mut control,
         )
         .expect("asset write");
-    assert!(handle.path.ends_with(Path::new("assets/asset-stream/payload.bin")));
+    assert!(handle
+        .path
+        .ends_with(Path::new("assets/asset-stream/payload.bin")));
     assert!(progress_count > 0);
     let mut copied = Vec::new();
     let token = CancellationToken::new();
     let mut control = OperationControl::new(&token);
     assert_eq!(
-        store.stream_to(&handle, &mut copied, &mut control).expect("asset read"),
+        store
+            .stream_to(&handle, &mut copied, &mut control)
+            .expect("asset read"),
         bytes.len() as u64
     );
     assert_eq!(copied, bytes);

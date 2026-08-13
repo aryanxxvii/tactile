@@ -53,7 +53,9 @@ pub fn coordinates_from_address(address: &str) -> Option<(u64, u64)> {
         if !upper.is_ascii_uppercase() {
             return None;
         }
-        column = column.checked_mul(26)?.checked_add(u64::from(upper - b'A' + 1))?;
+        column = column
+            .checked_mul(26)?
+            .checked_add(u64::from(upper - b'A' + 1))?;
     }
     column.checked_sub(1).map(|column| (row, column))
 }

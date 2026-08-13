@@ -89,9 +89,9 @@ impl AssetStore {
             ));
         }
         let final_path = self.path_for(&request.id, &request.file_name)?;
-        let parent = final_path.parent().ok_or_else(|| {
-            PortableError::invalid_request("asset path has no parent directory")
-        })?;
+        let parent = final_path
+            .parent()
+            .ok_or_else(|| PortableError::invalid_request("asset path has no parent directory"))?;
         fs::create_dir_all(parent).map_err(PortableError::from)?;
         let counter = ASSET_TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let temporary_path = parent.join(format!(".asset-{counter}.part"));
@@ -133,9 +133,7 @@ impl AssetStore {
                 if size != expected_size {
                     return Err(PortableError::new(
                         PortableErrorCode::MalformedAsset,
-                        format!(
-                            "asset size mismatch: expected {expected_size}, received {size}"
-                        ),
+                        format!("asset size mismatch: expected {expected_size}, received {size}"),
                     ));
                 }
             }

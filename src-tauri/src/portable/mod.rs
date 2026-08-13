@@ -303,7 +303,8 @@ pub fn safe_archive_path(path: &str, max_path_bytes: usize) -> PortableResult<St
         ));
     }
     for component in path.split('/') {
-        if component.is_empty() || component == "." || component == ".." || component.contains(':') {
+        if component.is_empty() || component == "." || component == ".." || component.contains(':')
+        {
             return Err(PortableError::new(
                 PortableErrorCode::ZipPathTraversal,
                 format!("archive path contains an unsafe component: {path}"),
@@ -333,7 +334,9 @@ fn temporary_directory_for(destination: &Path) -> PortableResult<PathBuf> {
     let name = destination
         .file_name()
         .and_then(|value| value.to_str())
-        .ok_or_else(|| PortableError::invalid_request("import destination has no valid file name"))?;
+        .ok_or_else(|| {
+            PortableError::invalid_request("import destination has no valid file name")
+        })?;
     for _ in 0..100 {
         let counter = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let candidate = parent.join(format!(".{name}.tactile-import-{counter}"));
@@ -353,7 +356,10 @@ fn finish_staging_directory(staging: &Path, destination: &Path) -> PortableResul
     if destination.exists() {
         return Err(PortableError::new(
             PortableErrorCode::DestinationExists,
-            format!("import destination already exists: {}", destination.display()),
+            format!(
+                "import destination already exists: {}",
+                destination.display()
+            ),
         ));
     }
     fs::rename(staging, destination).map_err(PortableError::from)
@@ -389,10 +395,18 @@ pub fn portable_version_of(value: &JsonValue) -> PortableResult<u64> {
     let raw = value
         .get("formatVersion")
         .or_else(|| value.get("version"))
-        .ok_or_else(|| PortableError::new(PortableErrorCode::MalformedVersion, "format version is missing"))?;
-    let version = raw
-        .as_u64()
-        .ok_or_else(|| PortableError::new(PortableErrorCode::MalformedVersion, "format version must be a positive integer"))?;
+        .ok_or_else(|| {
+            PortableError::new(
+                PortableErrorCode::MalformedVersion,
+                "format version is missing",
+            )
+        })?;
+    let version = raw.as_u64().ok_or_else(|| {
+        PortableError::new(
+            PortableErrorCode::MalformedVersion,
+            "format version must be a positive integer",
+        )
+    })?;
     if version == 0 {
         return Err(PortableError::new(
             PortableErrorCode::MalformedVersion,
@@ -415,7 +429,10 @@ fn assert_supported_version(value: &JsonValue) -> PortableResult<u64> {
     Ok(version)
 }
 
-fn collection<'a>(value: Option<&'a JsonValue>, label: &str) -> PortableResult<Vec<(String, &'a JsonValue)>> {
+fn collection<'a>(
+    value: Option<&'a JsonValue>,
+    label: &str,
+) -> PortableResult<Vec<(String, &'a JsonValue)>> {
     let Some(value) = value else {
         return Ok(Vec::new());
     };
@@ -513,7 +530,10 @@ fn validate_reference(
 
 fn cell_reference(cell: &JsonValue) -> Option<String> {
     if let Some(embed) = cell.get("embed") {
-        if let Some(object_id) = embed.as_str().and_then(|value| parse_tactile_link(value).map(|link| link.object_id)) {
+        if let Some(object_id) = embed
+            .as_str()
+            .and_then(|value| parse_tactile_link(value).map(|link| link.object_id))
+        {
             return Some(object_id);
         }
         if let Some(object_id) = embed.get("objectId").and_then(JsonValue::as_str) {
@@ -567,7 +587,10 @@ pub fn validate_portable_workspace(
                 ));
             }
             total_asset_bytes = total_asset_bytes.checked_add(size).ok_or_else(|| {
-                PortableError::new(PortableErrorCode::OversizedWorkspace, "asset size total overflow")
+                PortableError::new(
+                    PortableErrorCode::OversizedWorkspace,
+                    "asset size total overflow",
+                )
             })?;
             if total_asset_bytes > options.limits.max_total_asset_bytes {
                 return Err(PortableError::new(
@@ -598,12 +621,15 @@ pub fn validate_portable_workspace(
                         format!("object {key} has an invalid parent record"),
                     ));
                 }
-                let parent_id = parent.get("parentObjectId").and_then(JsonValue::as_str).ok_or_else(|| {
-                    PortableError::new(
-                        PortableErrorCode::MalformedReference,
-                        format!("object {key} parent is missing parentObjectId"),
-                    )
-                })?;
+                let parent_id = parent
+                    .get("parentObjectId")
+                    .and_then(JsonValue::as_str)
+                    .ok_or_else(|| {
+                        PortableError::new(
+                            PortableErrorCode::MalformedReference,
+                            format!("object {key} parent is missing parentObjectId"),
+                        )
+                    })?;
                 validate_reference(parent_id, &object_ids, &format!("object {key} parent"))?;
                 if let Some(link_id) = parent.get("linkId") {
                     if !matches!(link_id, JsonValue::String(_)) {
@@ -668,7 +694,8 @@ pub fn validate_portable_workspace(
                         format!("cell {cell_key} in object {key} has an invalid embed"),
                     ));
                 }
-            } else if let Some(embed_object_id) = embed.get("objectId").and_then(JsonValue::as_str) {
+            } else if let Some(embed_object_id) = embed.get("objectId").and_then(JsonValue::as_str)
+            {
                 if let Some(link_id) = embed.get("linkId") {
                     if !matches!(link_id, JsonValue::String(_)) {
                         return Err(PortableError::new(
@@ -809,7 +836,10 @@ pub fn export_portable<W: Write>(
     archive.write_entry("manifest.json", &manifest_bytes, control)?;
     archive.write_entry("workspace.json", &workspace_bytes, control)?;
 
-    let mut paths = BTreeSet::from([String::from("manifest.json"), String::from("workspace.json")]);
+    let mut paths = BTreeSet::from([
+        String::from("manifest.json"),
+        String::from("workspace.json"),
+    ]);
     for resource in &package.resources {
         control.check()?;
         let path = safe_archive_path(&resource.path, limits.max_path_bytes)?;
@@ -823,7 +853,12 @@ pub fn export_portable<W: Write>(
             ExportSource::Bytes(bytes) => archive.write_entry(&path, bytes, control)?,
             ExportSource::File(file_path) => {
                 let mut file = File::open(file_path).map_err(PortableError::from)?;
-                archive.write_entry_from_reader(&path, &mut file, resource.source.size()?, control)?;
+                archive.write_entry_from_reader(
+                    &path,
+                    &mut file,
+                    resource.source.size()?,
+                    control,
+                )?;
             }
         }
     }
@@ -901,7 +936,11 @@ impl PortableImportResult {
     pub fn resource_exports(&self) -> Vec<ExportEntry> {
         self.files
             .values()
-            .filter(|file| !file.is_directory && file.archive_path != "manifest.json" && file.archive_path != "workspace.json")
+            .filter(|file| {
+                !file.is_directory
+                    && file.archive_path != "manifest.json"
+                    && file.archive_path != "workspace.json"
+            })
             .map(|file| ExportEntry::file(&file.archive_path, self.root.join(&file.relative_path)))
             .collect()
     }
@@ -920,7 +959,11 @@ impl Default for PortableImportOptions {
     }
 }
 
-fn archive_file_path(value: &JsonValue, field: &str, limits: &PortableLimits) -> PortableResult<Option<String>> {
+fn archive_file_path(
+    value: &JsonValue,
+    field: &str,
+    limits: &PortableLimits,
+) -> PortableResult<Option<String>> {
     let Some(path) = value.get(field).and_then(JsonValue::as_str) else {
         return Ok(None);
     };
@@ -950,7 +993,11 @@ fn ensure_referenced_file<R: Read + Seek>(
     Ok(())
 }
 
-fn metadata_index(object_id: &str, archive_path: &str, raw: JsonValue) -> PortableResult<SheetMetadataIndex> {
+fn metadata_index(
+    object_id: &str,
+    archive_path: &str,
+    raw: JsonValue,
+) -> PortableResult<SheetMetadataIndex> {
     let cells = match raw.get("cells") {
         None => BTreeMap::new(),
         Some(JsonValue::Object(values)) => values
@@ -1060,7 +1107,10 @@ fn validate_package_resources<R: Read + Seek>(
             }
         }
         total = total.checked_add(entry.uncompressed_size).ok_or_else(|| {
-            PortableError::new(PortableErrorCode::OversizedWorkspace, "asset size total overflow")
+            PortableError::new(
+                PortableErrorCode::OversizedWorkspace,
+                "asset size total overflow",
+            )
         })?;
         if total > limits.max_total_asset_bytes {
             return Err(PortableError::new(
@@ -1082,7 +1132,10 @@ pub fn import_portable<R: Read + Seek>(
     if destination.exists() {
         return Err(PortableError::new(
             PortableErrorCode::DestinationExists,
-            format!("import destination already exists: {}", destination.display()),
+            format!(
+                "import destination already exists: {}",
+                destination.display()
+            ),
         ));
     }
 
@@ -1183,11 +1236,8 @@ pub fn import_portable<R: Read + Seek>(
             let mut bytes_completed = 0u64;
             for (index, entry) in entries.iter().enumerate() {
                 control.check()?;
-                let relative_path = PathBuf::from(
-                    entry
-                        .path
-                        .replace('/', std::path::MAIN_SEPARATOR_STR),
-                );
+                let relative_path =
+                    PathBuf::from(entry.path.replace('/', std::path::MAIN_SEPARATOR_STR));
                 let output_path = safe_output_path(&staging, &entry.path)?;
                 if entry.is_directory {
                     fs::create_dir_all(&output_path).map_err(PortableError::from)?;

@@ -200,7 +200,9 @@ pub fn write_json<W: std::io::Write>(
         JsonValue::Null => writer.write_all(b"null").map_err(PortableError::from),
         JsonValue::Bool(true) => writer.write_all(b"true").map_err(PortableError::from),
         JsonValue::Bool(false) => writer.write_all(b"false").map_err(PortableError::from),
-        JsonValue::Number(number) => writer.write_all(number.as_bytes()).map_err(PortableError::from),
+        JsonValue::Number(number) => writer
+            .write_all(number.as_bytes())
+            .map_err(PortableError::from),
         JsonValue::String(string) => write_json_string(writer, string),
         JsonValue::Array(values) => {
             writer.write_all(b"[").map_err(PortableError::from)?;
@@ -228,7 +230,8 @@ pub fn write_json<W: std::io::Write>(
                     write_indent(writer, depth + 1)?;
                 }
                 write_json_string(writer, key)?;
-                writer.write_all(if pretty { b": " } else { b":" })
+                writer
+                    .write_all(if pretty { b": " } else { b":" })
                     .map_err(PortableError::from)?;
                 write_json(writer, child, pretty, depth + 1)?;
             }
@@ -261,7 +264,9 @@ fn write_json_string<W: std::io::Write>(writer: &mut W, value: &str) -> Portable
             '\t' => writer.write_all(b"\\t").map_err(PortableError::from)?,
             character if character <= '\u{1f}' => {
                 let escape = format!("\\u{:04x}", character as u32);
-                writer.write_all(escape.as_bytes()).map_err(PortableError::from)?;
+                writer
+                    .write_all(escape.as_bytes())
+                    .map_err(PortableError::from)?;
             }
             character => {
                 let mut encoded = [0u8; 4];
@@ -375,9 +380,11 @@ impl<'a> Parser<'a> {
             };
             self.index += 1;
             match byte {
-                b'"' => return String::from_utf8(output).map_err(|_| {
-                    PortableError::malformed_json("JSON string contains invalid UTF-8")
-                }),
+                b'"' => {
+                    return String::from_utf8(output).map_err(|_| {
+                        PortableError::malformed_json("JSON string contains invalid UTF-8")
+                    })
+                }
                 b'\\' => {
                     let Some(&escaped) = self.bytes.get(self.index) else {
                         return Err(PortableError::malformed_json("unfinished JSON escape"));
@@ -499,7 +506,10 @@ impl<'a> Parser<'a> {
     }
 
     fn skip_whitespace(&mut self) {
-        while matches!(self.bytes.get(self.index), Some(b' ' | b'\n' | b'\r' | b'\t')) {
+        while matches!(
+            self.bytes.get(self.index),
+            Some(b' ' | b'\n' | b'\r' | b'\t')
+        ) {
             self.index += 1;
         }
     }

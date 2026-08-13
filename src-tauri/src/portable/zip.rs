@@ -50,8 +50,10 @@ impl<R: Read + Seek> ZipArchive<R> {
         let mut tail = vec![0u8; tail_length as usize];
         reader.read_exact(&mut tail).map_err(PortableError::from)?;
 
-        let eocd_offset = find_signature_from_end(&tail, END_OF_CENTRAL_SIGNATURE)
-            .ok_or_else(|| PortableError::new(PortableErrorCode::ZipSignature, "ZIP end record is missing"))?;
+        let eocd_offset =
+            find_signature_from_end(&tail, END_OF_CENTRAL_SIGNATURE).ok_or_else(|| {
+                PortableError::new(PortableErrorCode::ZipSignature, "ZIP end record is missing")
+            })?;
         if eocd_offset + 22 > tail.len() {
             return Err(PortableError::new(
                 PortableErrorCode::ZipSignature,
@@ -86,7 +88,10 @@ impl<R: Read + Seek> ZipArchive<R> {
             ));
         }
         let central_end = central_offset.checked_add(central_size).ok_or_else(|| {
-            PortableError::new(PortableErrorCode::ZipLimit, "ZIP central directory size overflows")
+            PortableError::new(
+                PortableErrorCode::ZipLimit,
+                "ZIP central directory size overflows",
+            )
         })?;
         if central_end > file_length {
             return Err(PortableError::new(
@@ -103,7 +108,9 @@ impl<R: Read + Seek> ZipArchive<R> {
         let mut total_uncompressed_bytes = 0u64;
         for _ in 0..entry_count {
             let mut header = [0u8; 46];
-            reader.read_exact(&mut header).map_err(PortableError::from)?;
+            reader
+                .read_exact(&mut header)
+                .map_err(PortableError::from)?;
             if read_u32(&header, 0)? != CENTRAL_FILE_SIGNATURE {
                 return Err(PortableError::new(
                     PortableErrorCode::ZipSignature,
@@ -162,7 +169,9 @@ impl<R: Read + Seek> ZipArchive<R> {
             let mut extra = vec![0u8; extra_length];
             reader.read_exact(&mut extra).map_err(PortableError::from)?;
             let mut comment = vec![0u8; comment_length];
-            reader.read_exact(&mut comment).map_err(PortableError::from)?;
+            reader
+                .read_exact(&mut comment)
+                .map_err(PortableError::from)?;
             let path = String::from_utf8(name).map_err(|_| {
                 PortableError::new(
                     PortableErrorCode::InvalidPath,
@@ -202,7 +211,9 @@ impl<R: Read + Seek> ZipArchive<R> {
             }
             total_uncompressed_bytes = total_uncompressed_bytes
                 .checked_add(uncompressed_size)
-                .ok_or_else(|| PortableError::new(PortableErrorCode::ZipLimit, "ZIP size total overflows"))?;
+                .ok_or_else(|| {
+                    PortableError::new(PortableErrorCode::ZipLimit, "ZIP size total overflows")
+                })?;
             if total_uncompressed_bytes > limits.max_total_uncompressed_bytes {
                 return Err(PortableError::new(
                     PortableErrorCode::ZipLimit,
@@ -243,14 +254,20 @@ impl<R: Read + Seek> ZipArchive<R> {
     }
 
     pub fn entry(&self, path: &str) -> Option<&ZipEntryInfo> {
-        self.by_path.get(path).and_then(|index| self.entries.get(*index))
+        self.by_path
+            .get(path)
+            .and_then(|index| self.entries.get(*index))
     }
 
     pub fn total_uncompressed_bytes(&self) -> u64 {
         self.total_uncompressed_bytes
     }
 
-    pub fn read_json(&mut self, path: &str, control: &mut OperationControl<'_>) -> PortableResult<super::JsonValue> {
+    pub fn read_json(
+        &mut self,
+        path: &str,
+        control: &mut OperationControl<'_>,
+    ) -> PortableResult<super::JsonValue> {
         let bytes = self.read_entry_bytes(path, control)?;
         parse_json(&bytes)
     }
@@ -286,7 +303,10 @@ impl<R: Read + Seek> ZipArchive<R> {
     ) -> PortableResult<()> {
         control.check()?;
         let entry = self.entries.get(index).cloned().ok_or_else(|| {
-            PortableError::new(PortableErrorCode::MissingEntry, "ZIP entry index is out of range")
+            PortableError::new(
+                PortableErrorCode::MissingEntry,
+                "ZIP entry index is out of range",
+            )
         })?;
         if entry.is_directory {
             return Ok(());
@@ -359,7 +379,9 @@ fn local_data_offset<R: Read + Seek>(
     offset: u64,
     flags: u16,
 ) -> PortableResult<u64> {
-    reader.seek(SeekFrom::Start(offset)).map_err(PortableError::from)?;
+    reader
+        .seek(SeekFrom::Start(offset))
+        .map_err(PortableError::from)?;
     if read_u32_from_reader(reader)? != LOCAL_FILE_SIGNATURE {
         return Err(PortableError::new(
             PortableErrorCode::ZipSignature,
@@ -386,7 +408,12 @@ fn local_data_offset<R: Read + Seek>(
         .checked_add(30)
         .and_then(|value| value.checked_add(name_length))
         .and_then(|value| value.checked_add(extra_length))
-        .ok_or_else(|| PortableError::new(PortableErrorCode::ZipLimit, "ZIP local header offset overflows"))
+        .ok_or_else(|| {
+            PortableError::new(
+                PortableErrorCode::ZipLimit,
+                "ZIP local header offset overflows",
+            )
+        })
 }
 
 struct LimitedReader<'a, R> {
@@ -405,7 +432,9 @@ impl<R: Read> Read for LimitedReader<'_, R> {
         if self.remaining == 0 {
             return Ok(0);
         }
-        let length = buffer.len().min(self.remaining.min(usize::MAX as u64) as usize);
+        let length = buffer
+            .len()
+            .min(self.remaining.min(usize::MAX as u64) as usize);
         let read = self.reader.read(&mut buffer[..length])?;
         self.remaining = self.remaining.saturating_sub(read as u64);
         Ok(read)
@@ -574,7 +603,9 @@ impl<'a, R: Read> BitReader<'a, R> {
         }
         while self.bit_count < count {
             let mut byte = [0u8; 1];
-            self.reader.read_exact(&mut byte).map_err(PortableError::from)?;
+            self.reader
+                .read_exact(&mut byte)
+                .map_err(PortableError::from)?;
             self.bits |= u64::from(byte[0]) << self.bit_count;
             self.bit_count += 8;
         }
@@ -600,7 +631,9 @@ impl<'a, R: Read> BitReader<'a, R> {
             ));
         }
         let mut byte = [0u8; 1];
-        self.reader.read_exact(&mut byte).map_err(PortableError::from)?;
+        self.reader
+            .read_exact(&mut byte)
+            .map_err(PortableError::from)?;
         Ok(byte[0])
     }
 
@@ -682,9 +715,7 @@ impl HuffmanTree {
                     node_index = child as usize;
                 }
             }
-            if tree.nodes[node_index].symbol >= 0
-                || tree.nodes[node_index].child != [-1, -1]
-            {
+            if tree.nodes[node_index].symbol >= 0 || tree.nodes[node_index].child != [-1, -1] {
                 return Err(PortableError::new(
                     PortableErrorCode::ZipSignature,
                     "deflate Huffman tree has a duplicate code",
@@ -770,7 +801,9 @@ fn dynamic_trees<R: Read>(
             "deflate dynamic tree count is invalid",
         ));
     }
-    let order = [16usize, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+    let order = [
+        16usize, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
+    ];
     let mut code_lengths = [0u8; 19];
     for index in 0..code_length_count {
         code_lengths[order[index]] = reader.read_bits(3)? as u8;
@@ -831,19 +864,19 @@ fn dynamic_trees<R: Read>(
 }
 
 const LENGTH_BASE: [usize; 29] = [
-    3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99,
-    115, 131, 163, 195, 227, 258,
+    3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131,
+    163, 195, 227, 258,
 ];
 const LENGTH_EXTRA: [u8; 29] = [
     0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0,
 ];
 const DISTANCE_BASE: [usize; 30] = [
-    1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025,
-    1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577,
+    1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537,
+    2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577,
 ];
 const DISTANCE_EXTRA: [u8; 30] = [
-    0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12,
-    13, 13,
+    0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13,
+    13,
 ];
 
 fn inflate_stream<R: Read, W: Write>(
@@ -984,7 +1017,9 @@ impl<W: Write> ZipWriter<W> {
         control: &mut OperationControl<'_>,
     ) -> PortableResult<()> {
         if self.finished {
-            return Err(PortableError::invalid_request("ZIP writer is already finished"));
+            return Err(PortableError::invalid_request(
+                "ZIP writer is already finished",
+            ));
         }
         let path = super::safe_archive_path(path, self.limits.max_path_bytes)?;
         if self.records.iter().any(|record| record.path == path) {
@@ -1080,7 +1115,9 @@ impl<W: Write> ZipWriter<W> {
 
     pub fn finish(mut self) -> PortableResult<W> {
         if self.finished {
-            return Err(PortableError::invalid_request("ZIP writer is already finished"));
+            return Err(PortableError::invalid_request(
+                "ZIP writer is already finished",
+            ));
         }
         self.finished = true;
         let central_offset = self.offset;
