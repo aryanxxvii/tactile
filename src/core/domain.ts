@@ -233,6 +233,8 @@ export interface CellView extends CellRecord {
 export interface WorkspaceObjectPatch {
   title?: string;
   description?: string;
+  iconEmoji?: string;
+  iconColor?: string;
 }
 
 export interface SheetObjectPatch extends WorkspaceObjectPatch {

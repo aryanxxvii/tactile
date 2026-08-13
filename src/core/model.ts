@@ -12,6 +12,7 @@ import {
   isCellUsed as isCellUsedRuntime,
   materializeCell as materializeCellRuntime,
   normalizeCell as normalizeCellRuntime,
+  normalizeIconEmoji as normalizeIconEmojiRuntime,
   normalizeWorkspace as normalizeWorkspaceRuntime,
   usedSheetBounds as usedSheetBoundsRuntime,
 } from "../model.js";
@@ -66,6 +67,10 @@ export function isCellUsed(cell: CellRecord | null | undefined): boolean {
 
 export function normalizeCell(cell: unknown, fallbackId: string): CellRecord | null {
   return normalizeCellRuntime(cell, fallbackId) as CellRecord | null;
+}
+
+export function normalizeIconEmoji(value: unknown): string {
+  return normalizeIconEmojiRuntime(value);
 }
 
 export function createSheetObject(options: CreateSheetOptions = {}): SheetObject {

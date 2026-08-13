@@ -428,6 +428,54 @@ test("Files uses a custom context menu for workspace object actions", async ({ p
   await expect(page).toHaveURL(/route=home-child/);
 });
 
+test("Files context commands use active Paper tokens for enabled text and icons", async ({ page }) => {
+  await page.goto("/");
+  const workspace = filesWorkspace();
+  workspace.activeThemeId = "contrast-paper";
+  workspace.themes = {
+    "contrast-paper": {
+      id: "contrast-paper",
+      name: "Contrast Paper",
+      tokens: {
+        colorScheme: "dark",
+        paper: "#101820",
+        paperElevated: "#1b2631",
+        ink: "#f4f7fa",
+        muted: "#b5c0c8",
+        faint: "#88949d",
+        line: "#34414d",
+        lineStrong: "#52616d",
+        accent: "#7dc4e8",
+        accentSoft: "rgba(125,196,232,.22)",
+      },
+    },
+  };
+  await importWorkspace(page, workspace);
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+
+  await page.locator('.files-tree-row[data-object-id="child"]').click({ button: "right" });
+  const menu = page.getByRole("menu", { name: "Actions for Child sheet" });
+  await expect(menu).toBeVisible();
+
+  const colors = await menu.getByRole("menuitem", { name: "Open", exact: true }).evaluate((item) => {
+    const resolveToken = (name) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${name})`;
+      item.appendChild(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    };
+    return {
+      text: getComputedStyle(item).color,
+      icon: getComputedStyle(item.querySelector("svg")).color,
+      ink: resolveToken("--ink"),
+    };
+  });
+  expect(colors.text).toBe(colors.ink);
+  expect(colors.icon).toBe(colors.ink);
+});
+
 test("Files lets users recolor a default icon or replace it with emoji", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);
@@ -457,6 +505,76 @@ test("Files lets users recolor a default icon or replace it with emoji", async (
   await iconDialog.getByLabel("Custom emoji").fill("🧠");
   await iconDialog.getByRole("button", { name: "Use", exact: true }).click();
   await expect(homeRow.locator(".files-tree-icon.object-glyph-emoji")).toHaveText("🧠");
+});
+
+test("Files limits custom icons to one emoji grapheme and preserves presets and reset", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+
+  const homeRow = page.locator('.files-tree-row[data-object-id="home"]');
+  await homeRow.locator(".files-tree-customize").click();
+  const iconDialog = page.getByRole("dialog", { name: "Customize icon for Home" });
+  await iconDialog.getByRole("button", { name: "Emoji", exact: true }).click();
+  await iconDialog.getByLabel("Custom emoji").fill("🎵✌️fbvf");
+  await iconDialog.getByRole("button", { name: "Use", exact: true }).click();
+  await expect(homeRow.locator(".files-tree-icon.object-glyph-emoji")).toHaveText("🎵");
+
+  await iconDialog.getByRole("button", { name: "Use ⭐ emoji", exact: true }).click();
+  await expect(homeRow.locator(".files-tree-icon.object-glyph-emoji")).toHaveText("⭐");
+
+  await iconDialog.getByRole("button", { name: "Reset icon", exact: true }).click();
+  await expect(homeRow.locator(".files-tree-icon.object-glyph-emoji")).toHaveCount(0);
+  await expect(homeRow.locator(".files-tree-icon")).toHaveCount(1);
+});
+
+test("opening Files keeps the bottom dock above the workspace scrim", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+  await page.getByRole("button", { name: "Browse files", exact: true }).click();
+
+  const transientState = await page.evaluate(() => {
+    const app = document.querySelector(".tactile-app");
+    const layer = document.querySelector(".files-layer");
+    const scrim = document.querySelector(".files-scrim");
+    const bar = document.querySelector(".app-bottom-bar");
+    const dock = document.querySelector(".app-dock");
+    const read = (element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        top: rect.top,
+        zIndex: style.zIndex,
+        background: style.backgroundColor,
+        opacity: style.opacity,
+        filter: style.filter,
+      };
+    };
+    return {
+      filesOpen: Boolean(app?.querySelector(".files-layer")),
+      layer: read(layer),
+      scrim: read(scrim),
+      bar: read(bar),
+      dock: read(dock),
+      barBlocked: bar?.hasAttribute("inert") || false,
+      dockPointerEvents: getComputedStyle(dock).pointerEvents,
+    };
+  });
+
+  expect(transientState.filesOpen).toBe(true);
+  expect(transientState.layer.bottom).toBeCloseTo(transientState.bar.top, 1);
+  expect(transientState.scrim.bottom).toBeCloseTo(transientState.bar.top, 1);
+  expect(Number(transientState.bar.zIndex)).toBeGreaterThan(Number(transientState.layer.zIndex));
+  expect(transientState.bar).toMatchObject({ background: "rgba(0, 0, 0, 0)", opacity: "1", filter: "none" });
+  expect(transientState.dock).toMatchObject({ background: "rgba(0, 0, 0, 0)", opacity: "1", filter: "none" });
+  expect(transientState.barBlocked).toBe(false);
+  expect(transientState.dockPointerEvents).toBe("auto");
+
+  await page.getByRole("dialog", { name: "Files" }).getByRole("button", { name: "Pin Files sidebar" }).click();
+  await expect(page.locator(".files-scrim")).toHaveCSS("opacity", "0");
+  await expect(page.locator(".files-layer")).toHaveClass(/is-pinned/);
+  await expect(page.locator(".tactile-app")).toHaveAttribute("data-files-pinned", "true");
 });
 
 test("embedded sheet icons use the linked object's Files color", async ({ page }) => {

@@ -19,7 +19,7 @@ import type { CellId, ObjectId } from "../ids.ts";
 import { asAssetId, asCellId, asEmbedLinkId, asObjectId, asThemeId, asTimestamp } from "../ids.ts";
 import { cellAddress, cellId, coordinatesFromCellId } from "../coordinates.ts";
 import { cellIdsInRange } from "../ranges.ts";
-import { createCellRecord, createObjectForType, isCellUsed } from "../model.ts";
+import { createCellRecord, createObjectForType, isCellUsed, normalizeIconEmoji } from "../model.ts";
 import {
   adjustAxisGroups,
   adjustColumnFilters,
@@ -180,7 +180,10 @@ function applyUpdateObject(
   const objectId = asObjectId(String(command.objectId));
   const object = store.getObject(objectId);
   if (!object) return;
-  builder.replaceObject(objectId, { ...object, ...command.patch } as WorkspaceObject);
+  const patch = Object.prototype.hasOwnProperty.call(command.patch, "iconEmoji")
+    ? { ...command.patch, iconEmoji: normalizeIconEmoji(command.patch.iconEmoji) }
+    : command.patch;
+  builder.replaceObject(objectId, { ...object, ...patch } as WorkspaceObject);
 }
 
 function numericTargets(command: ResizeAxisCommand): number[] {

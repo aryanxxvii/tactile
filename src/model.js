@@ -6,6 +6,9 @@ import {
 import {
   repairWorkspaceTopology,
 } from "./core/topology.js";
+import { normalizeIconEmoji } from "./iconEmoji.js";
+
+export { normalizeIconEmoji };
 
 export const WORKSPACE_VERSION = 4;
 export const DEFAULT_ROWS = 256;
@@ -235,6 +238,9 @@ function normalizeAxisGroups(groups, prefix, maxIndex) {
 
 function normalizeObject(object, fallbackId) {
   const type = object?.type === "document" ? "markdown" : object?.type;
+  const iconPatch = Object.prototype.hasOwnProperty.call(object || {}, "iconEmoji")
+    ? { iconEmoji: normalizeIconEmoji(object.iconEmoji) }
+    : {};
   if (type === "sheet") {
     const cells = {};
     Object.entries(object.cells || {}).forEach(([id, value]) => {
@@ -257,6 +263,7 @@ function normalizeObject(object, fallbackId) {
     return {
       ...object,
       ...sheet,
+      ...iconPatch,
       rowGroups: normalizeAxisGroups(object.rowGroups, "row-group", sheet.rows - 1),
       columnGroups: normalizeAxisGroups(object.columnGroups, "column-group", sheet.columns - 1),
       conditionalFormats: Array.isArray(object.conditionalFormats) ? object.conditionalFormats : [],
@@ -282,11 +289,13 @@ function normalizeObject(object, fallbackId) {
       parent: object.parent,
       content: typeof object.content === "string" ? object.content : legacyContent,
       }),
+      ...iconPatch,
     };
   }
   return createObjectForType(type || "markdown", {
     ...object,
     id: object?.id || fallbackId,
+    ...iconPatch,
   });
 }
 

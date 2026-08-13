@@ -105,10 +105,9 @@ function IconCustomizer({ entry, onChange, onClose, popoverRef }) {
           <div className="files-icon-emoji-field">
             <input
               value={draft}
-              onChange={(event) => setDraft(event.target.value.slice(0, 8))}
+              onChange={(event) => setDraft(event.target.value)}
               placeholder="e.g. 🧠"
               aria-label="Custom emoji"
-              maxLength={8}
               autoComplete="off"
               spellCheck="false"
             />

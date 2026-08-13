@@ -11,6 +11,7 @@ import {
   isCellUsed,
   normalizeWorkspace,
 } from "../model.js";
+import { normalizeIconEmoji } from "../iconEmoji.js";
 import { repairWorkspaceTopology } from "../core/topology.js";
 import { cellAddress, cellId, coordinatesFromCellId } from "../sheet/coordinates.js";
 import {
@@ -204,14 +205,17 @@ export function useLocalWorkspace() {
   }, []);
 
   const updateObject = useCallback((objectId, patch) => {
+    const normalizedPatch = Object.prototype.hasOwnProperty.call(patch || {}, "iconEmoji")
+      ? { ...patch, iconEmoji: normalizeIconEmoji(patch.iconEmoji) }
+      : patch;
     commitWorkspace((current) => {
       const object = current.objects[objectId];
       if (!object) return current;
       return touch(current, {
           ...current.objects,
-        [objectId]: { ...object, ...patch },
+        [objectId]: { ...object, ...normalizedPatch },
       });
-    }, `object:${objectId}:${Object.keys(patch).sort().join(",")}`);
+    }, `object:${objectId}:${Object.keys(normalizedPatch || {}).sort().join(",")}`);
   }, [commitWorkspace]);
 
   const updateCell = useCallback((objectId, targetCellId, patch) => {

@@ -1,5 +1,8 @@
 import { IconFile } from "@tabler/icons-react";
 import { objectTypeFor } from "../objects/objectTypes.js";
+import { normalizeIconEmoji } from "../iconEmoji.js";
+
+export { isEmojiGrapheme, normalizeIconEmoji } from "../iconEmoji.js";
 
 export const OBJECT_ICON_COLORS = Object.freeze([
   { id: "", label: "Default", color: "var(--muted)" },
@@ -18,7 +21,7 @@ export function iconColorValue(value) {
 }
 
 export function iconEmojiValue(value) {
-  return String(value || "").trim().slice(0, 8);
+  return normalizeIconEmoji(value);
 }
 
 export function ObjectGlyph({ item, className = "", size = 14, stroke = 1.6, style, ...rest }) {

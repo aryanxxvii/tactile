@@ -16,7 +16,7 @@ import type { CellId } from "../ids.ts";
 import { asCellId, asEmbedLinkId, asObjectId } from "../ids.ts";
 import { cellAddress, cellId, coordinatesFromCellId } from "../coordinates.ts";
 import { cellIdsInRange } from "../ranges.ts";
-import { createCellRecord, createObjectForType, isCellUsed, normalizeWorkspace } from "../model.ts";
+import { createCellRecord, createObjectForType, isCellUsed, normalizeIconEmoji, normalizeWorkspace } from "../model.ts";
 import {
   adjustAxisGroups,
   adjustColumnFilters,
@@ -96,7 +96,10 @@ function setRange(workspace: WorkspaceSnapshot, command: SetRangeCommand): Works
 function updateObject(workspace: WorkspaceSnapshot, command: UpdateObjectCommand): WorkspaceSnapshot {
   const object = workspace.objects[String(command.objectId)];
   if (!object) return workspace;
-  const nextObject = { ...object, ...command.patch } as WorkspaceObject;
+  const patch = Object.prototype.hasOwnProperty.call(command.patch, "iconEmoji")
+    ? { ...command.patch, iconEmoji: normalizeIconEmoji(command.patch.iconEmoji) }
+    : command.patch;
+  const nextObject = { ...object, ...patch } as WorkspaceObject;
   if (deepEqual(object, nextObject)) return workspace;
   return touch(
     workspace,

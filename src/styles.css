@@ -5673,6 +5673,16 @@ kbd {
   pointer-events: none;
 }
 
+/* The Files layer owns only the workspace lane. Keep the 32px bottom dock in
+   its own higher stacking context so the transient workspace scrim can never
+   tint or dim the global controls. */
+.tactile-app:has(> .files-layer):not(.has-floating-layer):not(.settings-open) .app-bottom-bar {
+  z-index: 240;
+  opacity: 1;
+  filter: none;
+  background: transparent;
+}
+
 .files-scrim {
   position: absolute;
   inset: 0;
@@ -6472,7 +6482,7 @@ kbd {
   padding: 0 7px;
   border: 1px solid transparent;
   border-radius: 4px;
-  color: var(--muted);
+  color: var(--ink);
   background: transparent;
   font-family: var(--font-ui);
   font-size: 9px;
@@ -6482,7 +6492,7 @@ kbd {
 
 .files-context-menu-item > svg {
   flex: 0 0 auto;
-  color: var(--faint);
+  color: var(--ink);
 }
 
 .files-context-menu-item span {
