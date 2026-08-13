@@ -141,7 +141,9 @@ test("pastes a single value directly into the selected cell without opening its 
   await setClipboard(page, "single value");
 
   await cellLocator(page, "C6").click();
-  await page.keyboard.press("Control+V");
+  await page.keyboard.down("Control");
+  await page.keyboard.press("V");
+  await page.keyboard.up("Control");
 
   await expect.poll(() => cellValue(page, "C6")).toBe("single value");
   await expect

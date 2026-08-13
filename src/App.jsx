@@ -121,7 +121,11 @@ export function App() {
       if (shell.filesOpen && !(historyShortcut && !typingTarget)) return;
       const activeGridCell = document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]');
       const gridSurface = event.target?.closest?.(".sheet-grid-shell") || activeGridCell;
-      if (command && event.key.toLowerCase() === "v" && gridSurface && !typingTarget) {
+      if ((event.key === "Control" || event.key === "Meta") && gridSurface && !typingTarget && !shell.filesOpen && !shell.settingsOpen) {
+        pasteProxyRef.current?.focus({ preventScroll: true });
+        return;
+      }
+      if (command && event.key.toLowerCase() === "v" && gridSurface && !typingTarget && !shell.filesOpen && !shell.settingsOpen) {
         pasteProxyRef.current?.focus({ preventScroll: true });
         return;
       }
