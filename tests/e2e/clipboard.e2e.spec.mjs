@@ -93,6 +93,7 @@ async function selectionSnapshot(page) {
   return page.evaluate(() => ({
     active: document.querySelector('.sheet-cell[aria-selected="true"]')?.dataset.cellAddress || null,
     focused: document.activeElement?.dataset.cellAddress || null,
+    editing: Boolean(document.querySelector(".cell-editor")),
     inRangeCount: document.querySelectorAll(".sheet-cell.is-in-range").length,
     status: document.querySelector(".active-cell-status code")?.textContent?.trim() || null,
   }));
@@ -101,6 +102,27 @@ async function selectionSnapshot(page) {
 async function cellValue(page, address) {
   return (await cellLocator(page, address).locator(".cell-value").textContent()).trim();
 }
+
+test("pastes a single value directly into the selected cell without opening its editor", async ({ page }) => {
+  await page.goto("/");
+  await grantClipboard(page);
+  await importClipboardWorkspace(page);
+  await setClipboard(page, "single value");
+
+  await cellLocator(page, "C6").click();
+  await page.keyboard.press("Control+V");
+
+  await expect.poll(() => cellValue(page, "C6")).toBe("single value");
+  await expect
+    .poll(() => selectionSnapshot(page))
+    .toMatchObject({
+      active: "C6",
+      focused: "C6",
+      editing: false,
+      inRangeCount: 0,
+      status: "C6",
+    });
+});
 
 test("pastes a rectangular TSV from the keyboard and selects that rectangle", async ({ page }) => {
   await page.goto("/");
@@ -120,6 +142,7 @@ test("pastes a rectangular TSV from the keyboard and selects that rectangle", as
     .toMatchObject({
       active: "B2",
       focused: "B2",
+      editing: false,
       inRangeCount: 3,
       status: "B2:C3",
     });
@@ -171,8 +194,41 @@ test("pasting a copied whole column preserves all 256 rows", async ({ page }) =>
     .poll(() => selectionSnapshot(page))
     .toMatchObject({
       active: "D1",
+      editing: false,
       status: "D1:D256",
     });
+});
+
+test("keeps native text-entry paste behavior when an inline editor is active", async ({ page }) => {
+  await page.goto("/");
+  await grantClipboard(page);
+  await importClipboardWorkspace(page);
+
+  const cell = cellLocator(page, "B2");
+  await cell.dblclick();
+  const editor = cell.locator(".cell-editor");
+  await expect(editor).toBeVisible();
+  await editor.fill("existing value");
+  await setClipboard(page, " pasted while editing");
+
+  await editor.press("Control+V");
+
+  await expect(editor).toHaveValue("existing value pasted while editing");
+});
+
+test("keeps native text-entry paste behavior when the formula editor is active", async ({ page }) => {
+  await page.goto("/");
+  await grantClipboard(page);
+  await importClipboardWorkspace(page);
+
+  const editor = page.locator(".formula-editor");
+  await editor.click();
+  await editor.fill("existing value");
+  await setClipboard(page, " pasted while editing");
+
+  await editor.press("Control+V");
+
+  await expect(editor).toHaveValue("existing value pasted while editing");
 });
 
 test("Delete clears a selected embedded cell without deleting the embedded object", async ({ page }) => {
