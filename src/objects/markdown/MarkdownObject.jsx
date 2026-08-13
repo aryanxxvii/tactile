@@ -195,7 +195,7 @@ function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
   );
 }
 
-export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions }) {
+export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
   const [mode, setMode] = useState("write");
   const editorRef = useRef(null);
   const content = object.content || "";
@@ -332,6 +332,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         onBack={onBack}
         canGoBack={canGoBack}
         workspaceActions={workspaceActions}
+        onReparentObject={onReparentObject}
       />
 
       <main className={mode === "split" ? "markdown-workspace is-split" : "markdown-workspace"}>

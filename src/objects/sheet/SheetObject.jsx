@@ -19,6 +19,7 @@ export function SheetObject({
   onUpdateCell,
   onUpdateCells,
   onOpenObject,
+  onReparentObject,
   onCreateEmbedded,
   onInsertAxis,
   onDeleteAxis,
@@ -84,6 +85,7 @@ export function SheetObject({
         onBack={onBack}
         canGoBack={canGoBack}
         workspaceActions={workspaceActions}
+        onReparentObject={onReparentObject}
       />
 
       <section className="sheet-workspace">
@@ -110,6 +112,7 @@ export function SheetObject({
           onCellsChange={onUpdateCells}
           onUpdateObject={onUpdateObject}
           onOpenObject={onOpenObject}
+          onReparentObject={onReparentObject}
           onCreateEmbedded={onCreateEmbedded}
           onInsertAxis={onInsertAxis}
           onDeleteAxis={onDeleteAxis}

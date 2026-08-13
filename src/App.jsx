@@ -11,6 +11,7 @@ import { useSelectionCommands } from "./shell/selectionCommands.js";
 import { useShellState } from "./shell/useShellState.js";
 import { buildFilesIndex } from "./shell/filesIndex.js";
 import { useWorkspaceCommands } from "./shell/workspaceCommands.js";
+import { reparentReasonMessage } from "./core/reparenting.js";
 import {
   cloneTheme,
   resolveTheme,
@@ -33,6 +34,7 @@ export function App() {
     createEmbeddedObject,
     createEmbeddedFile,
     replaceObjectFile,
+    reparentObject,
     insertSheetAxis,
     deleteSheetAxis,
     moveSheetAxis,
@@ -168,6 +170,22 @@ export function App() {
   const activeObjectId = currentObject?.id || workspaceRootId;
   const activeDockPath = objectPaths.at(-1) || [{ id: workspace.id, title: workspace.name }];
 
+  const handleReparentObject = (payload, target) => {
+    const result = reparentObject({
+      objectId: payload?.objectId,
+      source: payload,
+      target,
+    });
+    if (!result?.ok) {
+      shell.showNotice(reparentReasonMessage(result?.reason));
+      return false;
+    }
+    const objectTitle = workspace.objects[result.objectId]?.title || "Object";
+    const targetTitle = workspace.objects[result.targetObjectId]?.title || "Tiles";
+    shell.showNotice(`${objectTitle} moved to ${targetTitle} ${result.targetAddress}`);
+    return true;
+  };
+
   useEffect(() => {
     document.title = `Tactile — ${currentObjectTitle}`;
   }, [currentObjectTitle]);
@@ -205,6 +223,7 @@ export function App() {
       onSelectAddress: (address) => selection.selectAddress(object.id, address),
       onSelectRange: (anchor, focus, active) => selection.selectRange(object.id, anchor, focus, active),
       onUpdateObject: (patch) => updateObject(object.id, patch),
+      onReparentObject: handleReparentObject,
       onUpdateCell: (cellId, patch) => updateCell(object.id, cellId, patch),
       onUpdateCells: (changes, historyKey) => updateCells(object.id, changes, historyKey),
       onOpenObject: (payload) => inOut.openObject({ ...payload, sourceObjectId: object.id }),
@@ -315,6 +334,7 @@ export function App() {
           width={shell.filesWidth}
           onOpenRoute={(route) => inOut.navigateToRoute(route, { mode: "full", immediate: true })}
           onUpdateObject={updateObject}
+          onReparentObject={handleReparentObject}
           onSetHome={(objectId, route) => {
             setHomeObject(objectId, route?.segments || inOut.homePathForObject(objectId));
             shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now the start object`);

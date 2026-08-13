@@ -14,6 +14,12 @@ import {
 import { OBJECT_ICON_COLORS, ObjectGlyph, iconEmojiValue } from "./ObjectGlyph.jsx";
 import { PaperPortal } from "./PaperPortal.jsx";
 import { searchFilesIndex } from "../shell/filesIndex.js";
+import {
+  dragPayloadForObject,
+  isObjectDragEvent,
+  readObjectDragData,
+  writeObjectDragData,
+} from "../shell/objectDrag.js";
 import { FILES_MAX_WIDTH, FILES_MIN_WIDTH } from "../shell/useShellState.js";
 
 const FILTERS = [
@@ -279,10 +285,15 @@ function TreeRow({
   onCloseCustomizer,
   popoverRef,
   onContextMenu,
+  dropTarget = false,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }) {
   return (
     <div
-      className={`files-tree-row ${active ? "is-active" : ""} ${isAlias ? "is-alias" : ""} ${depth === 0 ? "is-root" : ""} ${customizerOpen ? "has-icon-popover" : ""}`}
+      className={`files-tree-row ${active ? "is-active" : ""} ${dropTarget ? "is-object-drop-target" : ""} ${isAlias ? "is-alias" : ""} ${depth === 0 ? "is-root" : ""} ${customizerOpen ? "has-icon-popover" : ""}`}
       style={{ "--files-depth": depth }}
       data-object-id={entry.objectId}
       role="treeitem"
@@ -306,6 +317,9 @@ function TreeRow({
         }
       }}
       onContextMenu={onContextMenu}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
       {Array.from({ length: depth }, (_, guideDepth) => (
         <span
@@ -339,7 +353,14 @@ function TreeRow({
       >
         <ObjectGlyph item={entry} className="files-tree-icon" size={14} stroke={1.6} />
       </button>
-      <button className="files-tree-open" type="button" onClick={onOpen} aria-label={`Open ${entry.title}`}>
+      <button
+        className="files-tree-open"
+        type="button"
+        draggable
+        onDragStart={onDragStart}
+        onClick={onOpen}
+        aria-label={`Open ${entry.title}`}
+      >
         <span className="files-tree-title">{entry.title}</span>
         {entry.isStart ? <IconHome className="files-home-icon" size={12} stroke={1.7} aria-label="Start" /> : null}
         <span className="files-tree-kind">{isAlias ? "Alias" : entry.typeLabel}</span>
@@ -402,6 +423,7 @@ export function FilesPanel({
   width = 360,
   onOpenRoute,
   onUpdateObject,
+  onReparentObject,
   onSetHome,
   onNotice,
   onTogglePinned,
@@ -418,6 +440,7 @@ export function FilesPanel({
   const [selectedId, setSelectedId] = useState(activeObjectId || index?.roots?.[0] || "");
   const [customizingKey, setCustomizingKey] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [dropTargetKey, setDropTargetKey] = useState("");
   const [resizing, setResizing] = useState(false);
   const customizerRef = useRef(null);
   const resizeRef = useRef(null);
@@ -497,8 +520,34 @@ export function FilesPanel({
   const openRoute = (route) => {
     if (!route) return;
     setContextMenu(null);
+    setDropTargetKey("");
     onOpenRoute?.(route);
     if (!pinned) onClose?.();
+  };
+
+  const beginObjectDrag = (event, objectId, location) => {
+    writeObjectDragData(event, dragPayloadForObject(objectId, location));
+  };
+
+  const handleObjectDragOver = (event, key) => {
+    if (!isObjectDragEvent(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetKey(key);
+  };
+
+  const handleObjectDragLeave = (event) => {
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+    setDropTargetKey("");
+  };
+
+  const handleObjectDrop = (event, targetObjectId) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const payload = readObjectDragData(event);
+    setDropTargetKey("");
+    if (payload) onReparentObject?.(payload, { parentObjectId: targetObjectId });
   };
 
   const openContextMenu = (event, row) => {
@@ -705,12 +754,17 @@ export function FilesPanel({
               {results.map((entry) => (
                 <div className={`files-result-group ${customizingKey === `result:${entry.objectId}` ? "has-icon-popover" : ""}`} key={entry.objectId}>
                   <button
-                    className={`files-result-row ${entry.objectId === selectedId ? "is-active" : ""}`}
+                    className={`files-result-row ${entry.objectId === selectedId ? "is-active" : ""} ${dropTargetKey === `result:${entry.objectId}` ? "is-object-drop-target" : ""}`}
                     type="button"
+                    draggable
                     role="option"
                     aria-haspopup="menu"
                     data-object-id={entry.objectId}
                     aria-selected={entry.objectId === selectedId}
+                    onDragStart={(event) => beginObjectDrag(event, entry.objectId, entry.canonical)}
+                    onDragOver={(event) => handleObjectDragOver(event, `result:${entry.objectId}`)}
+                    onDragLeave={handleObjectDragLeave}
+                    onDrop={(event) => handleObjectDrop(event, entry.objectId)}
                     onContextMenu={(event) => openContextMenu(event, {
                       key: `result:${entry.objectId}`,
                       customizerKey: `result:${entry.objectId}`,
@@ -756,7 +810,13 @@ export function FilesPanel({
                   {entry.aliases.length ? (
                     <div className="files-alias-links">
                       {entry.aliases.map((location, aliasIndex) => (
-                        <button type="button" key={`${entry.objectId}-alias-${aliasIndex}`} onClick={() => openRoute(location)}>
+                        <button
+                          type="button"
+                          draggable
+                          key={`${entry.objectId}-alias-${aliasIndex}`}
+                          onDragStart={(event) => beginObjectDrag(event, entry.objectId, location)}
+                          onClick={() => openRoute(location)}
+                        >
                           <span>↳</span> {location.pathLabel}
                         </button>
                       ))}
@@ -788,6 +848,11 @@ export function FilesPanel({
                     ...row,
                     customizerKey: `tree:${row.key}`,
                   })}
+                  dropTarget={dropTargetKey === `tree:${row.key}`}
+                  onDragStart={(event) => beginObjectDrag(event, row.entry.objectId, row.location)}
+                  onDragOver={(event) => handleObjectDragOver(event, `tree:${row.key}`)}
+                  onDragLeave={handleObjectDragLeave}
+                  onDrop={(event) => handleObjectDrop(event, row.entry.objectId)}
                   onOpen={() => {
                     setSelectedId(row.entry.objectId);
                     openRoute(row.location);

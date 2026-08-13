@@ -1,6 +1,10 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { FORMULA_CATALOG } from "../../sheet/formulas.js";
+import {
+  isObjectDragEvent,
+  writeObjectDragData,
+} from "../../shell/objectDrag.js";
 
 function formulaQuery(value, caret) {
   if (!value.startsWith("=") || caret == null) return null;
@@ -65,6 +69,10 @@ export const SheetCell = memo(function SheetCell({
   onCommit,
   onValueChange,
   onContextMenu,
+  dropTarget,
+  onObjectDragOver,
+  onObjectDragLeave,
+  onObjectDrop,
 }) {
   const inputRef = useRef(null);
   const [formulaHintQuery, setFormulaHintQuery] = useState(null);
@@ -127,14 +135,31 @@ export const SheetCell = memo(function SheetCell({
 
   return (
     <div
-      className={`sheet-cell ${selected ? "is-selected" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${editing ? "is-editing" : ""} ${hasEmbed ? "is-embedded" : ""} ${role === "heading" ? "is-table-heading" : ""} ${role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${styleBold ? "is-bold" : ""} ${styleHighlight ? `highlight-${styleHighlight}` : ""} ${styleTextColor ? `text-${styleTextColor}` : ""} ${styleAlign ? `align-${styleAlign}` : ""} ${styleVerticalAlign ? `align-${styleVerticalAlign}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
+      className={`sheet-cell ${selected ? "is-selected" : ""} ${dropTarget ? "is-object-drop-target" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${editing ? "is-editing" : ""} ${hasEmbed ? "is-embedded" : ""} ${role === "heading" ? "is-table-heading" : ""} ${role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${styleBold ? "is-bold" : ""} ${styleHighlight ? `highlight-${styleHighlight}` : ""} ${styleTextColor ? `text-${styleTextColor}` : ""} ${styleAlign ? `align-${styleAlign}` : ""} ${styleVerticalAlign ? `align-${styleVerticalAlign}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
       role="gridcell"
       aria-selected={selected}
       aria-label={`${address}${shownValue ? `, ${shownValue}` : ""}${hasEmbed ? ", embedded object" : ""}`}
       tabIndex={selected ? 0 : -1}
       data-object-id={objectId}
       data-cell-address={address}
+      draggable={hasEmbed}
       style={cellStyle}
+      onDragStart={(event) => {
+        if (!hasEmbed) return;
+        writeObjectDragData(event, {
+          objectId: embedObjectId,
+          linkId: embedLinkId,
+          sourceObjectId: objectId,
+          sourceCellId: cellId,
+          sourceAddress: address,
+        });
+      }}
+      onDragOver={(event) => {
+        if (!isObjectDragEvent(event)) return;
+        onObjectDragOver?.(event, address);
+      }}
+      onDragLeave={onObjectDragLeave}
+      onDrop={(event) => onObjectDrop?.(event, address)}
       onPointerDown={(event) => {
         const cell = eventCell();
         if (formulaEditingCellId && formulaEditingCellId !== cellId) {

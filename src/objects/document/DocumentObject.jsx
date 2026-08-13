@@ -1,7 +1,7 @@
 import { IconBrackets, IconFileText } from "@tabler/icons-react";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 
-export function DocumentObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions }) {
+export function DocumentObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
   return (
     <article className="object-surface document-object" data-object-type="document">
       <ObjectHeader
@@ -12,6 +12,7 @@ export function DocumentObject({ object, path, saveState, onUpdateObject, onBack
         onBack={onBack}
         canGoBack={canGoBack}
         workspaceActions={workspaceActions}
+        onReparentObject={onReparentObject}
       />
 
       <main className="document-page">

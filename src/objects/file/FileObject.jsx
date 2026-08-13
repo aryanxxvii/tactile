@@ -20,7 +20,7 @@ function dataUrlText(dataUrl) {
   }
 }
 
-export function FileObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, assets, onReplaceFile }) {
+export function FileObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, assets, onReplaceFile, onReparentObject }) {
   const asset = object.assetId ? assets?.[object.assetId] : null;
   const definition = objectTypeFor(object.type);
   const ObjectIcon = (props) => <ObjectGlyph item={object} {...props} />;
@@ -40,6 +40,7 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
         onBack={onBack}
         canGoBack={canGoBack}
         workspaceActions={workspaceActions}
+        onReparentObject={onReparentObject}
       />
 
       <main className="file-workspace">
