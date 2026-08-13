@@ -165,3 +165,114 @@ test("keeps a horizontally rebased virtual window bounded at the sheet edge", as
   expect(state.maxRow).toBeLessThan(256);
   expect(state.mountedCells).toBeLessThan(1000);
 });
+
+test("keeps the active cell and formula bar coherent through a coalesced native jump", async ({ page }) => {
+  await page.goto("/");
+
+  const scroll = page.locator("[data-sheet-scroll]").last();
+  const activeCell = scroll.locator('.sheet-cell[data-cell-address="B2"]').first();
+  await expect(activeCell).toBeVisible();
+  await activeCell.click();
+
+  const formulaEditor = page.locator(".formula-editor");
+  await formulaEditor.fill("=1+1");
+  await expect(formulaEditor).toHaveValue("=1+1");
+
+  const target = await scroll.evaluate((element) => ({
+    top: Math.max(0, element.scrollHeight - element.clientHeight),
+    left: Math.max(0, element.scrollWidth - element.clientWidth),
+  }));
+  const state = await scroll.evaluate(async (element, destination) => {
+    const readState = () => {
+      const scrollerBox = element.getBoundingClientRect();
+      const columnHeader = element.querySelector(".column-header");
+      const corner = element.querySelector(".sheet-corner");
+      const headerHeight = columnHeader?.getBoundingClientRect().height ?? 25;
+      const rowHeaderWidth = corner?.getBoundingClientRect().width ?? 34;
+      const bodyTop = scrollerBox.top + headerHeight;
+      const bodyLeft = scrollerBox.left + rowHeaderWidth;
+      const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
+        .map((node) => node.getBoundingClientRect())
+        .filter(
+          (box) =>
+            box.bottom > bodyTop &&
+            box.top < scrollerBox.bottom &&
+            box.right > bodyLeft &&
+            box.left < scrollerBox.right,
+        );
+      const allSlots = [...element.querySelectorAll(".virtual-cell-slot")];
+      const columnRail = [...element.querySelectorAll(".column-header")]
+        .map((node) => node.getBoundingClientRect())
+        .find((box) => box.right > bodyLeft && box.left < scrollerBox.right);
+      const rowRail = [...element.querySelectorAll(".row-header")]
+        .map((node) => node.getBoundingClientRect())
+        .find((box) => box.bottom > bodyTop && box.top < scrollerBox.bottom);
+      const canvas = element.querySelector(".virtual-sheet-canvas");
+      const rowCount = Number(canvas?.getAttribute("aria-rowcount")) || 0;
+      const columnCount = Number(canvas?.getAttribute("aria-colcount")) || 0;
+      const active = document.querySelector('.sheet-cell[aria-selected="true"]');
+      const formula = document.querySelector(".formula-editor");
+      const status = document.querySelector(".active-cell-status code");
+      const styles = getComputedStyle(element);
+      return {
+        scrollTop: element.scrollTop,
+        scrollLeft: element.scrollLeft,
+        scrollX: Number.parseFloat(styles.getPropertyValue("--sheet-scroll-x")),
+        scrollY: Number.parseFloat(styles.getPropertyValue("--sheet-scroll-y")),
+        mountedCells: allSlots.length,
+        visibleCells: visibleSlots.length,
+        rowCoverage:
+          visibleSlots.length > 0 &&
+          Math.min(...visibleSlots.map((box) => box.top)) <= bodyTop + 1 &&
+          Math.max(...visibleSlots.map((box) => box.bottom)) >= scrollerBox.bottom - 1,
+        columnCoverage:
+          visibleSlots.length > 0 &&
+          Math.min(...visibleSlots.map((box) => box.left)) <= bodyLeft + 1 &&
+          Math.max(...visibleSlots.map((box) => box.right)) >= scrollerBox.right - 1,
+        columnRailOffset: columnRail ? Math.abs(columnRail.top - scrollerBox.top) : null,
+        rowRailOffset: rowRail ? Math.abs(rowRail.left - scrollerBox.left) : null,
+        allSlotsInBounds: allSlots.every((node) => {
+          const row = Number(node.dataset.row);
+          const column = Number(node.dataset.column);
+          return row >= 0 && row < rowCount && column >= 0 && column < columnCount;
+        }),
+        activeAddress: active?.dataset.cellAddress || null,
+        formulaValue: formula?.value || "",
+        formulaAddress: formula?.getAttribute("aria-label") || null,
+        statusAddress: status?.textContent?.trim() || null,
+      };
+    };
+
+    element.scrollTo({ top: destination.top / 3, left: destination.left / 3, behavior: "auto" });
+    element.scrollTo({ top: destination.top, left: destination.left, behavior: "auto" });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    return readState();
+  }, target);
+
+  expect(state).toMatchObject({
+    rowCoverage: true,
+    columnCoverage: true,
+    columnRailOffset: 0,
+    rowRailOffset: 0,
+    allSlotsInBounds: true,
+    activeAddress: "B2",
+    formulaValue: "=1+1",
+    formulaAddress: "Formula or value for B2",
+    statusAddress: "B2",
+  });
+  expect(state.visibleCells).toBeGreaterThan(0);
+  expect(state.mountedCells).toBeLessThan(1_000);
+  expect(state.scrollTop).toBeGreaterThanOrEqual(target.top - 20);
+  expect(state.scrollLeft).toBeGreaterThanOrEqual(target.left - 20);
+  expect(state.scrollX).toBeCloseTo(state.scrollLeft, 1);
+  expect(state.scrollY).toBeCloseTo(state.scrollTop, 1);
+
+  await expect
+    .poll(() =>
+      scroll.evaluate((element) => ({
+        scrollTop: element.scrollTop,
+        scrollLeft: element.scrollLeft,
+      })),
+    )
+    .toEqual({ scrollTop: state.scrollTop, scrollLeft: state.scrollLeft });
+});

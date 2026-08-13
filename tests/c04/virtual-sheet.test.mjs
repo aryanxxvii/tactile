@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   buildAxisGeometry,
   buildVirtualRange,
+  directionalOverscan,
   expandedRange,
   rangeContains,
 } from "../../src/objects/sheet/useVirtualSheet.js";
@@ -110,6 +111,54 @@ test("horizontal virtual ranges keep a 65-column sheet inside its axis bounds", 
   );
 });
 
+test("rapid scroll look-ahead is directional and bounded", () => {
+  assert.deepEqual(directionalOverscan({ rowHeight: 31, columnWidth: 126 }, { scrollTop: 620, scrollLeft: 260 }, 5), {
+    top: 5,
+    bottom: 13,
+    left: 5,
+    right: 8,
+  });
+  assert.deepEqual(
+    directionalOverscan({ rowHeight: 31, columnWidth: 126 }, { scrollTop: -10_000, scrollLeft: -10_000 }, 5),
+    { top: 13, bottom: 5, left: 13, right: 5 },
+  );
+});
+
+test("virtual range math clamps malformed offsets and geometry mismatches", () => {
+  const { rows, columns, rowGeometry, columnGeometry, metrics } = fixtureGeometry();
+  const edge = buildVirtualRange(
+    rowGeometry,
+    columnGeometry,
+    rows.length + 100,
+    columns.length + 100,
+    metrics,
+    { width: 900, height: 500, scrollLeft: Number.MAX_SAFE_INTEGER, scrollTop: Number.MAX_SAFE_INTEGER },
+    9,
+  );
+  assert.ok(edge.rowStart >= 0);
+  assert.ok(edge.rowEnd < rows.length);
+  assert.ok(edge.columnStart >= 0);
+  assert.ok(edge.columnEnd < columns.length);
+
+  const sanitized = buildVirtualRange(
+    rowGeometry,
+    columnGeometry,
+    rows.length,
+    columns.length,
+    metrics,
+    { width: 900, height: 500, scrollLeft: -400, scrollTop: Number.NaN },
+    { top: 2, bottom: 4, left: 1, right: 3 },
+  );
+  assert.ok(sanitized.rowStart >= 0 && sanitized.rowEnd < rows.length);
+  assert.ok(sanitized.columnStart >= 0 && sanitized.columnEnd < columns.length);
+  assert.deepEqual(expandedRange(null, 0, 0, 2), {
+    rowStart: 0,
+    rowEnd: -1,
+    columnStart: 0,
+    columnEnd: -1,
+  });
+});
+
 test("selection projection uses numeric bounds without normalizing each cell", () => {
   const range = { rowStart: 2, rowEnd: 5, columnStart: 3, columnEnd: 7 };
   assert.equal(numericRangeContains(range, 2, 3), true);
@@ -124,23 +173,31 @@ test("conditional-format ranges compile once and preserve decimal sign values", 
     { id: "first", range: "A1:C3", kind: "sign" },
     { id: "invalid", range: "not-a-range", kind: "sign" },
   ]);
-  assert.deepEqual(compiled, [{
-    order: 0,
-    kind: "sign",
-    rowStart: 0,
-    rowEnd: 2,
-    columnStart: 0,
-    columnEnd: 2,
-  }]);
+  assert.deepEqual(compiled, [
+    {
+      order: 0,
+      kind: "sign",
+      rowStart: 0,
+      rowEnd: 2,
+      columnStart: 0,
+      columnEnd: 2,
+    },
+  ]);
   assert.equal(conditionalToneForCoordinates(compiled, 1, 1, "1.25"), "positive");
   assert.equal(conditionalToneForCoordinates(compiled, 1, 1, "-0.5"), "negative");
   assert.equal(conditionalToneForCoordinates(compiled, 4, 1, "5"), null);
 });
 
 test("empty cells stay sparse and embedded timers do not live in ordinary SheetCell", async () => {
-  const canvasSource = await readFile(new URL("../../src/objects/sheet/grid/SheetGridCanvas.jsx", import.meta.url), "utf8");
+  const canvasSource = await readFile(
+    new URL("../../src/objects/sheet/grid/SheetGridCanvas.jsx", import.meta.url),
+    "utf8",
+  );
   const sheetCellSource = await readFile(new URL("../../src/objects/sheet/SheetCell.jsx", import.meta.url), "utf8");
-  const embeddedSource = await readFile(new URL("../../src/objects/sheet/grid/embeddedCellOpen.js", import.meta.url), "utf8");
+  const embeddedSource = await readFile(
+    new URL("../../src/objects/sheet/grid/embeddedCellOpen.js", import.meta.url),
+    "utf8",
+  );
 
   assert.equal(canvasSource.includes("createCellRecord"), false);
   assert.equal(canvasSource.includes("conditionalToneForCell"), false);
