@@ -1,0 +1,14 @@
+# Tactile ownership map
+#
+# No owner identity is evidenced in this repository, so no active patterns are
+# asserted here. A maintainer must replace this comment-only file with real
+# GitHub handles or team slugs before relying on protected review.
+#
+# Suggested review areas once owners are named:
+#   /src/                 web application and object model
+#   /src-tauri/           native shell and persistence boundary
+#   /docs/                architecture, security, compatibility, and release
+#   /package.json         JavaScript supply chain
+#   /package-lock.json    JavaScript resolution
+#   /src-tauri/Cargo.toml native supply chain
+#   /src-tauri/Cargo.lock native resolution
