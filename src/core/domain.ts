@@ -29,6 +29,7 @@ export interface CellStyle {
   highlight?: string;
   numberFormat?: "general" | "number" | "percent" | string;
   textColor?: string;
+  verticalAlign?: "top" | "middle" | "bottom";
 }
 
 export interface CellValidation {

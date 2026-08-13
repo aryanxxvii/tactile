@@ -1328,6 +1328,18 @@ input:focus-visible,
   justify-content: flex-start;
 }
 
+.sheet-cell.align-top {
+  align-items: flex-start;
+}
+
+.sheet-cell.align-middle {
+  align-items: center;
+}
+
+.sheet-cell.align-bottom {
+  align-items: flex-end;
+}
+
 .sheet-cell.is-bold .cell-value {
   font-weight: 680;
 }

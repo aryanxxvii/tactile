@@ -29,6 +29,7 @@ export function SheetCell({
   const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
   const formulaError = cell.formula && String(shownValue).startsWith("#");
   const alignment = cell.style?.align;
+  const verticalAlignment = cell.style?.verticalAlign;
   const fontSize = Number(cell.style?.fontSize);
   const cellStyle = Number.isFinite(fontSize)
     ? { "--cell-font-size": `${fontSize}px` }
@@ -100,7 +101,7 @@ export function SheetCell({
 
   return (
     <div
-      className={`sheet-cell ${selected ? "is-selected" : ""} ${inRange && !selected ? "is-in-range" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${editing ? "is-editing" : ""} ${cell.embed ? "is-embedded" : ""} ${cell.role === "heading" ? "is-table-heading" : ""} ${cell.role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${cell.style?.bold ? "is-bold" : ""} ${cell.style?.highlight ? `highlight-${cell.style.highlight}` : ""} ${cell.style?.textColor ? `text-${cell.style.textColor}` : ""} ${alignment ? `align-${alignment}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
+      className={`sheet-cell ${selected ? "is-selected" : ""} ${inRange && !selected ? "is-in-range" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${editing ? "is-editing" : ""} ${cell.embed ? "is-embedded" : ""} ${cell.role === "heading" ? "is-table-heading" : ""} ${cell.role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${cell.style?.bold ? "is-bold" : ""} ${cell.style?.highlight ? `highlight-${cell.style.highlight}` : ""} ${cell.style?.textColor ? `text-${cell.style.textColor}` : ""} ${alignment ? `align-${alignment}` : ""} ${verticalAlignment ? `align-${verticalAlignment}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
       role="gridcell"
       aria-selected={selected}
       aria-label={`${cell.address}${shownValue ? `, ${shownValue}` : ""}${cell.embed ? ", embedded object" : ""}`}

@@ -37,6 +37,27 @@ test("centers the compact formatting controls without a visible section label", 
   await expect(page.getByRole("button", { name: "Remove bold", exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("applies top, middle, and bottom vertical alignment to the active tile", async ({ page }) => {
+  await page.goto("/");
+
+  const cell = page.locator('.sheet-cell[data-cell-address="A1"]');
+  const top = page.getByRole("button", { name: "Align top", exact: true });
+  const middle = page.getByRole("button", { name: "Align middle", exact: true });
+  const bottom = page.getByRole("button", { name: "Align bottom", exact: true });
+
+  await top.click();
+  await expect(cell).toHaveClass(/align-top/);
+  await expect(top).toHaveAttribute("aria-pressed", "true");
+
+  await middle.click();
+  await expect(cell).toHaveClass(/align-middle/);
+  await expect(middle).toHaveAttribute("aria-pressed", "true");
+
+  await bottom.click();
+  await expect(cell).toHaveClass(/align-bottom/);
+  await expect(bottom).toHaveAttribute("aria-pressed", "true");
+});
+
 test("keeps the formatting strip centered when the sheet narrows", async ({ page }) => {
   for (const width of [620, 390]) {
     await page.setViewportSize({ width, height: 900 });

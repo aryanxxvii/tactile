@@ -7,6 +7,9 @@ import {
   IconEraser,
   IconHash,
   IconHighlight,
+  IconLayoutAlignBottom,
+  IconLayoutAlignMiddle,
+  IconLayoutAlignTop,
   IconPercentage,
   IconPlusMinus,
   IconTextColor,
@@ -202,10 +205,15 @@ export function CellFormatMenu({ style = {}, onChange, onConditionalChange, hasC
       <TextSizeGroup selected={style.fontSize} onSelect={(value) => onChange?.({ fontSize: value })} />
       <ColorGroup label="Fill color" icon={IconHighlight} colors={FILL_COLORS} selected={currentFill} onSelect={(value) => onChange?.({ highlight: value })} />
       <ColorGroup label="Text color" icon={IconTextColor} colors={TEXT_COLORS} selected={style.textColor} onSelect={(value) => onChange?.({ textColor: value })} />
-      <div className="cell-format-group" role="group" aria-label="Alignment">
+      <div className="cell-format-group" role="group" aria-label="Horizontal alignment">
         <FormatButton icon={IconAlignLeft} label="Align left" selected={style.align === "left"} onSelect={() => onChange?.({ align: "left" })} />
         <FormatButton icon={IconAlignCenter} label="Align center" selected={style.align === "center"} onSelect={() => onChange?.({ align: "center" })} />
         <FormatButton icon={IconAlignRight} label="Align right" selected={style.align === "right"} onSelect={() => onChange?.({ align: "right" })} />
+      </div>
+      <div className="cell-format-group" role="group" aria-label="Vertical alignment">
+        <FormatButton icon={IconLayoutAlignTop} label="Align top" selected={style.verticalAlign === "top"} onSelect={() => onChange?.({ verticalAlign: "top" })} />
+        <FormatButton icon={IconLayoutAlignMiddle} label="Align middle" selected={style.verticalAlign === "middle"} onSelect={() => onChange?.({ verticalAlign: "middle" })} />
+        <FormatButton icon={IconLayoutAlignBottom} label="Align bottom" selected={style.verticalAlign === "bottom"} onSelect={() => onChange?.({ verticalAlign: "bottom" })} />
       </div>
       <div className="cell-format-group" role="group" aria-label="Number format">
         <FormatButton icon={IconHash} label="Number with two decimals" selected={style.numberFormat === "number"} onSelect={() => onChange?.({ numberFormat: style.numberFormat === "number" ? undefined : "number" })} />
