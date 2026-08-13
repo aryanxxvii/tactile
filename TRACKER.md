@@ -58,6 +58,9 @@
   - Existing selection and fill gestures retain their release-time transaction behavior and viewport lock.
   - Committed on the reviewed branch as `05b0955` and merged into `main` via `d84bd33`; 71/71 tests, typecheck, lint, and production build pass (lint retains existing warnings only).
 - [ ] D03 — In & Out lifecycle and compositing
+- [x] D03 — In & Out lifecycle and compositing
+  - Reviewed against the Wave 3 acceptance criteria: staged origin/floating/full phases, transform-first motion, reverse child-content fade, circular contraction radius, retained source handoff, nested route validation, and browser-history Back/Forward behavior are already present in the verified baseline.
+  - No additional safe production diff was identified by the bounded D03 review; no motion semantics were invented or changed.
 - [ ] D04 — CSS consolidation and code splitting
 - [ ] G3 — Wave 3 gate
 
