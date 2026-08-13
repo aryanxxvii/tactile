@@ -1,6 +1,14 @@
-export const PERFORMANCE_SCHEMA_VERSION = 1;
+export const PERFORMANCE_SCHEMA_VERSION = 2;
 
 export const DEFAULT_REGRESSION_TOLERANCE = 0.1;
+
+export const RELEASE_BUDGETS = Object.freeze({
+  frameTimeP95Ms: 16.7,
+  inputToPaintP95Ms: 50,
+  repeatedMainThreadTaskMs: 50,
+  initialJavascriptGzipBytes: 110 * 1024,
+  cssGzipBytes: 18 * 1024,
+});
 
 export function percentile(values, percentileValue = 0.95) {
   const numbers = values
@@ -60,8 +68,120 @@ export function summarizeInstrumentation(raw = {}) {
       domNodesMax: Number.isFinite(raw.maxDomNodes) ? raw.maxDomNodes : null,
     },
     resources: raw.resources || null,
+    runtimeBaseline: raw.runtimeBaseline || null,
     runtimeCounts: raw.runtimeCounts || null,
+    runtimeDelta: raw.runtimeDelta || null,
+    leakChecks: raw.leakChecks || null,
+    memoryStart: raw.memoryStart || null,
     memory: raw.memory || null,
+    memoryDeltaBytes: Number.isFinite(raw.memoryDeltaBytes) ? raw.memoryDeltaBytes : null,
+  };
+}
+
+function budgetCheck(name, observed, budget, unit) {
+  if (!Number.isFinite(observed)) {
+    return { name, status: "unmeasurable", observed: null, budget, unit };
+  }
+  return {
+    name,
+    status: observed <= budget ? "pass" : "fail",
+    observed,
+    budget,
+    unit,
+    delta: observed - budget,
+  };
+}
+
+function runtimeLeakCheck(name, leakChecks) {
+  if (!leakChecks?.runtime?.observable) {
+    return { name, status: "unmeasurable", observed: null, budget: 0, unit: "active resources" };
+  }
+  const leakedResources = leakChecks.runtime.leakedResources || [];
+  return {
+    name,
+    status: leakedResources.length === 0 ? "pass" : "fail",
+    observed: leakedResources,
+    budget: 0,
+    unit: "positive resource delta",
+  };
+}
+
+export function evaluatePerformanceCertification(result, budgets = RELEASE_BUDGETS) {
+  const checks = [];
+  const blockers = [];
+  const interactiveScenarios = ["scroll", "typing", "in-out", "nested"];
+
+  if (result?.status !== "measured") {
+    blockers.push(`Browser run status is ${result?.status || "unknown"}.`);
+  }
+  if (result?.fixture?.valid !== true) {
+    blockers.push("The deterministic performance fixture did not validate.");
+  }
+
+  for (const label of interactiveScenarios) {
+    const scenario = result?.scenarios?.[label];
+    if (!scenario) {
+      blockers.push(`Missing measured scenario: ${label}.`);
+      checks.push({ name: `${label}.measurement`, status: "unmeasurable", observed: null });
+      continue;
+    }
+    if (scenario.actionError) blockers.push(`${label} action failed: ${scenario.actionError}`);
+    checks.push(budgetCheck(`${label}.frameTimeMs.p95`, scenario.frameTimeMs?.p95, budgets.frameTimeP95Ms, "ms"));
+    checks.push(
+      budgetCheck(
+        `${label}.longTasks.over50Ms`,
+        scenario.longTasks?.over50Ms,
+        0,
+        `count of tasks over ${budgets.repeatedMainThreadTaskMs} ms`,
+      ),
+    );
+    if (label !== "scroll") {
+      checks.push(
+        budgetCheck(`${label}.inputLatencyMs.p95`, scenario.inputLatencyMs?.p95, budgets.inputToPaintP95Ms, "ms"),
+      );
+    }
+    checks.push(runtimeLeakCheck(`${label}.runtimeLeaks`, scenario.leakChecks));
+  }
+
+  checks.push(
+    budgetCheck(
+      "bundle.javascript.gzipBytes",
+      result?.bundle?.javascript?.gzipBytes,
+      budgets.initialJavascriptGzipBytes,
+      "bytes across all client JavaScript output",
+    ),
+  );
+  checks.push(
+    budgetCheck(
+      "bundle.css.gzipBytes",
+      result?.bundle?.css?.gzipBytes,
+      budgets.cssGzipBytes,
+      "bytes across all client CSS output",
+    ),
+  );
+
+  const teardown = result?.teardown;
+  checks.push(runtimeLeakCheck("teardown.runtimeLeaks", teardown?.leakChecks));
+  if (teardown?.leakChecks?.memory?.observable !== true) {
+    blockers.push("Final memory measurement was unavailable; leak certification is blocked.");
+  }
+
+  for (const check of checks) {
+    if (check.status === "unmeasurable") blockers.push(`${check.name} was not measurable.`);
+  }
+
+  const failedChecks = checks.filter((check) => check.status === "fail");
+  const unmeasurableChecks = checks.filter((check) => check.status === "unmeasurable");
+  const status = blockers.length ? "blocked" : failedChecks.length ? "fail" : "pass";
+  return {
+    status,
+    passed: status === "pass",
+    releaseBudgets: budgets,
+    checks,
+    failedChecks,
+    unmeasurableChecks,
+    blockers: [...new Set(blockers)],
+    memory: teardown?.leakChecks?.memory || null,
   };
 }
 
@@ -93,6 +213,9 @@ function instrumentationSource() {
 
   state.reactCommitCount = 0;
   state.reactCommitCountObservable = false;
+  state.referenceRuntime = null;
+  state.referenceMemory = null;
+  state.referenceLabel = null;
 
   const isInternal = () => state.internalDepth > 0;
   const withInternal = (callback) => {
@@ -109,26 +232,33 @@ function instrumentationSource() {
     state.original.removeEventListener = EventTarget.prototype.removeEventListener;
     EventTarget.prototype.addEventListener = function addEventListener(type, listener, options) {
       if (!isInternal()) {
-        state.counts.listeners += 1;
         let records = state.listenerRecords.get(this);
         if (!records) {
           records = new Map();
           state.listenerRecords.set(this, records);
         }
-        const key = `${String(type)}|${String(Boolean(options && typeof options === "object" ? options.capture : options))}|${String(listener)}`;
-        records.set(key, (records.get(key) || 0) + 1);
+        const key = `${String(type)}|${String(Boolean(options && typeof options === "object" ? options.capture : options))}`;
+        let listeners = records.get(key);
+        if (!listeners) {
+          listeners = new Set();
+          records.set(key, listeners);
+        }
+        if (!listeners.has(listener)) {
+          listeners.add(listener);
+          state.counts.listeners += 1;
+        }
       }
       return state.original.addEventListener.call(this, type, listener, options);
     };
     EventTarget.prototype.removeEventListener = function removeEventListener(type, listener, options) {
       if (!isInternal()) {
         const records = state.listenerRecords.get(this);
-        const key = `${String(type)}|${String(Boolean(options && typeof options === "object" ? options.capture : options))}|${String(listener)}`;
-        const count = records?.get(key) || 0;
-        if (count > 0) {
+        const key = `${String(type)}|${String(Boolean(options && typeof options === "object" ? options.capture : options))}`;
+        const listeners = records?.get(key);
+        if (listeners?.has(listener)) {
+          listeners.delete(listener);
           state.counts.listeners = Math.max(0, state.counts.listeners - 1);
-          if (count === 1) records.delete(key);
-          else records.set(key, count - 1);
+          if (listeners.size === 0) records.delete(key);
         }
       }
       return state.original.removeEventListener.call(this, type, listener, options);
@@ -230,6 +360,52 @@ function instrumentationSource() {
     animationFrames: state.counts.animationFrames.size,
   });
 
+  const runtimeKeys = [
+    "listeners",
+    "mutationObservers",
+    "resizeObservers",
+    "intersectionObservers",
+    "performanceObservers",
+    "timers",
+    "intervals",
+    "animationFrames",
+  ];
+
+  const runtimeDelta = (before, after) =>
+    Object.fromEntries(runtimeKeys.map((key) => [key, (after?.[key] || 0) - (before?.[key] || 0)]));
+
+  const memoryBytes = (snapshot) => {
+    if (!snapshot || snapshot.observable !== true) return null;
+    if (Number.isFinite(snapshot.usedJSHeapSize)) return snapshot.usedJSHeapSize;
+    if (Number.isFinite(snapshot.bytes)) return snapshot.bytes;
+    return null;
+  };
+
+  const makeLeakChecks = (before, after, memoryBefore, memoryAfter) => {
+    const delta = before && after ? runtimeDelta(before, after) : null;
+    const leakedResources = delta
+      ? runtimeKeys.filter((key) => delta[key] > 0).map((key) => ({ resource: key, delta: delta[key] }))
+      : null;
+    const memoryBeforeBytes = memoryBytes(memoryBefore);
+    const memoryAfterBytes = memoryBytes(memoryAfter);
+    return {
+      runtime: {
+        observable: Boolean(delta),
+        clean: Boolean(delta) && leakedResources.length === 0,
+        leakedResources,
+      },
+      memory: {
+        observable: memoryBefore?.observable === true && memoryAfter?.observable === true,
+        startBytes: memoryBeforeBytes,
+        endBytes: memoryAfterBytes,
+        deltaBytes:
+          Number.isFinite(memoryBeforeBytes) && Number.isFinite(memoryAfterBytes)
+            ? memoryAfterBytes - memoryBeforeBytes
+            : null,
+      },
+    };
+  };
+
   const memorySnapshot = async () => {
     if (performance.memory) {
       return {
@@ -261,7 +437,10 @@ function instrumentationSource() {
     current.mutationObserver?.disconnect();
     withInternal(() => state.original.removeEventListener?.call(document, "keydown", current.inputListener, true));
     const end = performance.now();
+    const runtime = runtimeCounts();
     const memory = await memorySnapshot();
+    const runtimeDeltaValue = current.runtimeBaseline ? runtimeDelta(current.runtimeBaseline, runtime) : null;
+    const leakChecks = makeLeakChecks(current.runtimeBaseline, runtime, current.memoryStart, memory);
     const result = {
       label: current.label,
       durationMs: end - current.startedAt,
@@ -276,8 +455,13 @@ function instrumentationSource() {
       maxMountedCells: current.maxMountedCells,
       maxMountedSheetCells: current.maxMountedSheetCells,
       maxDomNodes: current.maxDomNodes,
-      runtimeCounts: runtimeCounts(),
+      runtimeBaseline: current.runtimeBaseline,
+      runtimeCounts: runtime,
+      runtimeDelta: runtimeDeltaValue,
+      leakChecks,
+      memoryStart: current.memoryStart,
       memory,
+      memoryDeltaBytes: leakChecks.memory.deltaBytes,
     };
     state.current = null;
     state.lastResult = result;
@@ -323,8 +507,10 @@ function instrumentationSource() {
   }
 
   window.__tactilePerf = {
-    start(label = "scenario") {
+    async start(label = "scenario") {
       if (state.current) throw new Error("A performance scenario is already running.");
+      const runtimeBaseline = state.referenceRuntime ? { ...state.referenceRuntime } : runtimeCounts();
+      const memoryStart = state.referenceMemory || (await memorySnapshot());
       const current = {
         label,
         startedAt: performance.now(),
@@ -341,6 +527,8 @@ function instrumentationSource() {
         maxMountedSheetCells: 0,
         maxDomNodes: 0,
         reactCommitStart: state.reactCommitCountObservable ? state.reactCommitCount : null,
+        runtimeBaseline,
+        memoryStart,
       };
       state.current = current;
 
@@ -415,13 +603,40 @@ function instrumentationSource() {
       return { label, startedAt: current.startedAt };
     },
     stop,
-    snapshot() {
+    async markBaseline(label = "reference") {
+      state.referenceRuntime = runtimeCounts();
+      state.referenceMemory = await memorySnapshot();
+      state.referenceLabel = label;
       return {
-        lastResult: state.lastResult,
-        runtimeCounts: runtimeCounts(),
+        label,
+        runtime: state.referenceRuntime,
+        memory: state.referenceMemory,
+      };
+    },
+    async snapshot() {
+      const runtime = runtimeCounts();
+      const memory = await memorySnapshot();
+      const lastResult = state.lastResult
+        ? {
+            label: state.lastResult.label,
+            durationMs: state.lastResult.durationMs,
+            frameSamples: state.lastResult.frameTimes?.length || 0,
+            longTaskCount: state.lastResult.longTaskDurations?.length || 0,
+            inputSamples: state.lastResult.inputLatencies?.length || 0,
+            memoryDeltaBytes: state.lastResult.memoryDeltaBytes ?? null,
+          }
+        : null;
+      return {
+        lastResult,
+        referenceLabel: state.referenceLabel,
+        referenceRuntime: state.referenceRuntime,
+        runtimeCounts: runtime,
+        runtimeDelta: state.referenceRuntime ? runtimeDelta(state.referenceRuntime, runtime) : null,
         dom: countDom(),
         reactCommitCount: state.reactCommitCountObservable ? state.reactCommitCount : null,
         reactCommitCountObservable: state.reactCommitCountObservable,
+        memory,
+        leakChecks: makeLeakChecks(state.referenceRuntime, runtime, state.referenceMemory, memory),
       };
     },
   };

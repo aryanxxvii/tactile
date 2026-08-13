@@ -9,7 +9,13 @@ import {
   writePerformanceFixture,
 } from "../../benchmarks/generate-fixture.mjs";
 import { measureBundle } from "./bundle.mjs";
-import { createMeasurementInitScript, PERFORMANCE_SCHEMA_VERSION, summarizeInstrumentation } from "./measurement.mjs";
+import {
+  createMeasurementInitScript,
+  evaluatePerformanceCertification,
+  PERFORMANCE_SCHEMA_VERSION,
+  RELEASE_BUDGETS,
+  summarizeInstrumentation,
+} from "./measurement.mjs";
 
 const ROOT_OBJECT_ID = "perf-root-sheet";
 const LAYER_OBJECT_IDS = ["perf-layer-1-sheet", "perf-layer-2-sheet", "perf-layer-3-sheet", "perf-layer-4-sheet"];
@@ -98,7 +104,7 @@ async function ensureBase(page, baseUrl) {
 }
 
 async function measureScenario(page, label, action, settleMs = 250) {
-  await page.evaluate((scenarioLabel) => window.__tactilePerf.start(scenarioLabel), label);
+  await page.evaluate(async (scenarioLabel) => window.__tactilePerf.start(scenarioLabel), label);
   let actionError = null;
   try {
     await action();
@@ -300,6 +306,7 @@ async function runMeasuredBrowser(args, fixture) {
       500,
     );
     results.push(importMeasurement);
+    await page.evaluate(async () => window.__tactilePerf?.markBaseline?.("post-fixture-import") ?? null);
 
     const scrollMeasurement = await measureScenario(page, "scroll", () => scrollAction(page), 250);
     results.push(scrollMeasurement);
@@ -329,6 +336,10 @@ async function runMeasuredBrowser(args, fixture) {
     );
     results.push(nestedMeasurement);
 
+    await ensureBase(page, baseUrl);
+    await page.waitForTimeout(500);
+    const teardown = await page.evaluate(async () => window.__tactilePerf?.snapshot?.() ?? null);
+
     if (args.screenshots) {
       await ensureBase(page, baseUrl);
       screenshots.push(...(await captureVisualStates(page, baseUrl, args.screenshots)));
@@ -341,6 +352,7 @@ async function runMeasuredBrowser(args, fixture) {
       viewport: { width: 1440, height: 900, deviceScaleFactor: 1 },
       resources: await collectResourceSizes(page),
       scenarios: Object.fromEntries(results.map((result) => [result.label, result])),
+      teardown,
       screenshots,
       browserUrl: baseUrl,
     };
@@ -354,6 +366,7 @@ async function runMeasuredBrowser(args, fixture) {
       viewport: { width: 1440, height: 900, deviceScaleFactor: 1 },
       resources: [],
       scenarios: Object.fromEntries(results.map((result) => [result.label, result])),
+      teardown: null,
       screenshots,
       browserUrl: baseUrl,
     };
@@ -406,7 +419,9 @@ async function main(argv = process.argv.slice(2)) {
     },
     fixture: validation,
     bundle: null,
+    releaseBudgets: RELEASE_BUDGETS,
     scenarios: {},
+    teardown: null,
     screenshots: [],
     limitations: [],
   };
@@ -425,6 +440,7 @@ async function main(argv = process.argv.slice(2)) {
       result.limitations = [...new Set([...(result.limitations || []), ...(browserResult.limitations || [])])];
     }
   }
+  result.certification = evaluatePerformanceCertification(result);
   result.runsRequested = args.runs;
   result.measurementNote =
     args.runs > 1
@@ -437,6 +453,7 @@ async function main(argv = process.argv.slice(2)) {
         status: result.status,
         output: path.relative(process.cwd(), outputPath).replaceAll("\\", "/"),
         reason: result.reason,
+        certification: result.certification,
         bundle: result.bundle,
         screenshots: result.screenshots?.length || 0,
         scenarios: Object.keys(result.scenarios || {}),
@@ -445,7 +462,9 @@ async function main(argv = process.argv.slice(2)) {
       2,
     ),
   );
-  if (args.strict && result.status !== "measured") process.exitCode = 2;
+  if (args.strict && result.certification.status !== "pass") {
+    process.exitCode = result.certification.status === "blocked" ? 2 : 1;
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

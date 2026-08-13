@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-08-13T17:39:50.751Z",
-  "status": "partial",
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-13T20:03:03.111Z",
+  "status": "measured",
   "environment": {
     "node": "v24.13.0",
     "platform": "win32",
@@ -9,7 +9,7 @@
     "cpuCount": 12,
     "memoryBytes": 16477036544,
     "headless": true,
-    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-13956\\fixture.json",
+    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-24520\\fixture.json",
     "fixtureGeneratedOnRun": true,
     "fixtureFingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4"
   },
@@ -60,112 +60,112 @@
     "javascript": {
       "files": [
         {
-          "file": "assets/App-5MUHg8UZ.js",
-          "rawBytes": 219463,
-          "gzipBytes": 65398
+          "file": "assets/App-CBBpHeuk.js",
+          "rawBytes": 220589,
+          "gzipBytes": 65782
         },
         {
-          "file": "assets/DocumentObject-BLujMcZA.js",
+          "file": "assets/DocumentObject-CD9FnwSS.js",
           "rawBytes": 1845,
-          "gzipBytes": 851
+          "gzipBytes": 852
         },
         {
-          "file": "assets/FileObject-D8T0U3sX.js",
+          "file": "assets/FileObject-CCSKhTYJ.js",
           "rawBytes": 4431,
-          "gzipBytes": 1749
+          "gzipBytes": 1750
         },
         {
-          "file": "assets/FilesPanel-D90Nop4a.js",
+          "file": "assets/FilesPanel-DSv9xUwT.js",
           "rawBytes": 24304,
-          "gzipBytes": 7175
+          "gzipBytes": 7173
         },
         {
-          "file": "assets/IconBrackets-B2SSy2vP.js",
+          "file": "assets/IconBrackets-B0TIpoPt.js",
           "rawBytes": 362,
-          "gzipBytes": 273
+          "gzipBytes": 270
         },
         {
-          "file": "assets/IconCheck-BGX9Zj3u.js",
+          "file": "assets/IconCheck-DaCzNgew.js",
           "rawBytes": 314,
-          "gzipBytes": 258
+          "gzipBytes": 256
         },
         {
-          "file": "assets/IconChevronDown-YHAwK09A.js",
+          "file": "assets/IconChevronDown-DrO8md-a.js",
           "rawBytes": 329,
-          "gzipBytes": 266
+          "gzipBytes": 263
         },
         {
-          "file": "assets/IconCopy-DTEJskX1.js",
+          "file": "assets/IconCopy-CCYbUQMN.js",
           "rawBytes": 861,
           "gzipBytes": 398
         },
         {
-          "file": "assets/IconPalette-Ds8MnfvR.js",
+          "file": "assets/IconPalette-D2GYpODT.js",
           "rawBytes": 660,
-          "gzipBytes": 391
+          "gzipBytes": 390
         },
         {
-          "file": "assets/IconPencil-BxvBorlP.js",
+          "file": "assets/IconPencil-BSEJj7Nb.js",
           "rawBytes": 401,
-          "gzipBytes": 298
+          "gzipBytes": 297
         },
         {
-          "file": "assets/IconTable-B2J2ZPqV.js",
+          "file": "assets/IconTable-Ddf2mP6J.js",
           "rawBytes": 1248,
-          "gzipBytes": 452
+          "gzipBytes": 450
         },
         {
-          "file": "assets/IconTrash-Di7fGtpf.js",
+          "file": "assets/IconTrash-C1V77sjk.js",
           "rawBytes": 530,
-          "gzipBytes": 328
+          "gzipBytes": 326
         },
         {
-          "file": "assets/IconUpload-BNaQDMdc.js",
+          "file": "assets/IconUpload-BVFZyTZR.js",
           "rawBytes": 810,
-          "gzipBytes": 337
+          "gzipBytes": 335
         },
         {
-          "file": "assets/IconX-BN6_S8ah.js",
+          "file": "assets/IconX-CWXREfM1.js",
           "rawBytes": 345,
-          "gzipBytes": 265
+          "gzipBytes": 264
         },
         {
-          "file": "assets/index-Bnh4Duf4.js",
+          "file": "assets/index-CBOGRJCR.js",
           "rawBytes": 196139,
           "gzipBytes": 61523
         },
         {
-          "file": "assets/jszip.min-DlNSjtOj.js",
+          "file": "assets/jszip.min-B3Ms3rgk.js",
           "rawBytes": 97535,
-          "gzipBytes": 30323
+          "gzipBytes": 30325
         },
         {
-          "file": "assets/MarkdownObject-CeMJMls1.js",
+          "file": "assets/MarkdownObject-7ygFf5NF.js",
           "rawBytes": 20389,
-          "gzipBytes": 6151
+          "gzipBytes": 6153
         },
         {
-          "file": "assets/objectDrag-CU2IOsGO.js",
+          "file": "assets/objectDrag-CRQKwFPH.js",
           "rawBytes": 3638,
-          "gzipBytes": 1490
+          "gzipBytes": 1486
         },
         {
-          "file": "assets/ObjectHeader-DED81jeW.js",
+          "file": "assets/ObjectHeader-BHEcE784.js",
           "rawBytes": 7063,
-          "gzipBytes": 2769
+          "gzipBytes": 2768
         },
         {
-          "file": "assets/SettingsPanel-DFh17goc.js",
+          "file": "assets/SettingsPanel-D38vBOF2.js",
           "rawBytes": 19711,
-          "gzipBytes": 6155
+          "gzipBytes": 6157
         },
         {
-          "file": "assets/SheetObject-D5U3r9k1.js",
-          "rawBytes": 89820,
-          "gzipBytes": 24693
+          "file": "assets/SheetObject-Bgxum9g_.js",
+          "rawBytes": 91218,
+          "gzipBytes": 25059
         },
         {
-          "file": "assets/TooltipLayer-Buv--hvi.js",
+          "file": "assets/TooltipLayer-BF2YTgx3.js",
           "rawBytes": 2933,
           "gzipBytes": 1210
         },
@@ -175,38 +175,57 @@
           "gzipBytes": 7528
         }
       ],
-      "rawBytes": 716438,
-      "gzipBytes": 220281
+      "rawBytes": 718962,
+      "gzipBytes": 221015
     },
     "css": {
       "files": [
         {
-          "file": "assets/index-CQ-qiIPk.css",
-          "rawBytes": 112645,
-          "gzipBytes": 18313
+          "file": "assets/index-CXFfWh9W.css",
+          "rawBytes": 112663,
+          "gzipBytes": 18331
         }
       ],
-      "rawBytes": 112645,
-      "gzipBytes": 18313
+      "rawBytes": 112663,
+      "gzipBytes": 18331
+    },
+    "entry": {
+      "javascript": {
+        "file": "assets/index-CBOGRJCR.js",
+        "rawBytes": 196139,
+        "gzipBytes": 61523
+      },
+      "css": {
+        "file": "assets/index-CXFfWh9W.css",
+        "rawBytes": 112663,
+        "gzipBytes": 18331
+      }
     }
+  },
+  "releaseBudgets": {
+    "frameTimeP95Ms": 16.7,
+    "inputToPaintP95Ms": 50,
+    "repeatedMainThreadTaskMs": 50,
+    "initialJavascriptGzipBytes": 112640,
+    "cssGzipBytes": 18432
   },
   "scenarios": {
     "fixture-import-and-render": {
       "label": "fixture-import-and-render",
-      "durationMs": 21584.89999985695,
+      "durationMs": 14771.400000095367,
       "frameTimeMs": {
-        "samples": 157,
-        "average": 137.36242038216562,
-        "p95": 433.2000000000007,
-        "max": 6416.4,
-        "droppedFrameSamples": 74
+        "samples": 98,
+        "average": 150.6734693877551,
+        "p95": 400.09999999999854,
+        "max": 5633.1,
+        "droppedFrameSamples": 43
       },
       "longTasks": {
         "observable": true,
-        "count": 10,
-        "totalDurationMs": 19106,
-        "maxDurationMs": 6428,
-        "over50Ms": 10
+        "count": 9,
+        "totalDurationMs": 13214,
+        "maxDurationMs": 5649,
+        "over50Ms": 9
       },
       "inputLatencyMs": {
         "observable": true,
@@ -217,48 +236,102 @@
       "react": {
         "commitCount": 10,
         "commitCountObservable": true,
-        "domMutationBatches": 8
+        "domMutationBatches": 9
       },
       "mounted": {
         "cellsMax": 476,
         "sheetCellsMax": 476,
-        "domNodesMax": 2276
+        "domNodesMax": 2282
       },
       "resources": null,
+      "runtimeBaseline": {
+        "listeners": 139,
+        "mutationObservers": 0,
+        "resizeObservers": 0,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 1,
+        "intervals": 0,
+        "animationFrames": 0
+      },
       "runtimeCounts": {
-        "listeners": 179,
+        "listeners": 191,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 1,
+        "intervals": 0,
         "animationFrames": 0
+      },
+      "runtimeDelta": {
+        "listeners": 52,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": -1,
+        "intervals": 0,
+        "animationFrames": 0
+      },
+      "leakChecks": {
+        "runtime": {
+          "observable": true,
+          "clean": false,
+          "leakedResources": [
+            {
+              "resource": "listeners",
+              "delta": 52
+            },
+            {
+              "resource": "mutationObservers",
+              "delta": 1
+            },
+            {
+              "resource": "resizeObservers",
+              "delta": 1
+            }
+          ]
+        },
+        "memory": {
+          "observable": true,
+          "startBytes": 10000000,
+          "endBytes": 10000000,
+          "deltaBytes": 0
+        }
+      },
+      "memoryStart": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
+        "jsHeapSizeLimit": 3760000000
       },
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 304000000,
-        "totalJSHeapSize": 364000000,
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
         "jsHeapSizeLimit": 3760000000
-      }
+      },
+      "memoryDeltaBytes": 0
     },
     "scroll": {
       "label": "scroll",
-      "durationMs": 5971.799999952316,
+      "durationMs": 3323.600000143051,
       "frameTimeMs": {
-        "samples": 74,
-        "average": 80.4027027027027,
-        "p95": 533.4000000000015,
-        "max": 649.8999999999978,
-        "droppedFrameSamples": 66
+        "samples": 83,
+        "average": 39.95783132530121,
+        "p95": 83.29999999999927,
+        "max": 150,
+        "droppedFrameSamples": 65
       },
       "longTasks": {
         "observable": true,
-        "count": 24,
-        "totalDurationMs": 23032,
-        "maxDurationMs": 6428,
-        "over50Ms": 22
+        "count": 22,
+        "totalDurationMs": 1386,
+        "maxDurationMs": 157,
+        "over50Ms": 19
       },
       "inputLatencyMs": {
         "observable": true,
@@ -267,196 +340,448 @@
         "max": null
       },
       "react": {
-        "commitCount": 19,
+        "commitCount": 10,
         "commitCountObservable": true,
         "domMutationBatches": 55
       },
       "mounted": {
         "cellsMax": 1025,
         "sheetCellsMax": 1025,
-        "domNodesMax": 4532
+        "domNodesMax": 4537
       },
       "resources": null,
-      "runtimeCounts": {
-        "listeners": 179,
+      "runtimeBaseline": {
+        "listeners": 191,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 1,
+        "intervals": 0,
         "animationFrames": 0
+      },
+      "runtimeCounts": {
+        "listeners": 191,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 0
+      },
+      "runtimeDelta": {
+        "listeners": 0,
+        "mutationObservers": 0,
+        "resizeObservers": 0,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 0
+      },
+      "leakChecks": {
+        "runtime": {
+          "observable": true,
+          "clean": true,
+          "leakedResources": []
+        },
+        "memory": {
+          "observable": true,
+          "startBytes": 10000000,
+          "endBytes": 10000000,
+          "deltaBytes": 0
+        }
+      },
+      "memoryStart": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
+        "jsHeapSizeLimit": 3760000000
       },
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 304000000,
-        "totalJSHeapSize": 364000000,
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
         "jsHeapSizeLimit": 3760000000
-      }
+      },
+      "memoryDeltaBytes": 0
     },
     "typing": {
       "label": "typing",
-      "durationMs": 16195.599999904633,
+      "durationMs": 4874.600000143051,
       "frameTimeMs": {
-        "samples": 34,
-        "average": 475.4735294117648,
-        "p95": 7116.399999999998,
-        "max": 7816.399999999994,
-        "droppedFrameSamples": 13
+        "samples": 28,
+        "average": 173.20714285714283,
+        "p95": 266.59999999999854,
+        "max": 3716.600000000002,
+        "droppedFrameSamples": 19
       },
       "longTasks": {
         "observable": true,
-        "count": 28,
-        "totalDurationMs": 38695,
-        "maxDurationMs": 7825,
-        "over50Ms": 26
+        "count": 4,
+        "totalDurationMs": 4408,
+        "maxDurationMs": 3721,
+        "over50Ms": 4
       },
       "inputLatencyMs": {
         "observable": true,
-        "samples": 6,
-        "p95": 7840,
-        "max": 7840
+        "samples": 10,
+        "p95": 3736,
+        "max": 3736
       },
       "react": {
-        "commitCount": 5,
+        "commitCount": 9,
         "commitCountObservable": true,
-        "domMutationBatches": 3
+        "domMutationBatches": 6
       },
       "mounted": {
         "cellsMax": 476,
         "sheetCellsMax": 476,
-        "domNodesMax": 2277
+        "domNodesMax": 2283
       },
       "resources": null,
-      "runtimeCounts": {
-        "listeners": 183,
+      "runtimeBaseline": {
+        "listeners": 191,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 1,
+        "intervals": 0,
         "animationFrames": 0
+      },
+      "runtimeCounts": {
+        "listeners": 191,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 0
+      },
+      "runtimeDelta": {
+        "listeners": 0,
+        "mutationObservers": 0,
+        "resizeObservers": 0,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 0
+      },
+      "leakChecks": {
+        "runtime": {
+          "observable": true,
+          "clean": true,
+          "leakedResources": []
+        },
+        "memory": {
+          "observable": true,
+          "startBytes": 10000000,
+          "endBytes": 10000000,
+          "deltaBytes": 0
+        }
+      },
+      "memoryStart": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
+        "jsHeapSizeLimit": 3760000000
       },
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 304000000,
-        "totalJSHeapSize": 364000000,
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
         "jsHeapSizeLimit": 3760000000
-      }
+      },
+      "memoryDeltaBytes": 0
     },
     "in-out": {
       "label": "in-out",
-      "durationMs": 6049.900000095367,
+      "durationMs": 3113,
       "frameTimeMs": {
-        "samples": 56,
-        "average": 107.73275,
-        "p95": 899.9000000000015,
-        "max": 1083.300000000003,
-        "droppedFrameSamples": 26
+        "samples": 49,
+        "average": 58.16326530612245,
+        "p95": 333.2999999999993,
+        "max": 450,
+        "droppedFrameSamples": 29
       },
       "longTasks": {
         "observable": true,
-        "count": 37,
-        "totalDurationMs": 43693,
-        "maxDurationMs": 7825,
-        "over50Ms": 34
+        "count": 8,
+        "totalDurationMs": 2041,
+        "maxDurationMs": 431,
+        "over50Ms": 8
       },
       "inputLatencyMs": {
         "observable": true,
-        "samples": 6,
-        "p95": 7840,
-        "max": 7840
+        "samples": 5,
+        "p95": 384,
+        "max": 384
       },
       "react": {
-        "commitCount": 13,
+        "commitCount": 15,
         "commitCountObservable": true,
-        "domMutationBatches": 9
+        "domMutationBatches": 11
       },
       "mounted": {
         "cellsMax": 918,
         "sheetCellsMax": 918,
-        "domNodesMax": 4387
+        "domNodesMax": 4397
       },
       "resources": null,
-      "runtimeCounts": {
-        "listeners": 325,
+      "runtimeBaseline": {
+        "listeners": 191,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 1,
+        "intervals": 0,
         "animationFrames": 0
+      },
+      "runtimeCounts": {
+        "listeners": 337,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 0
+      },
+      "runtimeDelta": {
+        "listeners": 146,
+        "mutationObservers": 0,
+        "resizeObservers": 0,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 0
+      },
+      "leakChecks": {
+        "runtime": {
+          "observable": true,
+          "clean": false,
+          "leakedResources": [
+            {
+              "resource": "listeners",
+              "delta": 146
+            }
+          ]
+        },
+        "memory": {
+          "observable": true,
+          "startBytes": 10000000,
+          "endBytes": 10000000,
+          "deltaBytes": 0
+        }
+      },
+      "memoryStart": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
+        "jsHeapSizeLimit": 3760000000
       },
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 304000000,
-        "totalJSHeapSize": 364000000,
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
         "jsHeapSizeLimit": 3760000000
-      }
+      },
+      "memoryDeltaBytes": 0
     },
     "nested": {
       "label": "nested",
-      "durationMs": 35024.700000047684,
+      "durationMs": 22642.799999952316,
       "frameTimeMs": {
-        "samples": 240,
-        "average": 139.23083333333335,
-        "p95": 800.1000000000058,
-        "max": 2499.9000000000015,
-        "droppedFrameSamples": 112
+        "samples": 461,
+        "average": 41.35755748373103,
+        "p95": 250,
+        "max": 633.2999999999956,
+        "droppedFrameSamples": 213
       },
       "longTasks": {
         "observable": true,
-        "count": 84,
-        "totalDurationMs": 74091,
-        "maxDurationMs": 7825,
-        "over50Ms": 81
+        "count": 43,
+        "totalDurationMs": 11046,
+        "maxDurationMs": 583,
+        "over50Ms": 43
       },
       "inputLatencyMs": {
         "observable": true,
-        "samples": 24,
-        "p95": 1736,
-        "max": 7840
+        "samples": 20,
+        "p95": 602.1000001430511,
+        "max": 664
       },
       "react": {
-        "commitCount": 61,
+        "commitCount": 69,
         "commitCountObservable": true,
-        "domMutationBatches": 42
+        "domMutationBatches": 50
       },
       "mounted": {
-        "cellsMax": 918,
-        "sheetCellsMax": 918,
-        "domNodesMax": 4387
+        "cellsMax": 1008,
+        "sheetCellsMax": 1008,
+        "domNodesMax": 4756
       },
       "resources": null,
+      "runtimeBaseline": {
+        "listeners": 191,
+        "mutationObservers": 1,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 0
+      },
       "runtimeCounts": {
-        "listeners": 1050,
+        "listeners": 1062,
         "mutationObservers": 1,
         "resizeObservers": 2,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 1,
-        "animationFrames": 2
+        "intervals": 0,
+        "animationFrames": 4
+      },
+      "runtimeDelta": {
+        "listeners": 871,
+        "mutationObservers": 0,
+        "resizeObservers": 1,
+        "intersectionObservers": 0,
+        "performanceObservers": 0,
+        "timers": 0,
+        "intervals": 0,
+        "animationFrames": 4
+      },
+      "leakChecks": {
+        "runtime": {
+          "observable": true,
+          "clean": false,
+          "leakedResources": [
+            {
+              "resource": "listeners",
+              "delta": 871
+            },
+            {
+              "resource": "resizeObservers",
+              "delta": 1
+            },
+            {
+              "resource": "animationFrames",
+              "delta": 4
+            }
+          ]
+        },
+        "memory": {
+          "observable": true,
+          "startBytes": 10000000,
+          "endBytes": 10000000,
+          "deltaBytes": 0
+        }
+      },
+      "memoryStart": {
+        "observable": true,
+        "source": "performance.memory",
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
+        "jsHeapSizeLimit": 3760000000
       },
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 304000000,
-        "totalJSHeapSize": 364000000,
+        "usedJSHeapSize": 10000000,
+        "totalJSHeapSize": 10000000,
         "jsHeapSizeLimit": 3760000000
+      },
+      "memoryDeltaBytes": 0
+    }
+  },
+  "teardown": {
+    "lastResult": {
+      "label": "nested",
+      "durationMs": 22642.799999952316,
+      "frameSamples": 461,
+      "longTaskCount": 43,
+      "inputSamples": 20,
+      "memoryDeltaBytes": 0
+    },
+    "referenceLabel": "post-fixture-import",
+    "referenceRuntime": {
+      "listeners": 191,
+      "mutationObservers": 1,
+      "resizeObservers": 1,
+      "intersectionObservers": 0,
+      "performanceObservers": 0,
+      "timers": 0,
+      "intervals": 0,
+      "animationFrames": 0
+    },
+    "runtimeCounts": {
+      "listeners": 1057,
+      "mutationObservers": 1,
+      "resizeObservers": 1,
+      "intersectionObservers": 0,
+      "performanceObservers": 0,
+      "timers": 0,
+      "intervals": 0,
+      "animationFrames": 0
+    },
+    "runtimeDelta": {
+      "listeners": 866,
+      "mutationObservers": 0,
+      "resizeObservers": 0,
+      "intersectionObservers": 0,
+      "performanceObservers": 0,
+      "timers": 0,
+      "intervals": 0,
+      "animationFrames": 0
+    },
+    "dom": {
+      "domNodes": 2550,
+      "mountedCells": 540,
+      "mountedSheetCells": 540
+    },
+    "reactCommitCount": 119,
+    "reactCommitCountObservable": true,
+    "memory": {
+      "observable": true,
+      "source": "performance.memory",
+      "usedJSHeapSize": 10000000,
+      "totalJSHeapSize": 10000000,
+      "jsHeapSizeLimit": 3760000000
+    },
+    "leakChecks": {
+      "runtime": {
+        "observable": true,
+        "clean": false,
+        "leakedResources": [
+          {
+            "resource": "listeners",
+            "delta": 866
+          }
+        ]
+      },
+      "memory": {
+        "observable": true,
+        "startBytes": 10000000,
+        "endBytes": 10000000,
+        "deltaBytes": 0
       }
     }
   },
   "screenshots": [],
-  "limitations": [
-    "One or more interaction states were unavailable to the baseline harness."
-  ],
-  "reason": "Browser baseline stopped after a scenario failure: locator.waitFor: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-object-id=\"perf-root-sheet\"][data-cell-address=\"A1\"]')\u001b[22m\n",
+  "limitations": [],
   "playwright": "playwright",
   "browser": "chromium",
   "viewport": {
@@ -464,8 +789,442 @@
     "height": 900,
     "deviceScaleFactor": 1
   },
-  "resources": [],
-  "browserUrl": "http://127.0.0.1:5173",
+  "resources": [
+    {
+      "name": "http://127.0.0.1:5187/assets/index-CBOGRJCR.js",
+      "transferSize": 61823,
+      "encodedBodySize": 61523,
+      "decodedBodySize": 196139
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/index-CXFfWh9W.css",
+      "transferSize": 18631,
+      "encodedBodySize": 18331,
+      "decodedBodySize": 112663
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/App-CBBpHeuk.js",
+      "transferSize": 66082,
+      "encodedBodySize": 65782,
+      "decodedBodySize": 220589
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/SheetObject-Bgxum9g_.js",
+      "transferSize": 25359,
+      "encodedBodySize": 25059,
+      "decodedBodySize": 91218
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconTable-Ddf2mP6J.js",
+      "transferSize": 750,
+      "encodedBodySize": 450,
+      "decodedBodySize": 1248
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/ObjectHeader-BHEcE784.js",
+      "transferSize": 3068,
+      "encodedBodySize": 2768,
+      "decodedBodySize": 7063
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/objectDrag-CRQKwFPH.js",
+      "transferSize": 1786,
+      "encodedBodySize": 1486,
+      "decodedBodySize": 3638
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconCheck-DaCzNgew.js",
+      "transferSize": 614,
+      "encodedBodySize": 314,
+      "decodedBodySize": 314
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconUpload-BVFZyTZR.js",
+      "transferSize": 1110,
+      "encodedBodySize": 810,
+      "decodedBodySize": 810
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconChevronDown-DrO8md-a.js",
+      "transferSize": 629,
+      "encodedBodySize": 329,
+      "decodedBodySize": 329
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconCopy-CCYbUQMN.js",
+      "transferSize": 1161,
+      "encodedBodySize": 861,
+      "decodedBodySize": 861
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconTrash-C1V77sjk.js",
+      "transferSize": 830,
+      "encodedBodySize": 530,
+      "decodedBodySize": 530
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconBrackets-B0TIpoPt.js",
+      "transferSize": 662,
+      "encodedBodySize": 362,
+      "decodedBodySize": 362
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/TooltipLayer-BF2YTgx3.js",
+      "transferSize": 1510,
+      "encodedBodySize": 1210,
+      "decodedBodySize": 2933
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/FileObject-CCSKhTYJ.js",
+      "transferSize": 2050,
+      "encodedBodySize": 1750,
+      "decodedBodySize": 4431
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/MarkdownObject-7ygFf5NF.js",
+      "transferSize": 6453,
+      "encodedBodySize": 6153,
+      "decodedBodySize": 20389
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconPencil-BSEJj7Nb.js",
+      "transferSize": 701,
+      "encodedBodySize": 401,
+      "decodedBodySize": 401
+    },
+    {
+      "name": "http://127.0.0.1:5187/assets/IconPalette-D2GYpODT.js",
+      "transferSize": 960,
+      "encodedBodySize": 660,
+      "decodedBodySize": 660
+    }
+  ],
+  "browserUrl": "http://127.0.0.1:5187",
+  "certification": {
+    "status": "fail",
+    "passed": false,
+    "releaseBudgets": {
+      "frameTimeP95Ms": 16.7,
+      "inputToPaintP95Ms": 50,
+      "repeatedMainThreadTaskMs": 50,
+      "initialJavascriptGzipBytes": 112640,
+      "cssGzipBytes": 18432
+    },
+    "checks": [
+      {
+        "name": "scroll.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 83.29999999999927,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 66.59999999999927
+      },
+      {
+        "name": "scroll.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 19,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 19
+      },
+      {
+        "name": "scroll.runtimeLeaks",
+        "status": "pass",
+        "observed": [],
+        "budget": 0,
+        "unit": "positive resource delta"
+      },
+      {
+        "name": "typing.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 266.59999999999854,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 249.89999999999856
+      },
+      {
+        "name": "typing.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 4,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 4
+      },
+      {
+        "name": "typing.inputLatencyMs.p95",
+        "status": "fail",
+        "observed": 3736,
+        "budget": 50,
+        "unit": "ms",
+        "delta": 3686
+      },
+      {
+        "name": "typing.runtimeLeaks",
+        "status": "pass",
+        "observed": [],
+        "budget": 0,
+        "unit": "positive resource delta"
+      },
+      {
+        "name": "in-out.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 333.2999999999993,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 316.5999999999993
+      },
+      {
+        "name": "in-out.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 8,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 8
+      },
+      {
+        "name": "in-out.inputLatencyMs.p95",
+        "status": "fail",
+        "observed": 384,
+        "budget": 50,
+        "unit": "ms",
+        "delta": 334
+      },
+      {
+        "name": "in-out.runtimeLeaks",
+        "status": "fail",
+        "observed": [
+          {
+            "resource": "listeners",
+            "delta": 146
+          }
+        ],
+        "budget": 0,
+        "unit": "positive resource delta"
+      },
+      {
+        "name": "nested.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 250,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 233.3
+      },
+      {
+        "name": "nested.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 43,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 43
+      },
+      {
+        "name": "nested.inputLatencyMs.p95",
+        "status": "fail",
+        "observed": 602.1000001430511,
+        "budget": 50,
+        "unit": "ms",
+        "delta": 552.1000001430511
+      },
+      {
+        "name": "nested.runtimeLeaks",
+        "status": "fail",
+        "observed": [
+          {
+            "resource": "listeners",
+            "delta": 871
+          },
+          {
+            "resource": "resizeObservers",
+            "delta": 1
+          },
+          {
+            "resource": "animationFrames",
+            "delta": 4
+          }
+        ],
+        "budget": 0,
+        "unit": "positive resource delta"
+      },
+      {
+        "name": "bundle.javascript.gzipBytes",
+        "status": "fail",
+        "observed": 221015,
+        "budget": 112640,
+        "unit": "bytes across all client JavaScript output",
+        "delta": 108375
+      },
+      {
+        "name": "bundle.css.gzipBytes",
+        "status": "pass",
+        "observed": 18331,
+        "budget": 18432,
+        "unit": "bytes across all client CSS output",
+        "delta": -101
+      },
+      {
+        "name": "teardown.runtimeLeaks",
+        "status": "fail",
+        "observed": [
+          {
+            "resource": "listeners",
+            "delta": 866
+          }
+        ],
+        "budget": 0,
+        "unit": "positive resource delta"
+      }
+    ],
+    "failedChecks": [
+      {
+        "name": "scroll.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 83.29999999999927,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 66.59999999999927
+      },
+      {
+        "name": "scroll.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 19,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 19
+      },
+      {
+        "name": "typing.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 266.59999999999854,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 249.89999999999856
+      },
+      {
+        "name": "typing.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 4,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 4
+      },
+      {
+        "name": "typing.inputLatencyMs.p95",
+        "status": "fail",
+        "observed": 3736,
+        "budget": 50,
+        "unit": "ms",
+        "delta": 3686
+      },
+      {
+        "name": "in-out.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 333.2999999999993,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 316.5999999999993
+      },
+      {
+        "name": "in-out.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 8,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 8
+      },
+      {
+        "name": "in-out.inputLatencyMs.p95",
+        "status": "fail",
+        "observed": 384,
+        "budget": 50,
+        "unit": "ms",
+        "delta": 334
+      },
+      {
+        "name": "in-out.runtimeLeaks",
+        "status": "fail",
+        "observed": [
+          {
+            "resource": "listeners",
+            "delta": 146
+          }
+        ],
+        "budget": 0,
+        "unit": "positive resource delta"
+      },
+      {
+        "name": "nested.frameTimeMs.p95",
+        "status": "fail",
+        "observed": 250,
+        "budget": 16.7,
+        "unit": "ms",
+        "delta": 233.3
+      },
+      {
+        "name": "nested.longTasks.over50Ms",
+        "status": "fail",
+        "observed": 43,
+        "budget": 0,
+        "unit": "count of tasks over 50 ms",
+        "delta": 43
+      },
+      {
+        "name": "nested.inputLatencyMs.p95",
+        "status": "fail",
+        "observed": 602.1000001430511,
+        "budget": 50,
+        "unit": "ms",
+        "delta": 552.1000001430511
+      },
+      {
+        "name": "nested.runtimeLeaks",
+        "status": "fail",
+        "observed": [
+          {
+            "resource": "listeners",
+            "delta": 871
+          },
+          {
+            "resource": "resizeObservers",
+            "delta": 1
+          },
+          {
+            "resource": "animationFrames",
+            "delta": 4
+          }
+        ],
+        "budget": 0,
+        "unit": "positive resource delta"
+      },
+      {
+        "name": "bundle.javascript.gzipBytes",
+        "status": "fail",
+        "observed": 221015,
+        "budget": 112640,
+        "unit": "bytes across all client JavaScript output",
+        "delta": 108375
+      },
+      {
+        "name": "teardown.runtimeLeaks",
+        "status": "fail",
+        "observed": [
+          {
+            "resource": "listeners",
+            "delta": 866
+          }
+        ],
+        "budget": 0,
+        "unit": "positive resource delta"
+      }
+    ],
+    "unmeasurableChecks": [],
+    "blockers": [],
+    "memory": {
+      "observable": true,
+      "startBytes": 10000000,
+      "endBytes": 10000000,
+      "deltaBytes": 0
+    }
+  },
   "runsRequested": 1,
   "measurementNote": "Repeat the command three times on pinned reference hardware for certification medians/p95s."
 }

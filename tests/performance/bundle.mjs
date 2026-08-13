@@ -35,9 +35,15 @@ export async function measureBundle(rootDirectory = "dist/client") {
   const resolvedRoot = path.resolve(rootDirectory);
   const rootStats = await stat(resolvedRoot);
   if (!rootStats.isDirectory()) throw new Error(`Bundle directory is not a directory: ${resolvedRoot}`);
+  const [javascript, css] = await Promise.all([measureKind(resolvedRoot, ".js"), measureKind(resolvedRoot, ".css")]);
+  const entryFile = (kind, pattern) => kind.files.find((entry) => pattern.test(entry.file)) || null;
   return {
     root: resolvedRoot,
-    javascript: await measureKind(resolvedRoot, ".js"),
-    css: await measureKind(resolvedRoot, ".css"),
+    javascript,
+    css,
+    entry: {
+      javascript: entryFile(javascript, /(?:^|\/)index-[^/]+\.js$/),
+      css: entryFile(css, /(?:^|\/)index-[^/]+\.css$/),
+    },
   };
 }
