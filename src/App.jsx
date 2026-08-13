@@ -62,6 +62,7 @@ export function App() {
     width: window.innerWidth,
     height: window.innerHeight,
   }));
+  const pasteProxyRef = useRef(null);
   useEffect(() => {
     const handleResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", handleResize);
@@ -118,6 +119,12 @@ export function App() {
       const historyShortcut = command && (event.key.toLowerCase() === "z" || event.key.toLowerCase() === "y");
       const typingTarget = event.target?.closest?.("input, textarea, [contenteditable=\"true\"]");
       if (shell.filesOpen && !(historyShortcut && !typingTarget)) return;
+      const activeGridCell = document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]');
+      const gridSurface = event.target?.closest?.(".sheet-grid-shell") || activeGridCell;
+      if (command && event.key.toLowerCase() === "v" && gridSurface && !typingTarget) {
+        pasteProxyRef.current?.focus({ preventScroll: true });
+        return;
+      }
       selection.handleKeyboard(
         event,
         shell.settingsOpen,
@@ -128,7 +135,10 @@ export function App() {
     };
     const handlePaste = (event) => {
       if (shell.filesOpen || shell.settingsOpen) return;
-      selection.handlePaste(event);
+      const proxy = event.target?.dataset?.tactilePasteProxy === "true" ? event.target : null;
+      Promise.resolve(selection.handlePaste(event)).finally(() => {
+        if (proxy) proxy.value = "";
+      });
     };
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("paste", handlePaste);
@@ -287,6 +297,15 @@ export function App() {
           onChange={commands.handleImportFile}
           tabIndex={-1}
           aria-hidden="true"
+        />
+        <textarea
+          ref={pasteProxyRef}
+          className="native-paste-proxy"
+          data-tactile-paste-proxy="true"
+          aria-hidden="true"
+          tabIndex={-1}
+          defaultValue=""
+          spellCheck="false"
         />
         <div
           className="base-object-layer"

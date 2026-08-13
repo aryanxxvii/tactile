@@ -272,21 +272,14 @@ test("pasting a copied whole column preserves all 256 rows", async ({ page }) =>
     });
 });
 
-test("keeps native text-entry paste behavior when an inline editor is active", async ({ page }) => {
+test("double-click keeps editing in the formula bar instead of creating an inline editor", async ({ page }) => {
   await page.goto("/");
-  await grantClipboard(page);
   await importClipboardWorkspace(page);
 
   const cell = cellLocator(page, "B2");
   await cell.dblclick();
-  const editor = cell.locator(".cell-editor");
-  await expect(editor).toBeVisible();
-  await editor.fill("existing value");
-  await setClipboard(page, " pasted while editing");
-
-  await editor.press("Control+V");
-
-  await expect(editor).toHaveValue("existing value pasted while editing");
+  await expect(cell.locator(".cell-editor")).toHaveCount(0);
+  await expect(page.locator(".formula-editor")).toBeFocused();
 });
 
 test("keeps native text-entry paste behavior when the formula editor is active", async ({ page }) => {
@@ -302,6 +295,21 @@ test("keeps native text-entry paste behavior when the formula editor is active",
   await editor.press("Control+V");
 
   await expect(editor).toHaveValue("existing value pasted while editing");
+});
+
+test("pastes a clipboard image while the formula editor is active into the selected cell", async ({ page }) => {
+  await page.goto("/");
+  await grantClipboard(page);
+  await importClipboardWorkspace(page);
+  await cellLocator(page, "B2").click();
+  const editor = page.locator(".formula-editor");
+  await editor.click();
+  await setClipboardImage(page);
+
+  await editor.press("Control+V");
+
+  await expect.poll(() => cellValue(page, "B2")).toBe("image");
+  await expect(page.locator('[data-cell-address="B2"]')).toHaveAttribute("aria-label", /embedded object/);
 });
 
 test("Delete clears a selected embedded cell without deleting the embedded object", async ({ page }) => {

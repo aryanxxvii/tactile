@@ -3615,6 +3615,18 @@ kbd {
   display: none !important;
 }
 
+.native-paste-proxy {
+  position: fixed !important;
+  z-index: -1 !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
 @media (max-width: 900px) {
   .object-header {
     min-height: 66px;

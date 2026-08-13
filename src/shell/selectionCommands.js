@@ -28,8 +28,27 @@ function isSheetCellTarget(target) {
   return Boolean(target?.closest?.(".sheet-cell"));
 }
 
+function hasActiveSheetCell() {
+  return typeof document !== "undefined"
+    && Boolean(document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]'));
+}
+
 function isSheetNavigationTarget(target) {
-  return isSheetCellTarget(target) || isGridTarget(target);
+  return isSheetCellTarget(target) || isGridTarget(target) || hasActiveSheetCell();
+}
+
+function focusSheetCell(objectId, address, attempt = 0) {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  window.requestAnimationFrame(() => {
+    const nextCell = document.querySelector(
+      `[data-object-id="${objectId}"][data-cell-address="${address}"]`,
+    );
+    if (nextCell?.getAttribute("aria-selected") === "true") {
+      nextCell.focus({ preventScroll: true });
+    } else if (attempt < 8) {
+      focusSheetCell(objectId, address, attempt + 1);
+    }
+  });
 }
 
 function clipboardMethodAvailable(method) {
@@ -135,12 +154,14 @@ export function useSelectionCommands({
     } else {
       selectAddress(activeObject.id, next);
     }
+    focusSheetCell(activeObject.id, next);
   }, [layers, selectAddress, selectRange, workspace.objects]);
 
   const pasteTextIntoActiveCell = useCallback((object, cell, text) => {
     const pasted = pasteChanges(cell.address, text);
     updateCells(object.id, pasted.changes, "paste");
     selectRange(object.id, cell.address, pasted.endAddress, cell.address);
+    focusSheetCell(object.id, cell.address);
   }, [selectRange, updateCells]);
 
   const clipboardSelectedCell = useCallback(async (mode) => {
@@ -172,6 +193,7 @@ export function useSelectionCommands({
             const asset = await readLocalFile(file);
             const created = createEmbeddedFile(object.id, cell.id, asset);
             if (created) {
+              focusSheetCell(object.id, cell.address);
               showNotice("Pasted image into the selected tile");
               return;
             }
@@ -190,12 +212,13 @@ export function useSelectionCommands({
   }, [clearCells, createEmbeddedFile, layers, pasteTextIntoActiveCell, selectedCellFor, showNotice, workspace.objects]);
 
   const handlePaste = useCallback(async (event) => {
-    if (event.defaultPrevented || isTypingTarget(event.target)) return;
     const activeLayer = layers[layers.length - 1];
     const object = workspace.objects[activeLayer?.objectId];
     if (object?.type !== "sheet") return;
     const cell = selectedCellFor(object);
     const imageFile = imageFileFromClipboard(event.clipboardData);
+    const pasteProxy = event.target?.dataset?.tactilePasteProxy === "true";
+    if (event.defaultPrevented || (!imageFile && isTypingTarget(event.target) && !pasteProxy)) return;
     const clipboardTypes = Array.from(event.clipboardData?.types || []);
     const text = typeof event.clipboardData?.getData === "function"
       ? event.clipboardData.getData("text/plain")
@@ -207,7 +230,10 @@ export function useSelectionCommands({
       try {
         const asset = await readLocalFile(imageFile);
         const created = createEmbeddedFile(object.id, cell.id, asset);
-        if (created) showNotice("Pasted image into the selected tile");
+        if (created) {
+          focusSheetCell(object.id, cell.address);
+          showNotice("Pasted image into the selected tile");
+        }
       } catch {
         showNotice("Could not paste the image");
       }
