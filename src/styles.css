@@ -4248,7 +4248,7 @@ kbd {
 
 .sheet-cell {
   padding: 0 6px;
-  border-radius: 4px;
+  border-radius: var(--cell-radius);
 }
 
 .address-input input::selection,
@@ -4264,7 +4264,7 @@ kbd {
   inset: -1px;
   box-sizing: border-box;
   border-width: 1.5px;
-  border-radius: calc(var(--cell-radius) + 2px);
+  border-radius: calc(var(--cell-radius) + 1px);
 }
 
 .object-statusbar {
@@ -4852,7 +4852,7 @@ kbd {
   inset: -1px;
   box-sizing: border-box;
   border-width: 1.5px;
-  border-radius: calc(var(--cell-radius) + 2px);
+  border-radius: calc(var(--cell-radius) + 1px);
 }
 
 /* Final compact header and dock rhythm. */
