@@ -33,9 +33,6 @@ export function SheetObject({
   const selectedCell = materializeCell(object, selectedCoordinates.row, selectedCoordinates.column);
   const selectedRangeLabel = rangeLabel(selectionRange);
   const selectedRangeSize = rangeSize(selectionRange);
-  const selectedCellValue = selectedCell?.embed
-    ? workspaceObjects?.[selectedCell.embed.objectId]?.title || selectedCell.value || "Embedded object"
-    : selectedCell?.formula || selectedCell?.value || "";
   const hasConditionalFormat = (object.conditionalFormats || []).some((rule) => rule.range === selectedRangeLabel);
 
   const handleFormulaChange = (value) => {
@@ -117,7 +114,6 @@ export function SheetObject({
         <span className="status-item active-cell-status">
           <span className="status-caption">{selectedRangeSize > 1 ? "Range" : "Active"}</span>
           <code>{selectedRangeSize > 1 ? selectedRangeLabel : selectedCell?.address || "A1"}</code>
-          {selectedRangeSize === 1 && selectedCellValue ? <span className="active-cell-value">· {selectedCellValue}</span> : null}
         </span>
         {selectedRangeSize > 1 ? <span className="status-item range-status">· {selectedRangeSize} cells</span> : null}
         {object.filters?.length ? <span className="status-item filter-status">{object.filters.length} filter{object.filters.length === 1 ? "" : "s"} active</span> : null}

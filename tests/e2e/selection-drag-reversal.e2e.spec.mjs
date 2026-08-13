@@ -68,6 +68,20 @@ test("keeps the reversed drag endpoint stable while the pointer remains down", a
     });
 });
 
+test("keeps cell values out of the bottom status dock", async ({ page }) => {
+  await page.goto("/");
+
+  const cell = page.locator('.sheet-cell[data-cell-address="A1"]');
+  await cell.dblclick();
+  const editor = cell.locator(".cell-editor");
+  await editor.fill("Visible value");
+  await editor.press("Enter");
+
+  await expect(page.locator(".active-cell-status code")).toHaveText("A1");
+  await expect(page.locator(".active-cell-status")).not.toContainText("Visible value");
+  await expect(page.locator(".active-cell-value")).toHaveCount(0);
+});
+
 test("registers a range drag even when the pointer jumps between cells", async ({ page }) => {
   await page.goto("/");
 
