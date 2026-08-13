@@ -750,6 +750,11 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
     return true;
   }, [closeLayerWithoutHistory, currentHistoryStack, setLayers, syncHistoryStack, workspace.id, workspace.objects, writeHistoryStack]);
 
+  const closeTopLayerRef = useRef(closeTopLayer);
+  useEffect(() => {
+    closeTopLayerRef.current = closeTopLayer;
+  }, [closeTopLayer]);
+
   useEffect(() => {
     if (!workspaceHydrated) return;
     if (historyReadyRef.current) return;
@@ -871,11 +876,11 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
       if (event.target instanceof Element && event.target.closest("[data-floating-interactive=\"true\"]")) return;
       if (event.target instanceof Element && event.target.closest(".object-window")) return;
       if (event.target instanceof Element && event.target.closest(".transition-backdrop")) return;
-      closeTopLayer();
+      closeTopLayerRef.current();
     };
     document.addEventListener("pointerdown", handleOutsideFloatingPointer, true);
     return () => document.removeEventListener("pointerdown", handleOutsideFloatingPointer, true);
-  }, [closeTopLayer]);
+  }, []);
 
   return {
     layers,

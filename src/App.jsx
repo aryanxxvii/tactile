@@ -118,13 +118,23 @@ export function App() {
     resetSelection: selection.resetSelection,
   });
 
+  // Keep the document-level keyboard and clipboard bridge mounted once. The
+  // active shell/selection callbacks change as workspace state changes, but
+  // replacing global listeners for every edit creates measurable listener
+  // churn during large imports and nested navigation.
+  const globalEventStateRef = useRef(null);
+  globalEventStateRef.current = { inOut, selection, shell };
+
   useEffect(() => {
     const handleKeyDown = (event) => {
+      const currentState = globalEventStateRef.current;
+      if (!currentState) return;
+      const { inOut: currentInOut, selection: currentSelection, shell: currentShell } = currentState;
       const command = event.ctrlKey || event.metaKey;
       if (command && event.key.toLowerCase() === "p") {
         event.preventDefault();
-        if (shell.filesOpen) shell.closeFiles();
-        else shell.openFiles(event.target);
+        if (currentShell.filesOpen) currentShell.closeFiles();
+        else currentShell.openFiles(event.target);
         return;
       }
       // Let focused controls keep their native keyboard activation. Global
@@ -141,10 +151,10 @@ export function App() {
         || document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]');
       const gridSurface = event.target?.closest?.(".sheet-grid-shell") || activeGridCell;
       const inFilesPanel = Boolean(event.target?.closest?.(".files-panel"));
-      const gridShortcutsAvailable = Boolean(shell.filesPinned && gridSurface && !inFilesPanel);
+      const gridShortcutsAvailable = Boolean(currentShell.filesPinned && gridSurface && !inFilesPanel);
       const formulaEditorTarget = event.target?.closest?.(".formula-editor");
-      if (shell.filesOpen && !gridShortcutsAvailable && !(historyShortcut && !typingTarget)) return;
-      if (command && event.key === "]" && activeGridCell && !inFilesPanel && (!nativeTypingTarget || formulaEditorTarget) && !shell.settingsOpen) {
+      if (currentShell.filesOpen && !gridShortcutsAvailable && !(historyShortcut && !typingTarget)) return;
+      if (command && event.key === "]" && activeGridCell && !inFilesPanel && (!nativeTypingTarget || formulaEditorTarget) && !currentShell.settingsOpen) {
         event.preventDefault();
         const box = activeGridCell.getBoundingClientRect();
         activeGridCell.dispatchEvent(new MouseEvent("contextmenu", {
@@ -156,11 +166,11 @@ export function App() {
         }));
         return;
       }
-      if ((event.key === "Control" || event.key === "Meta") && gridSurface && !nativeTypingTarget && (!shell.filesOpen || gridShortcutsAvailable) && !shell.settingsOpen) {
+      if ((event.key === "Control" || event.key === "Meta") && gridSurface && !nativeTypingTarget && (!currentShell.filesOpen || gridShortcutsAvailable) && !currentShell.settingsOpen) {
         pasteProxyRef.current?.focus({ preventScroll: true });
         return;
       }
-      if (command && event.key.toLowerCase() === "v" && gridSurface && !nativeTypingTarget && (!shell.filesOpen || gridShortcutsAvailable) && !shell.settingsOpen) {
+      if (command && event.key.toLowerCase() === "v" && gridSurface && !nativeTypingTarget && (!currentShell.filesOpen || gridShortcutsAvailable) && !currentShell.settingsOpen) {
         const request = { handled: false };
         pasteRequestRef.current = request;
         if (pasteRequestTimeoutRef.current != null) window.clearTimeout(pasteRequestTimeoutRef.current);
@@ -171,25 +181,28 @@ export function App() {
         // Native ClipboardEvent data is preferred, but some preview/webview
         // hosts do not dispatch that event for a focused grid cell. Start an
         // async clipboard read from this user gesture as a coordinated fallback.
-        void selection.clipboardSelectedCell("paste", request);
+        void currentSelection.clipboardSelectedCell("paste", request);
         return;
       }
-      selection.handleKeyboard(
+      currentSelection.handleKeyboard(
         event,
-        shell.settingsOpen,
-        shell.closeSettings,
-        inOut.closeTopLayer,
-        inOut.expandTopLayer,
+        currentShell.settingsOpen,
+        currentShell.closeSettings,
+        currentInOut.closeTopLayer,
+        currentInOut.expandTopLayer,
       );
     };
     const handlePaste = (event) => {
+      const currentState = globalEventStateRef.current;
+      if (!currentState) return;
+      const { selection: currentSelection, shell: currentShell } = currentState;
       const activeGridCell = document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]');
       const inFilesPanel = Boolean(event.target?.closest?.(".files-panel"));
-      const gridPasteAvailable = Boolean(shell.filesPinned && activeGridCell && !inFilesPanel);
-      if (shell.settingsOpen || (shell.filesOpen && !gridPasteAvailable)) return;
+      const gridPasteAvailable = Boolean(currentShell.filesPinned && activeGridCell && !inFilesPanel);
+      if (currentShell.settingsOpen || (currentShell.filesOpen && !gridPasteAvailable)) return;
       const proxy = event.target?.dataset?.tactilePasteProxy === "true" ? event.target : null;
       const request = pasteRequestRef.current;
-      Promise.resolve(selection.handlePaste(event, request)).finally(() => {
+      Promise.resolve(currentSelection.handlePaste(event, request)).finally(() => {
         if (proxy) proxy.value = "";
         if (request?.handled && pasteRequestRef.current === request) pasteRequestRef.current = null;
       });
@@ -209,7 +222,7 @@ export function App() {
       window.removeEventListener("paste", handlePaste);
       if (pasteRequestTimeoutRef.current != null) window.clearTimeout(pasteRequestTimeoutRef.current);
     };
-  }, [inOut.closeTopLayer, inOut.expandTopLayer, inOut.layers.length, selection.clipboardSelectedCell, selection.handleKeyboard, selection.handlePaste, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.filesPinned, shell.openFiles, shell.settingsOpen]);
+  }, []);
 
   const objectPaths = useMemo(() => inOut.layers.map((_, index) => {
     const rootLayer = inOut.layers[0];

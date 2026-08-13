@@ -21,6 +21,6 @@ Run date: 2026-08-13
 
 ## Gate status
 
-G3 remains open, not because of a known functional regression, but because the rapid virtual-sheet scrolling/performance work was explicitly deferred by the user. The corrected performance harness ran against the local test server and captured the existing problem: scroll and typing measurements remain above target, and the large fixture rerun later timed out while re-entering the imported fixture. `npm run format:check` also retains the repository's existing 50-file formatting drift.
+G3 remains open, not because of a known functional regression, but because the rapid virtual-sheet scrolling/performance work was explicitly deferred by the user. The corrected performance harness ran against the local test server and captured the existing problem: the latest scroll p95 is 133.3 ms, typing p95 is 633.3 ms with 7,648 ms input p95, and nested In & Out remains above target with listener retention. `npm run format:check` also retains the repository's existing 50-file formatting drift.
 
 The next wave can proceed from this state, but G3 should be marked complete only after the deferred scrolling performance pass is accepted.

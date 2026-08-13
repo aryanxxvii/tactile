@@ -76,6 +76,11 @@ export function TooltipLayer() {
   const [active, setActive] = useState(null);
   const [position, setPosition] = useState(null);
   const tooltipRef = useRef(null);
+  const activeRef = useRef(null);
+
+  useLayoutEffect(() => {
+    activeRef.current = active;
+  }, [active]);
 
   useLayoutEffect(() => {
     if (!active || !tooltipRef.current) return;
@@ -108,13 +113,13 @@ export function TooltipLayer() {
     };
     const hide = (event) => {
       const anchor = anchorFor(event.target);
-      if (!anchor || anchor !== active?.anchor || isInsideAnchor(anchor, event.relatedTarget)) return;
+      if (!anchor || anchor !== activeRef.current?.anchor || isInsideAnchor(anchor, event.relatedTarget)) return;
       setActive(null);
       setPosition(null);
     };
     const handleFocusOut = (event) => {
       const anchor = anchorFor(event.target);
-      if (!anchor || anchor !== active?.anchor || isInsideAnchor(anchor, event.relatedTarget)) return;
+      if (!anchor || anchor !== activeRef.current?.anchor || isInsideAnchor(anchor, event.relatedTarget)) return;
       setActive(null);
       setPosition(null);
     };
@@ -129,7 +134,7 @@ export function TooltipLayer() {
       document.removeEventListener("focusin", show, true);
       document.removeEventListener("focusout", handleFocusOut, true);
     };
-  }, [active]);
+  }, []);
 
   if (!active || !position) return null;
   return (

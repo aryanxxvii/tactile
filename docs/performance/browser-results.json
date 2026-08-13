@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-13T20:03:03.111Z",
+  "generatedAt": "2026-08-13T20:20:47.697Z",
   "status": "measured",
   "environment": {
     "node": "v24.13.0",
@@ -9,7 +9,7 @@
     "cpuCount": 12,
     "memoryBytes": 16477036544,
     "headless": true,
-    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-24520\\fixture.json",
+    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-9684\\fixture.json",
     "fixtureGeneratedOnRun": true,
     "fixtureFingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4"
   },
@@ -60,114 +60,114 @@
     "javascript": {
       "files": [
         {
-          "file": "assets/App-CBBpHeuk.js",
+          "file": "assets/App-BDdTytr3.js",
           "rawBytes": 220589,
-          "gzipBytes": 65782
+          "gzipBytes": 65776
         },
         {
-          "file": "assets/DocumentObject-CD9FnwSS.js",
+          "file": "assets/DocumentObject-C5iZe73y.js",
           "rawBytes": 1845,
           "gzipBytes": 852
         },
         {
-          "file": "assets/FileObject-CCSKhTYJ.js",
+          "file": "assets/FileObject-CTyHW2jD.js",
           "rawBytes": 4431,
           "gzipBytes": 1750
         },
         {
-          "file": "assets/FilesPanel-DSv9xUwT.js",
+          "file": "assets/FilesPanel-B5l0w2B6.js",
           "rawBytes": 24304,
-          "gzipBytes": 7173
+          "gzipBytes": 7172
         },
         {
-          "file": "assets/IconBrackets-B0TIpoPt.js",
+          "file": "assets/IconBrackets-CDT_eUFa.js",
           "rawBytes": 362,
           "gzipBytes": 270
         },
         {
-          "file": "assets/IconCheck-DaCzNgew.js",
+          "file": "assets/IconCheck-DI3NM4v1.js",
           "rawBytes": 314,
-          "gzipBytes": 256
+          "gzipBytes": 257
         },
         {
-          "file": "assets/IconChevronDown-DrO8md-a.js",
+          "file": "assets/IconChevronDown-UKaw5Vmx.js",
           "rawBytes": 329,
           "gzipBytes": 263
         },
         {
-          "file": "assets/IconCopy-CCYbUQMN.js",
+          "file": "assets/IconCopy-CwYXnUKA.js",
           "rawBytes": 861,
-          "gzipBytes": 398
+          "gzipBytes": 397
         },
         {
-          "file": "assets/IconPalette-D2GYpODT.js",
+          "file": "assets/IconPalette-DiedwXE3.js",
           "rawBytes": 660,
           "gzipBytes": 390
         },
         {
-          "file": "assets/IconPencil-BSEJj7Nb.js",
+          "file": "assets/IconPencil-DVCcmdwQ.js",
           "rawBytes": 401,
           "gzipBytes": 297
         },
         {
-          "file": "assets/IconTable-Ddf2mP6J.js",
+          "file": "assets/IconTable-DIWFW7dg.js",
           "rawBytes": 1248,
           "gzipBytes": 450
         },
         {
-          "file": "assets/IconTrash-C1V77sjk.js",
+          "file": "assets/IconTrash-BXnP8WiK.js",
           "rawBytes": 530,
           "gzipBytes": 326
         },
         {
-          "file": "assets/IconUpload-BVFZyTZR.js",
+          "file": "assets/IconUpload-_ASWTZtq.js",
           "rawBytes": 810,
           "gzipBytes": 335
         },
         {
-          "file": "assets/IconX-CWXREfM1.js",
+          "file": "assets/IconX-CFU5BcHI.js",
           "rawBytes": 345,
-          "gzipBytes": 264
+          "gzipBytes": 263
         },
         {
-          "file": "assets/index-CBOGRJCR.js",
+          "file": "assets/index-CCkgQ_4Z.js",
           "rawBytes": 196139,
           "gzipBytes": 61523
         },
         {
-          "file": "assets/jszip.min-B3Ms3rgk.js",
+          "file": "assets/jszip.min-DCGt5xh0.js",
           "rawBytes": 97535,
           "gzipBytes": 30325
         },
         {
-          "file": "assets/MarkdownObject-7ygFf5NF.js",
+          "file": "assets/MarkdownObject-CVUqd_KE.js",
           "rawBytes": 20389,
-          "gzipBytes": 6153
+          "gzipBytes": 6150
         },
         {
-          "file": "assets/objectDrag-CRQKwFPH.js",
+          "file": "assets/objectDrag-1qLwlJ48.js",
           "rawBytes": 3638,
-          "gzipBytes": 1486
+          "gzipBytes": 1488
         },
         {
-          "file": "assets/ObjectHeader-BHEcE784.js",
+          "file": "assets/ObjectHeader-BWVGeBNa.js",
           "rawBytes": 7063,
           "gzipBytes": 2768
         },
         {
-          "file": "assets/SettingsPanel-D38vBOF2.js",
+          "file": "assets/SettingsPanel-5YbV-WCE.js",
           "rawBytes": 19711,
-          "gzipBytes": 6157
+          "gzipBytes": 6155
         },
         {
-          "file": "assets/SheetObject-Bgxum9g_.js",
+          "file": "assets/SheetObject-CrI22ORW.js",
           "rawBytes": 91218,
-          "gzipBytes": 25059
+          "gzipBytes": 25061
         },
         {
-          "file": "assets/TooltipLayer-BF2YTgx3.js",
-          "rawBytes": 2933,
-          "gzipBytes": 1210
+          "file": "assets/TooltipLayer-BOSVjHcm.js",
+          "rawBytes": 3026,
+          "gzipBytes": 1231
         },
         {
           "file": "assets/worker-B_URDJXR.js",
@@ -175,8 +175,8 @@
           "gzipBytes": 7528
         }
       ],
-      "rawBytes": 718962,
-      "gzipBytes": 221015
+      "rawBytes": 719055,
+      "gzipBytes": 221027
     },
     "css": {
       "files": [
@@ -191,7 +191,7 @@
     },
     "entry": {
       "javascript": {
-        "file": "assets/index-CBOGRJCR.js",
+        "file": "assets/index-CCkgQ_4Z.js",
         "rawBytes": 196139,
         "gzipBytes": 61523
       },
@@ -212,19 +212,19 @@
   "scenarios": {
     "fixture-import-and-render": {
       "label": "fixture-import-and-render",
-      "durationMs": 14771.400000095367,
+      "durationMs": 16394,
       "frameTimeMs": {
-        "samples": 98,
-        "average": 150.6734693877551,
-        "p95": 400.09999999999854,
-        "max": 5633.1,
-        "droppedFrameSamples": 43
+        "samples": 101,
+        "average": 162.2049504950495,
+        "p95": 316.60000000000036,
+        "max": 5433.1,
+        "droppedFrameSamples": 44
       },
       "longTasks": {
         "observable": true,
         "count": 9,
-        "totalDurationMs": 13214,
-        "maxDurationMs": 5649,
+        "totalDurationMs": 14827,
+        "maxDurationMs": 5447,
         "over50Ms": 9
       },
       "inputLatencyMs": {
@@ -234,24 +234,24 @@
         "max": null
       },
       "react": {
-        "commitCount": 10,
+        "commitCount": 8,
         "commitCountObservable": true,
-        "domMutationBatches": 9
+        "domMutationBatches": 7
       },
       "mounted": {
-        "cellsMax": 476,
-        "sheetCellsMax": 476,
-        "domNodesMax": 2282
+        "cellsMax": 273,
+        "sheetCellsMax": 273,
+        "domNodesMax": 1428
       },
       "resources": null,
       "runtimeBaseline": {
-        "listeners": 139,
+        "listeners": 143,
         "mutationObservers": 0,
         "resizeObservers": 0,
         "intersectionObservers": 0,
         "performanceObservers": 0,
-        "timers": 1,
-        "intervals": 0,
+        "timers": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeCounts": {
@@ -261,16 +261,16 @@
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeDelta": {
-        "listeners": 52,
+        "listeners": 48,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
-        "timers": -1,
+        "timers": 0,
         "intervals": 0,
         "animationFrames": 0
       },
@@ -281,7 +281,7 @@
           "leakedResources": [
             {
               "resource": "listeners",
-              "delta": 52
+              "delta": 48
             },
             {
               "resource": "mutationObservers",
@@ -318,20 +318,20 @@
     },
     "scroll": {
       "label": "scroll",
-      "durationMs": 3323.600000143051,
+      "durationMs": 4177.099999904633,
       "frameTimeMs": {
-        "samples": 83,
-        "average": 39.95783132530121,
-        "p95": 83.29999999999927,
-        "max": 150,
-        "droppedFrameSamples": 65
+        "samples": 72,
+        "average": 51.38750000000002,
+        "p95": 133.29999999999927,
+        "max": 500,
+        "droppedFrameSamples": 62
       },
       "longTasks": {
         "observable": true,
-        "count": 22,
-        "totalDurationMs": 1386,
-        "maxDurationMs": 157,
-        "over50Ms": 19
+        "count": 8,
+        "totalDurationMs": 1588,
+        "maxDurationMs": 505,
+        "over50Ms": 8
       },
       "inputLatencyMs": {
         "observable": true,
@@ -347,7 +347,7 @@
       "mounted": {
         "cellsMax": 1025,
         "sheetCellsMax": 1025,
-        "domNodesMax": 4537
+        "domNodesMax": 4528
       },
       "resources": null,
       "runtimeBaseline": {
@@ -357,7 +357,7 @@
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeCounts": {
@@ -367,7 +367,7 @@
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeDelta": {
@@ -411,26 +411,26 @@
     },
     "typing": {
       "label": "typing",
-      "durationMs": 4874.600000143051,
+      "durationMs": 9396.399999856949,
       "frameTimeMs": {
-        "samples": 28,
-        "average": 173.20714285714283,
-        "p95": 266.59999999999854,
-        "max": 3716.600000000002,
-        "droppedFrameSamples": 19
+        "samples": 30,
+        "average": 312.76333333333326,
+        "p95": 633.2999999999993,
+        "max": 7616.4000000000015,
+        "droppedFrameSamples": 18
       },
       "longTasks": {
         "observable": true,
         "count": 4,
-        "totalDurationMs": 4408,
-        "maxDurationMs": 3721,
+        "totalDurationMs": 8866,
+        "maxDurationMs": 7631,
         "over50Ms": 4
       },
       "inputLatencyMs": {
         "observable": true,
         "samples": 10,
-        "p95": 3736,
-        "max": 3736
+        "p95": 7648,
+        "max": 7648
       },
       "react": {
         "commitCount": 9,
@@ -440,7 +440,7 @@
       "mounted": {
         "cellsMax": 476,
         "sheetCellsMax": 476,
-        "domNodesMax": 2283
+        "domNodesMax": 2273
       },
       "resources": null,
       "runtimeBaseline": {
@@ -450,7 +450,7 @@
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeCounts": {
@@ -460,7 +460,7 @@
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeDelta": {
@@ -504,36 +504,36 @@
     },
     "in-out": {
       "label": "in-out",
-      "durationMs": 3113,
+      "durationMs": 4997.199999809265,
       "frameTimeMs": {
-        "samples": 49,
-        "average": 58.16326530612245,
-        "p95": 333.2999999999993,
-        "max": 450,
-        "droppedFrameSamples": 29
+        "samples": 24,
+        "average": 176.3791666666666,
+        "p95": 766.5999999999985,
+        "max": 949.9000000000015,
+        "droppedFrameSamples": 17
       },
       "longTasks": {
         "observable": true,
         "count": 8,
-        "totalDurationMs": 2041,
-        "maxDurationMs": 431,
+        "totalDurationMs": 3833,
+        "maxDurationMs": 932,
         "over50Ms": 8
       },
       "inputLatencyMs": {
         "observable": true,
         "samples": 5,
-        "p95": 384,
-        "max": 384
+        "p95": 672,
+        "max": 672
       },
       "react": {
-        "commitCount": 15,
+        "commitCount": 13,
         "commitCountObservable": true,
-        "domMutationBatches": 11
+        "domMutationBatches": 9
       },
       "mounted": {
-        "cellsMax": 918,
-        "sheetCellsMax": 918,
-        "domNodesMax": 4397
+        "cellsMax": 749,
+        "sheetCellsMax": 749,
+        "domNodesMax": 3684
       },
       "resources": null,
       "runtimeBaseline": {
@@ -543,26 +543,26 @@
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeCounts": {
-        "listeners": 337,
+        "listeners": 338,
         "mutationObservers": 1,
-        "resizeObservers": 1,
+        "resizeObservers": 2,
         "intersectionObservers": 0,
         "performanceObservers": 0,
-        "timers": 0,
-        "intervals": 0,
+        "timers": 1,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeDelta": {
-        "listeners": 146,
+        "listeners": 147,
         "mutationObservers": 0,
-        "resizeObservers": 0,
+        "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
-        "timers": 0,
+        "timers": 1,
         "intervals": 0,
         "animationFrames": 0
       },
@@ -573,7 +573,15 @@
           "leakedResources": [
             {
               "resource": "listeners",
-              "delta": 146
+              "delta": 147
+            },
+            {
+              "resource": "resizeObservers",
+              "delta": 1
+            },
+            {
+              "resource": "timers",
+              "delta": 1
             }
           ]
         },
@@ -602,36 +610,36 @@
     },
     "nested": {
       "label": "nested",
-      "durationMs": 22642.799999952316,
+      "durationMs": 32200.700000047684,
       "frameTimeMs": {
-        "samples": 461,
-        "average": 41.35755748373103,
-        "p95": 250,
-        "max": 633.2999999999956,
-        "droppedFrameSamples": 213
+        "samples": 278,
+        "average": 110.66676978417267,
+        "p95": 733.2999999999956,
+        "max": 2183.300000000003,
+        "droppedFrameSamples": 122
       },
       "longTasks": {
         "observable": true,
-        "count": 43,
-        "totalDurationMs": 11046,
-        "maxDurationMs": 583,
-        "over50Ms": 43
+        "count": 38,
+        "totalDurationMs": 27113,
+        "maxDurationMs": 2165,
+        "over50Ms": 38
       },
       "inputLatencyMs": {
         "observable": true,
         "samples": 20,
-        "p95": 602.1000001430511,
-        "max": 664
+        "p95": 1408,
+        "max": 1568
       },
       "react": {
-        "commitCount": 69,
+        "commitCount": 58,
         "commitCountObservable": true,
-        "domMutationBatches": 50
+        "domMutationBatches": 40
       },
       "mounted": {
-        "cellsMax": 1008,
-        "sheetCellsMax": 1008,
-        "domNodesMax": 4756
+        "cellsMax": 749,
+        "sheetCellsMax": 749,
+        "domNodesMax": 3684
       },
       "resources": null,
       "runtimeBaseline": {
@@ -641,28 +649,28 @@
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
+        "intervals": 1,
         "animationFrames": 0
       },
       "runtimeCounts": {
-        "listeners": 1062,
+        "listeners": 1058,
         "mutationObservers": 1,
         "resizeObservers": 2,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
-        "intervals": 0,
-        "animationFrames": 4
+        "intervals": 1,
+        "animationFrames": 2
       },
       "runtimeDelta": {
-        "listeners": 871,
+        "listeners": 867,
         "mutationObservers": 0,
         "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
         "intervals": 0,
-        "animationFrames": 4
+        "animationFrames": 2
       },
       "leakChecks": {
         "runtime": {
@@ -671,7 +679,7 @@
           "leakedResources": [
             {
               "resource": "listeners",
-              "delta": 871
+              "delta": 867
             },
             {
               "resource": "resizeObservers",
@@ -679,7 +687,7 @@
             },
             {
               "resource": "animationFrames",
-              "delta": 4
+              "delta": 2
             }
           ]
         },
@@ -710,9 +718,9 @@
   "teardown": {
     "lastResult": {
       "label": "nested",
-      "durationMs": 22642.799999952316,
-      "frameSamples": 461,
-      "longTaskCount": 43,
+      "durationMs": 32200.700000047684,
+      "frameSamples": 278,
+      "longTaskCount": 38,
       "inputSamples": 20,
       "memoryDeltaBytes": 0
     },
@@ -724,7 +732,7 @@
       "intersectionObservers": 0,
       "performanceObservers": 0,
       "timers": 0,
-      "intervals": 0,
+      "intervals": 1,
       "animationFrames": 0
     },
     "runtimeCounts": {
@@ -734,7 +742,7 @@
       "intersectionObservers": 0,
       "performanceObservers": 0,
       "timers": 0,
-      "intervals": 0,
+      "intervals": 1,
       "animationFrames": 0
     },
     "runtimeDelta": {
@@ -748,11 +756,11 @@
       "animationFrames": 0
     },
     "dom": {
-      "domNodes": 2550,
-      "mountedCells": 540,
-      "mountedSheetCells": 540
+      "domNodes": 2272,
+      "mountedCells": 476,
+      "mountedSheetCells": 476
     },
-    "reactCommitCount": 119,
+    "reactCommitCount": 111,
     "reactCommitCountObservable": true,
     "memory": {
       "observable": true,
@@ -791,115 +799,373 @@
   },
   "resources": [
     {
-      "name": "http://127.0.0.1:5187/assets/index-CBOGRJCR.js",
-      "transferSize": 61823,
-      "encodedBodySize": 61523,
-      "decodedBodySize": 196139
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=3ed46bb3",
+      "transferSize": 12806,
+      "encodedBodySize": 12506,
+      "decodedBodySize": 12506
     },
     {
-      "name": "http://127.0.0.1:5187/assets/index-CXFfWh9W.css",
-      "transferSize": 18631,
-      "encodedBodySize": 18331,
-      "decodedBodySize": 112663
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react.js?v=3ed46bb3",
+      "transferSize": 1324,
+      "encodedBodySize": 1024,
+      "decodedBodySize": 1024
     },
     {
-      "name": "http://127.0.0.1:5187/assets/App-CBBpHeuk.js",
-      "transferSize": 66082,
-      "encodedBodySize": 65782,
-      "decodedBodySize": 220589
+      "name": "http://127.0.0.1:5242/src/fonts.css",
+      "transferSize": 4979,
+      "encodedBodySize": 4679,
+      "decodedBodySize": 4679
     },
     {
-      "name": "http://127.0.0.1:5187/assets/SheetObject-Bgxum9g_.js",
-      "transferSize": 25359,
-      "encodedBodySize": 25059,
-      "decodedBodySize": 91218
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react-dom_client.js?v=3ed46bb3",
+      "transferSize": 1005907,
+      "encodedBodySize": 1005607,
+      "decodedBodySize": 1005607
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconTable-Ddf2mP6J.js",
-      "transferSize": 750,
-      "encodedBodySize": 450,
-      "decodedBodySize": 1248
+      "name": "http://127.0.0.1:5242/src/styles.css?t=1786650106486",
+      "transferSize": 157934,
+      "encodedBodySize": 157634,
+      "decodedBodySize": 157634
     },
     {
-      "name": "http://127.0.0.1:5187/assets/ObjectHeader-BHEcE784.js",
-      "transferSize": 3068,
-      "encodedBodySize": 2768,
-      "decodedBodySize": 7063
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-6EXAMU6Q.js?v=dfd13786",
+      "transferSize": 45963,
+      "encodedBodySize": 45663,
+      "decodedBodySize": 45663
     },
     {
-      "name": "http://127.0.0.1:5187/assets/objectDrag-CRQKwFPH.js",
-      "transferSize": 1786,
-      "encodedBodySize": 1486,
-      "decodedBodySize": 3638
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-PR4QN5HX.js?v=dfd13786",
+      "transferSize": 10423,
+      "encodedBodySize": 10123,
+      "decodedBodySize": 10123
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconCheck-DaCzNgew.js",
-      "transferSize": 614,
-      "encodedBodySize": 314,
-      "decodedBodySize": 314
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-GDZKV5FY.js?v=dfd13786",
+      "transferSize": 16833,
+      "encodedBodySize": 16533,
+      "decodedBodySize": 16533
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconUpload-BVFZyTZR.js",
-      "transferSize": 1110,
-      "encodedBodySize": 810,
-      "decodedBodySize": 810
+      "name": "http://127.0.0.1:5242/src/hooks/useLocalWorkspace.js?t=1786648245884",
+      "transferSize": 138050,
+      "encodedBodySize": 137750,
+      "decodedBodySize": 137750
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconChevronDown-DrO8md-a.js",
-      "transferSize": 629,
-      "encodedBodySize": 329,
-      "decodedBodySize": 329
+      "name": "http://127.0.0.1:5242/src/shell/inOut.js?t=1786652413297",
+      "transferSize": 198654,
+      "encodedBodySize": 198354,
+      "decodedBodySize": 198354
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconCopy-CCYbUQMN.js",
-      "transferSize": 1161,
-      "encodedBodySize": 861,
-      "decodedBodySize": 861
+      "name": "http://127.0.0.1:5242/src/shell/selectionCommands.js",
+      "transferSize": 84792,
+      "encodedBodySize": 84492,
+      "decodedBodySize": 84492
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconTrash-C1V77sjk.js",
-      "transferSize": 830,
-      "encodedBodySize": 530,
-      "decodedBodySize": 530
+      "name": "http://127.0.0.1:5242/src/shell/useShellState.js",
+      "transferSize": 24031,
+      "encodedBodySize": 23731,
+      "decodedBodySize": 23731
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconBrackets-B0TIpoPt.js",
-      "transferSize": 662,
-      "encodedBodySize": 362,
-      "decodedBodySize": 362
+      "name": "http://127.0.0.1:5242/src/shell/filesIndex.js?t=1786647461836",
+      "transferSize": 62650,
+      "encodedBodySize": 62350,
+      "decodedBodySize": 62350
     },
     {
-      "name": "http://127.0.0.1:5187/assets/TooltipLayer-BF2YTgx3.js",
-      "transferSize": 1510,
-      "encodedBodySize": 1210,
-      "decodedBodySize": 2933
+      "name": "http://127.0.0.1:5242/src/shell/workspaceCommands.js?t=1786645511793",
+      "transferSize": 22713,
+      "encodedBodySize": 22413,
+      "decodedBodySize": 22413
     },
     {
-      "name": "http://127.0.0.1:5187/assets/FileObject-CCSKhTYJ.js",
-      "transferSize": 2050,
-      "encodedBodySize": 1750,
-      "decodedBodySize": 4431
+      "name": "http://127.0.0.1:5242/src/core/reparenting.js",
+      "transferSize": 53087,
+      "encodedBodySize": 52787,
+      "decodedBodySize": 52787
     },
     {
-      "name": "http://127.0.0.1:5187/assets/MarkdownObject-7ygFf5NF.js",
-      "transferSize": 6453,
-      "encodedBodySize": 6153,
-      "decodedBodySize": 20389
+      "name": "http://127.0.0.1:5242/src/themes.js?t=1786645511793",
+      "transferSize": 98246,
+      "encodedBodySize": 97946,
+      "decodedBodySize": 97946
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconPencil-BSEJj7Nb.js",
-      "transferSize": 701,
-      "encodedBodySize": 401,
-      "decodedBodySize": 401
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/@tabler_icons-react.js?v=5d4b415a",
+      "transferSize": 4276695,
+      "encodedBodySize": 4276395,
+      "decodedBodySize": 4276395
     },
     {
-      "name": "http://127.0.0.1:5187/assets/IconPalette-D2GYpODT.js",
-      "transferSize": 960,
-      "encodedBodySize": 660,
-      "decodedBodySize": 660
+      "name": "http://127.0.0.1:5242/src/model.js",
+      "transferSize": 98841,
+      "encodedBodySize": 98541,
+      "decodedBodySize": 98541
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/iconEmoji.js",
+      "transferSize": 6975,
+      "encodedBodySize": 6675,
+      "decodedBodySize": 6675
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/core/topology.js",
+      "transferSize": 87428,
+      "encodedBodySize": 87128,
+      "decodedBodySize": 87128
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/sheet/coordinates.js",
+      "transferSize": 8437,
+      "encodedBodySize": 8137,
+      "decodedBodySize": 8137
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/sheet/structure.js",
+      "transferSize": 17299,
+      "encodedBodySize": 16999,
+      "decodedBodySize": 16999
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/storage.js",
+      "transferSize": 13753,
+      "encodedBodySize": 13453,
+      "decodedBodySize": 13453
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/core/engine/shadow.js?t=1786648245884",
+      "transferSize": 73231,
+      "encodedBodySize": 72931,
+      "decodedBodySize": 72931
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/sheet/ranges.js",
+      "transferSize": 56340,
+      "encodedBodySize": 56040,
+      "decodedBodySize": 56040
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/registry/index.js?t=1786647461836",
+      "transferSize": 12532,
+      "encodedBodySize": 12232,
+      "decodedBodySize": 12232
+    },
+    {
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react-dom.js?v=3ed46bb3",
+      "transferSize": 1652,
+      "encodedBodySize": 1352,
+      "decodedBodySize": 1352
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/registry/descriptors.js?t=1786647461836",
+      "transferSize": 19537,
+      "encodedBodySize": 19237,
+      "decodedBodySize": 19237
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/workers/formula/index.js",
+      "transferSize": 2956,
+      "encodedBodySize": 2656,
+      "decodedBodySize": 2656
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/platform/browser/persistence.js?t=1786648245884",
+      "transferSize": 104440,
+      "encodedBodySize": 104140,
+      "decodedBodySize": 104140
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/registry/compatibility.js",
+      "transferSize": 18371,
+      "encodedBodySize": 18071,
+      "decodedBodySize": 18071
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/workers/formula/protocol.js",
+      "transferSize": 17918,
+      "encodedBodySize": 17618,
+      "decodedBodySize": 17618
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/workers/formula/runtime.js",
+      "transferSize": 21450,
+      "encodedBodySize": 21150,
+      "decodedBodySize": 21150
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/workers/formula/client.js",
+      "transferSize": 23766,
+      "encodedBodySize": 23466,
+      "decodedBodySize": 23466
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/compat/portable.js?t=1786648245884",
+      "transferSize": 55283,
+      "encodedBodySize": 54983,
+      "decodedBodySize": 54983
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/export.js",
+      "transferSize": 61184,
+      "encodedBodySize": 60884,
+      "decodedBodySize": 60884
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/platform/browser/constants.js",
+      "transferSize": 3652,
+      "encodedBodySize": 3352,
+      "decodedBodySize": 3352
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/platform/browser/assets.js",
+      "transferSize": 26076,
+      "encodedBodySize": 25776,
+      "decodedBodySize": 25776
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/platform/browser/bootMetadata.js",
+      "transferSize": 7412,
+      "encodedBodySize": 7112,
+      "decodedBodySize": 7112
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/platform/browser/records.js",
+      "transferSize": 15358,
+      "encodedBodySize": 15058,
+      "decodedBodySize": 15058
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/platform/browser/indexedDb.js",
+      "transferSize": 18906,
+      "encodedBodySize": 18606,
+      "decodedBodySize": 18606
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/platform/browser/migration.js",
+      "transferSize": 40793,
+      "encodedBodySize": 40493,
+      "decodedBodySize": 40493
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/sheet/formulas.js",
+      "transferSize": 209185,
+      "encodedBodySize": 208885,
+      "decodedBodySize": 208885
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/format/csv.js",
+      "transferSize": 24149,
+      "encodedBodySize": 23849,
+      "decodedBodySize": 23849
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/compat/errors.js",
+      "transferSize": 2140,
+      "encodedBodySize": 1840,
+      "decodedBodySize": 1840
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/compat/migrations.js",
+      "transferSize": 56116,
+      "encodedBodySize": 55816,
+      "decodedBodySize": 55816
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/compat/schema.js",
+      "transferSize": 50991,
+      "encodedBodySize": 50691,
+      "decodedBodySize": 50691
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/selectionGeometry.js",
+      "transferSize": 14332,
+      "encodedBodySize": 14032,
+      "decodedBodySize": 14032
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/components/localEditSession.js",
+      "transferSize": 17475,
+      "encodedBodySize": 17175,
+      "decodedBodySize": 17175
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/shell/objectDrag.js",
+      "transferSize": 14728,
+      "encodedBodySize": 14428,
+      "decodedBodySize": 14428
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/useSheetGridContextMenu.js",
+      "transferSize": 18212,
+      "encodedBodySize": 17912,
+      "decodedBodySize": 17912
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/useSheetGridGestures.js?t=1786647461836",
+      "transferSize": 174048,
+      "encodedBodySize": 173748,
+      "decodedBodySize": 173748
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/useSheetGridProjection.js?t=1786647461836",
+      "transferSize": 36008,
+      "encodedBodySize": 35708,
+      "decodedBodySize": 35708
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/objectTypes.js?t=1786647461836",
+      "transferSize": 2818,
+      "encodedBodySize": 2518,
+      "decodedBodySize": 2518
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/components/controls/menuKeyboard.js",
+      "transferSize": 9476,
+      "encodedBodySize": 9176,
+      "decodedBodySize": 9176
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/sheet/sort.js",
+      "transferSize": 12197,
+      "encodedBodySize": 11897,
+      "decodedBodySize": 11897
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/sheet/formatting.js",
+      "transferSize": 3986,
+      "encodedBodySize": 3686,
+      "decodedBodySize": 3686
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/conditionalRuleProjection.js",
+      "transferSize": 8516,
+      "encodedBodySize": 8216,
+      "decodedBodySize": 8216
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/cellSlotProjection.js",
+      "transferSize": 4237,
+      "encodedBodySize": 3937,
+      "decodedBodySize": 3937
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/useVirtualSheet.js?t=1786647461836",
+      "transferSize": 98631,
+      "encodedBodySize": 98331,
+      "decodedBodySize": 98331
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/embeddedCellOpen.js",
+      "transferSize": 8863,
+      "encodedBodySize": 8563,
+      "decodedBodySize": 8563
     }
   ],
-  "browserUrl": "http://127.0.0.1:5187",
+  "browserUrl": "http://127.0.0.1:5242",
   "certification": {
     "status": "fail",
     "passed": false,
@@ -914,18 +1180,18 @@
       {
         "name": "scroll.frameTimeMs.p95",
         "status": "fail",
-        "observed": 83.29999999999927,
+        "observed": 133.29999999999927,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 66.59999999999927
+        "delta": 116.59999999999927
       },
       {
         "name": "scroll.longTasks.over50Ms",
         "status": "fail",
-        "observed": 19,
+        "observed": 8,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 19
+        "delta": 8
       },
       {
         "name": "scroll.runtimeLeaks",
@@ -937,10 +1203,10 @@
       {
         "name": "typing.frameTimeMs.p95",
         "status": "fail",
-        "observed": 266.59999999999854,
+        "observed": 633.2999999999993,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 249.89999999999856
+        "delta": 616.5999999999992
       },
       {
         "name": "typing.longTasks.over50Ms",
@@ -953,10 +1219,10 @@
       {
         "name": "typing.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 3736,
+        "observed": 7648,
         "budget": 50,
         "unit": "ms",
-        "delta": 3686
+        "delta": 7598
       },
       {
         "name": "typing.runtimeLeaks",
@@ -968,10 +1234,10 @@
       {
         "name": "in-out.frameTimeMs.p95",
         "status": "fail",
-        "observed": 333.2999999999993,
+        "observed": 766.5999999999985,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 316.5999999999993
+        "delta": 749.8999999999985
       },
       {
         "name": "in-out.longTasks.over50Ms",
@@ -984,10 +1250,10 @@
       {
         "name": "in-out.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 384,
+        "observed": 672,
         "budget": 50,
         "unit": "ms",
-        "delta": 334
+        "delta": 622
       },
       {
         "name": "in-out.runtimeLeaks",
@@ -995,7 +1261,15 @@
         "observed": [
           {
             "resource": "listeners",
-            "delta": 146
+            "delta": 147
+          },
+          {
+            "resource": "resizeObservers",
+            "delta": 1
+          },
+          {
+            "resource": "timers",
+            "delta": 1
           }
         ],
         "budget": 0,
@@ -1004,26 +1278,26 @@
       {
         "name": "nested.frameTimeMs.p95",
         "status": "fail",
-        "observed": 250,
+        "observed": 733.2999999999956,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 233.3
+        "delta": 716.5999999999956
       },
       {
         "name": "nested.longTasks.over50Ms",
         "status": "fail",
-        "observed": 43,
+        "observed": 38,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 43
+        "delta": 38
       },
       {
         "name": "nested.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 602.1000001430511,
+        "observed": 1408,
         "budget": 50,
         "unit": "ms",
-        "delta": 552.1000001430511
+        "delta": 1358
       },
       {
         "name": "nested.runtimeLeaks",
@@ -1031,7 +1305,7 @@
         "observed": [
           {
             "resource": "listeners",
-            "delta": 871
+            "delta": 867
           },
           {
             "resource": "resizeObservers",
@@ -1039,7 +1313,7 @@
           },
           {
             "resource": "animationFrames",
-            "delta": 4
+            "delta": 2
           }
         ],
         "budget": 0,
@@ -1048,10 +1322,10 @@
       {
         "name": "bundle.javascript.gzipBytes",
         "status": "fail",
-        "observed": 221015,
+        "observed": 221027,
         "budget": 112640,
         "unit": "bytes across all client JavaScript output",
-        "delta": 108375
+        "delta": 108387
       },
       {
         "name": "bundle.css.gzipBytes",
@@ -1078,26 +1352,26 @@
       {
         "name": "scroll.frameTimeMs.p95",
         "status": "fail",
-        "observed": 83.29999999999927,
+        "observed": 133.29999999999927,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 66.59999999999927
+        "delta": 116.59999999999927
       },
       {
         "name": "scroll.longTasks.over50Ms",
         "status": "fail",
-        "observed": 19,
+        "observed": 8,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 19
+        "delta": 8
       },
       {
         "name": "typing.frameTimeMs.p95",
         "status": "fail",
-        "observed": 266.59999999999854,
+        "observed": 633.2999999999993,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 249.89999999999856
+        "delta": 616.5999999999992
       },
       {
         "name": "typing.longTasks.over50Ms",
@@ -1110,18 +1384,18 @@
       {
         "name": "typing.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 3736,
+        "observed": 7648,
         "budget": 50,
         "unit": "ms",
-        "delta": 3686
+        "delta": 7598
       },
       {
         "name": "in-out.frameTimeMs.p95",
         "status": "fail",
-        "observed": 333.2999999999993,
+        "observed": 766.5999999999985,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 316.5999999999993
+        "delta": 749.8999999999985
       },
       {
         "name": "in-out.longTasks.over50Ms",
@@ -1134,10 +1408,10 @@
       {
         "name": "in-out.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 384,
+        "observed": 672,
         "budget": 50,
         "unit": "ms",
-        "delta": 334
+        "delta": 622
       },
       {
         "name": "in-out.runtimeLeaks",
@@ -1145,7 +1419,15 @@
         "observed": [
           {
             "resource": "listeners",
-            "delta": 146
+            "delta": 147
+          },
+          {
+            "resource": "resizeObservers",
+            "delta": 1
+          },
+          {
+            "resource": "timers",
+            "delta": 1
           }
         ],
         "budget": 0,
@@ -1154,26 +1436,26 @@
       {
         "name": "nested.frameTimeMs.p95",
         "status": "fail",
-        "observed": 250,
+        "observed": 733.2999999999956,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 233.3
+        "delta": 716.5999999999956
       },
       {
         "name": "nested.longTasks.over50Ms",
         "status": "fail",
-        "observed": 43,
+        "observed": 38,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 43
+        "delta": 38
       },
       {
         "name": "nested.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 602.1000001430511,
+        "observed": 1408,
         "budget": 50,
         "unit": "ms",
-        "delta": 552.1000001430511
+        "delta": 1358
       },
       {
         "name": "nested.runtimeLeaks",
@@ -1181,7 +1463,7 @@
         "observed": [
           {
             "resource": "listeners",
-            "delta": 871
+            "delta": 867
           },
           {
             "resource": "resizeObservers",
@@ -1189,7 +1471,7 @@
           },
           {
             "resource": "animationFrames",
-            "delta": 4
+            "delta": 2
           }
         ],
         "budget": 0,
@@ -1198,10 +1480,10 @@
       {
         "name": "bundle.javascript.gzipBytes",
         "status": "fail",
-        "observed": 221015,
+        "observed": 221027,
         "budget": 112640,
         "unit": "bytes across all client JavaScript output",
-        "delta": 108375
+        "delta": 108387
       },
       {
         "name": "teardown.runtimeLeaks",
