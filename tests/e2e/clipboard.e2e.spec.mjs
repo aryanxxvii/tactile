@@ -328,6 +328,22 @@ test("double-click keeps editing in the formula bar instead of creating an inlin
   await expect(page.locator(".formula-editor")).toBeFocused();
 });
 
+test("square brackets can be entered in a tile and Ctrl+] opens its active-cell menu", async ({ page }) => {
+  await page.goto("/");
+  await importClipboardWorkspace(page);
+
+  const cell = cellLocator(page, "C3");
+  await cell.click();
+  await cell.press("[");
+  await page.locator(".formula-editor").press("]");
+  await expect.poll(() => cellValue(page, "C3")).toBe("[]");
+
+  await cell.press("Control+]");
+  const menu = page.getByRole("menu", { name: "Commands for C3" });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "In: Tiles" })).toBeVisible();
+});
+
 test("keeps native text-entry paste behavior when the formula editor is active", async ({ page }) => {
   await page.goto("/");
   await grantClipboard(page);

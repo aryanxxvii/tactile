@@ -135,11 +135,27 @@ export function App() {
       const typingTarget = event.target?.closest?.("input, textarea, [contenteditable=\"true\"]");
       const isPasteProxy = event.target?.dataset?.tactilePasteProxy === "true";
       const nativeTypingTarget = typingTarget && !isPasteProxy;
-      const activeGridCell = document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]');
+      const activeGridCell = [...document.querySelectorAll('.sheet-grid-shell .sheet-cell[aria-selected="true"]')]
+        .reverse()
+        .find((cell) => cell.getClientRects().length > 0)
+        || document.querySelector('.sheet-grid-shell .sheet-cell[aria-selected="true"]');
       const gridSurface = event.target?.closest?.(".sheet-grid-shell") || activeGridCell;
       const inFilesPanel = Boolean(event.target?.closest?.(".files-panel"));
       const gridShortcutsAvailable = Boolean(shell.filesPinned && gridSurface && !inFilesPanel);
+      const formulaEditorTarget = event.target?.closest?.(".formula-editor");
       if (shell.filesOpen && !gridShortcutsAvailable && !(historyShortcut && !typingTarget)) return;
+      if (command && event.key === "]" && activeGridCell && !inFilesPanel && (!nativeTypingTarget || formulaEditorTarget) && !shell.settingsOpen) {
+        event.preventDefault();
+        const box = activeGridCell.getBoundingClientRect();
+        activeGridCell.dispatchEvent(new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          clientX: box.left + Math.min(box.width, 28),
+          clientY: box.bottom,
+        }));
+        return;
+      }
       if ((event.key === "Control" || event.key === "Meta") && gridSurface && !nativeTypingTarget && (!shell.filesOpen || gridShortcutsAvailable) && !shell.settingsOpen) {
         pasteProxyRef.current?.focus({ preventScroll: true });
         return;
@@ -156,13 +172,6 @@ export function App() {
         // hosts do not dispatch that event for a focused grid cell. Start an
         // async clipboard read from this user gesture as a coordinated fallback.
         void selection.clipboardSelectedCell("paste", request);
-        return;
-      }
-      const formulaEditorTarget = event.target?.closest?.(".formula-editor");
-      if (formulaEditorTarget && !command && inOut.layers.length > 1 && (event.key === "[" || event.key === "]")) {
-        event.preventDefault();
-        if (event.key === "[") inOut.closeTopLayer();
-        else inOut.expandTopLayer();
         return;
       }
       selection.handleKeyboard(
