@@ -66,8 +66,9 @@
   - The enforced production budget checks the Vite entry assets: entry JS is 61,523 gzip bytes (≤112,640) and entry CSS is 18,298 gzip bytes (≤18,432). `scripts/check-bundle-budget.mjs` runs as part of `npm run build`.
   - 71/71 unit tests, typecheck, Sites packaging, production build, and focused Arrow/selection browser scenarios pass. Lint has zero errors and pre-existing warnings only.
 - [ ] G3 — Wave 3 gate
-  - Not passed: the visible app still runs through the legacy whole-workspace hook with the normalized transaction engine in reversible shadow mode; the G3 default-engine switch remains for final integration.
-  - Deterministic functional/build checks pass, but the full E2E sweep timed out and the focused sweep retains two pre-existing baseline mismatches: one In & Out layer-cleanup assertion and one stale `.cell-editor` expectation. These are recorded rather than masked.
+  - Functional and integration work is complete: the normalized transaction engine is now the default, the legacy path is available only through `__TACTILE_LEGACY_ROLLBACK__`, formula-bar reference insertion keeps its local draft synchronized, nested In & Out cleanup is covered, and deferred Files loading preserves dock/scrim geometry.
+  - Acceptance evidence: 72/72 unit tests, typecheck, lint with 0 errors, 86 focused browser scenarios, 4/4 Sites checks, and production build/budget checks pass. The full In & Out suite is 14/14; keyboard/clipboard/delete/formula is 25/25; range/selection is 19/19; Files/overlay/theme/tooltip is 23/23; object/reparenting is 5/5.
+  - Gate remains open because the user explicitly deferred rapid virtual-sheet scrolling. The performance harness ran against the correct local server and produced a partial result: scroll and typing remain well above the performance target, and the fixture rerun later timed out. Format check also retains the repository's existing 50-file drift. These are recorded rather than masked; G3 should be closed after the deferred scrolling/performance pass.
 
 ## Wave 4 — Native Tauri platform
 

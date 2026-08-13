@@ -219,10 +219,13 @@ function disposeFormulaClients(clients) {
 export function createWave2Shadow(initialWorkspace, options = {}) {
   let engine = createTransactionEngine(normalizeWorkspace(initialWorkspace), { initialRevision: "0" });
   const persistence = options.persistence || createBrowserPersistence();
+  const legacyRollback = options.legacyRollback === true;
+  const useInitialSnapshot = options.useInitialSnapshot === true;
   const formulaClients = new Map();
   const state = {
     enabled: true,
-    engine: "shadow",
+    engine: legacyRollback ? "legacy-rollback" : "transaction",
+    mode: legacyRollback ? "rollback" : "default",
     persistence: "initializing",
     formulaWorker: "idle",
     revision: "0",
@@ -239,14 +242,23 @@ export function createWave2Shadow(initialWorkspace, options = {}) {
 
   const ready = (async () => {
     try {
-      await persistence.open({ workspaceId: previous.id });
-      await persistence.writeSnapshot(previous, { revision: "0", activate: true });
+      const stored = legacyRollback || useInitialSnapshot
+        ? null
+        : await persistence.open({ workspaceId: previous.id });
+      if (stored) {
+        previous = normalizeWorkspace(stored);
+        engine = createTransactionEngine(previous, { initialRevision: "0" });
+      } else {
+        await persistence.open({ workspaceId: previous.id });
+        await persistence.writeSnapshot(previous, { revision: "0", activate: true });
+      }
       state.persistence = "active";
     } catch (error) {
       state.persistence = "unavailable";
       state.lastError = error?.message || String(error);
     }
     exposeState(state);
+    return previous;
   })();
 
   async function ensureFormulaClient(sheetId, sheet, revision) {
@@ -390,6 +402,7 @@ export function createWave2Shadow(initialWorkspace, options = {}) {
   return {
     state,
     engine: () => engine,
+    ready,
     reconcile,
     dispose,
   };

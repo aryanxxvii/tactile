@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-12T03:02:01.240Z",
-  "status": "measured",
+  "generatedAt": "2026-08-13T17:39:50.751Z",
+  "status": "partial",
   "environment": {
     "node": "v24.13.0",
     "platform": "win32",
@@ -9,7 +9,7 @@
     "cpuCount": 12,
     "memoryBytes": 16477036544,
     "headless": true,
-    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-15128\\fixture.json",
+    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-13956\\fixture.json",
     "fixtureGeneratedOnRun": true,
     "fixtureFingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4"
   },
@@ -60,43 +60,153 @@
     "javascript": {
       "files": [
         {
-          "file": "assets/index-IF9CiFsC.js",
-          "rawBytes": 471710,
-          "gzipBytes": 140125
+          "file": "assets/App-5MUHg8UZ.js",
+          "rawBytes": 219463,
+          "gzipBytes": 65398
+        },
+        {
+          "file": "assets/DocumentObject-BLujMcZA.js",
+          "rawBytes": 1845,
+          "gzipBytes": 851
+        },
+        {
+          "file": "assets/FileObject-D8T0U3sX.js",
+          "rawBytes": 4431,
+          "gzipBytes": 1749
+        },
+        {
+          "file": "assets/FilesPanel-D90Nop4a.js",
+          "rawBytes": 24304,
+          "gzipBytes": 7175
+        },
+        {
+          "file": "assets/IconBrackets-B2SSy2vP.js",
+          "rawBytes": 362,
+          "gzipBytes": 273
+        },
+        {
+          "file": "assets/IconCheck-BGX9Zj3u.js",
+          "rawBytes": 314,
+          "gzipBytes": 258
+        },
+        {
+          "file": "assets/IconChevronDown-YHAwK09A.js",
+          "rawBytes": 329,
+          "gzipBytes": 266
+        },
+        {
+          "file": "assets/IconCopy-DTEJskX1.js",
+          "rawBytes": 861,
+          "gzipBytes": 398
+        },
+        {
+          "file": "assets/IconPalette-Ds8MnfvR.js",
+          "rawBytes": 660,
+          "gzipBytes": 391
+        },
+        {
+          "file": "assets/IconPencil-BxvBorlP.js",
+          "rawBytes": 401,
+          "gzipBytes": 298
+        },
+        {
+          "file": "assets/IconTable-B2J2ZPqV.js",
+          "rawBytes": 1248,
+          "gzipBytes": 452
+        },
+        {
+          "file": "assets/IconTrash-Di7fGtpf.js",
+          "rawBytes": 530,
+          "gzipBytes": 328
+        },
+        {
+          "file": "assets/IconUpload-BNaQDMdc.js",
+          "rawBytes": 810,
+          "gzipBytes": 337
+        },
+        {
+          "file": "assets/IconX-BN6_S8ah.js",
+          "rawBytes": 345,
+          "gzipBytes": 265
+        },
+        {
+          "file": "assets/index-Bnh4Duf4.js",
+          "rawBytes": 196139,
+          "gzipBytes": 61523
+        },
+        {
+          "file": "assets/jszip.min-DlNSjtOj.js",
+          "rawBytes": 97535,
+          "gzipBytes": 30323
+        },
+        {
+          "file": "assets/MarkdownObject-CeMJMls1.js",
+          "rawBytes": 20389,
+          "gzipBytes": 6151
+        },
+        {
+          "file": "assets/objectDrag-CU2IOsGO.js",
+          "rawBytes": 3638,
+          "gzipBytes": 1490
+        },
+        {
+          "file": "assets/ObjectHeader-DED81jeW.js",
+          "rawBytes": 7063,
+          "gzipBytes": 2769
+        },
+        {
+          "file": "assets/SettingsPanel-DFh17goc.js",
+          "rawBytes": 19711,
+          "gzipBytes": 6155
+        },
+        {
+          "file": "assets/SheetObject-D5U3r9k1.js",
+          "rawBytes": 89820,
+          "gzipBytes": 24693
+        },
+        {
+          "file": "assets/TooltipLayer-Buv--hvi.js",
+          "rawBytes": 2933,
+          "gzipBytes": 1210
+        },
+        {
+          "file": "assets/worker-B_URDJXR.js",
+          "rawBytes": 23307,
+          "gzipBytes": 7528
         }
       ],
-      "rawBytes": 471710,
-      "gzipBytes": 140125
+      "rawBytes": 716438,
+      "gzipBytes": 220281
     },
     "css": {
       "files": [
         {
-          "file": "assets/index-DyaJUpa9.css",
-          "rawBytes": 81918,
-          "gzipBytes": 14505
+          "file": "assets/index-CQ-qiIPk.css",
+          "rawBytes": 112645,
+          "gzipBytes": 18313
         }
       ],
-      "rawBytes": 81918,
-      "gzipBytes": 14505
+      "rawBytes": 112645,
+      "gzipBytes": 18313
     }
   },
   "scenarios": {
     "fixture-import-and-render": {
       "label": "fixture-import-and-render",
-      "durationMs": 4918.299999952316,
+      "durationMs": 21584.89999985695,
       "frameTimeMs": {
-        "samples": 80,
-        "average": 61.662975,
-        "p95": 133.4000000000001,
-        "max": 1833.1999999999998,
-        "droppedFrameSamples": 21
+        "samples": 157,
+        "average": 137.36242038216562,
+        "p95": 433.2000000000007,
+        "max": 6416.4,
+        "droppedFrameSamples": 74
       },
       "longTasks": {
         "observable": true,
-        "count": 12,
-        "totalDurationMs": 3949,
-        "maxDurationMs": 1801,
-        "over50Ms": 11
+        "count": 10,
+        "totalDurationMs": 19106,
+        "maxDurationMs": 6428,
+        "over50Ms": 10
       },
       "inputLatencyMs": {
         "observable": true,
@@ -105,18 +215,18 @@
         "max": null
       },
       "react": {
-        "commitCount": 9,
+        "commitCount": 10,
         "commitCountObservable": true,
-        "domMutationBatches": 9
+        "domMutationBatches": 8
       },
       "mounted": {
-        "cellsMax": 390,
-        "sheetCellsMax": 390,
-        "domNodesMax": 1901
+        "cellsMax": 476,
+        "sheetCellsMax": 476,
+        "domNodesMax": 2276
       },
       "resources": null,
       "runtimeCounts": {
-        "listeners": 181,
+        "listeners": 179,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -128,27 +238,27 @@
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 167000000,
-        "totalJSHeapSize": 225000000,
+        "usedJSHeapSize": 304000000,
+        "totalJSHeapSize": 364000000,
         "jsHeapSizeLimit": 3760000000
       }
     },
     "scroll": {
       "label": "scroll",
-      "durationMs": 6102.200000047684,
+      "durationMs": 5971.799999952316,
       "frameTimeMs": {
-        "samples": 79,
-        "average": 77.0012658227848,
-        "p95": 200.10000000000036,
-        "max": 216.69999999999982,
-        "droppedFrameSamples": 64
+        "samples": 74,
+        "average": 80.4027027027027,
+        "p95": 533.4000000000015,
+        "max": 649.8999999999978,
+        "droppedFrameSamples": 66
       },
       "longTasks": {
         "observable": true,
-        "count": 41,
-        "totalDurationMs": 6616,
-        "maxDurationMs": 1801,
-        "over50Ms": 36
+        "count": 24,
+        "totalDurationMs": 23032,
+        "maxDurationMs": 6428,
+        "over50Ms": 22
       },
       "inputLatencyMs": {
         "observable": true,
@@ -157,18 +267,18 @@
         "max": null
       },
       "react": {
-        "commitCount": 54,
+        "commitCount": 19,
         "commitCountObservable": true,
-        "domMutationBatches": 108
+        "domMutationBatches": 55
       },
       "mounted": {
-        "cellsMax": 570,
-        "sheetCellsMax": 570,
-        "domNodesMax": 2636
+        "cellsMax": 1025,
+        "sheetCellsMax": 1025,
+        "domNodesMax": 4532
       },
       "resources": null,
       "runtimeCounts": {
-        "listeners": 181,
+        "listeners": 179,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -180,47 +290,47 @@
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 167000000,
-        "totalJSHeapSize": 225000000,
+        "usedJSHeapSize": 304000000,
+        "totalJSHeapSize": 364000000,
         "jsHeapSizeLimit": 3760000000
       }
     },
     "typing": {
       "label": "typing",
-      "durationMs": 4113.099999904633,
+      "durationMs": 16195.599999904633,
       "frameTimeMs": {
-        "samples": 36,
-        "average": 113.42222222222219,
-        "p95": 283.2000000000007,
-        "max": 2516.6000000000004,
-        "droppedFrameSamples": 21
+        "samples": 34,
+        "average": 475.4735294117648,
+        "p95": 7116.399999999998,
+        "max": 7816.399999999994,
+        "droppedFrameSamples": 13
       },
       "longTasks": {
         "observable": true,
-        "count": 49,
-        "totalDurationMs": 10162,
-        "maxDurationMs": 2509,
-        "over50Ms": 44
+        "count": 28,
+        "totalDurationMs": 38695,
+        "maxDurationMs": 7825,
+        "over50Ms": 26
       },
       "inputLatencyMs": {
         "observable": true,
-        "samples": 9,
-        "p95": 2536,
-        "max": 2536
+        "samples": 6,
+        "p95": 7840,
+        "max": 7840
       },
       "react": {
-        "commitCount": 7,
+        "commitCount": 5,
         "commitCountObservable": true,
-        "domMutationBatches": 6
+        "domMutationBatches": 3
       },
       "mounted": {
-        "cellsMax": 390,
-        "sheetCellsMax": 390,
-        "domNodesMax": 1901
+        "cellsMax": 476,
+        "sheetCellsMax": 476,
+        "domNodesMax": 2277
       },
       "resources": null,
       "runtimeCounts": {
-        "listeners": 182,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -232,47 +342,47 @@
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 167000000,
-        "totalJSHeapSize": 225000000,
+        "usedJSHeapSize": 304000000,
+        "totalJSHeapSize": 364000000,
         "jsHeapSizeLimit": 3760000000
       }
     },
     "in-out": {
       "label": "in-out",
-      "durationMs": 2431.9000000953674,
+      "durationMs": 6049.900000095367,
       "frameTimeMs": {
-        "samples": 48,
-        "average": 50.34445833333333,
-        "p95": 166.70000000000073,
-        "max": 283.2999999999993,
-        "droppedFrameSamples": 30
+        "samples": 56,
+        "average": 107.73275,
+        "p95": 899.9000000000015,
+        "max": 1083.300000000003,
+        "droppedFrameSamples": 26
       },
       "longTasks": {
         "observable": true,
-        "count": 61,
-        "totalDurationMs": 11446,
-        "maxDurationMs": 2509,
-        "over50Ms": 56
+        "count": 37,
+        "totalDurationMs": 43693,
+        "maxDurationMs": 7825,
+        "over50Ms": 34
       },
       "inputLatencyMs": {
         "observable": true,
-        "samples": 9,
-        "p95": 2536,
-        "max": 2536
+        "samples": 6,
+        "p95": 7840,
+        "max": 7840
       },
       "react": {
-        "commitCount": 14,
+        "commitCount": 13,
         "commitCountObservable": true,
-        "domMutationBatches": 11
+        "domMutationBatches": 9
       },
       "mounted": {
-        "cellsMax": 780,
-        "sheetCellsMax": 780,
-        "domNodesMax": 3815
+        "cellsMax": 918,
+        "sheetCellsMax": 918,
+        "domNodesMax": 4387
       },
       "resources": null,
       "runtimeCounts": {
-        "listeners": 188,
+        "listeners": 325,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -284,130 +394,69 @@
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 167000000,
-        "totalJSHeapSize": 225000000,
+        "usedJSHeapSize": 304000000,
+        "totalJSHeapSize": 364000000,
         "jsHeapSizeLimit": 3760000000
       }
     },
     "nested": {
       "label": "nested",
-      "durationMs": 17211.299999952316,
+      "durationMs": 35024.700000047684,
       "frameTimeMs": {
-        "samples": 238,
-        "average": 72.26596638655461,
-        "p95": 300.09999999999854,
-        "max": 533.2999999999993,
-        "droppedFrameSamples": 175
+        "samples": 240,
+        "average": 139.23083333333335,
+        "p95": 800.1000000000058,
+        "max": 2499.9000000000015,
+        "droppedFrameSamples": 112
       },
       "longTasks": {
         "observable": true,
-        "count": 159,
-        "totalDurationMs": 23631,
-        "maxDurationMs": 2509,
-        "over50Ms": 153
+        "count": 84,
+        "totalDurationMs": 74091,
+        "maxDurationMs": 7825,
+        "over50Ms": 81
       },
       "inputLatencyMs": {
         "observable": true,
-        "samples": 27,
-        "p95": 2528,
-        "max": 2536
+        "samples": 24,
+        "p95": 1736,
+        "max": 7840
       },
       "react": {
-        "commitCount": 52,
+        "commitCount": 61,
         "commitCountObservable": true,
-        "domMutationBatches": 43
+        "domMutationBatches": 42
       },
       "mounted": {
-        "cellsMax": 1935,
-        "sheetCellsMax": 1935,
-        "domNodesMax": 9666
+        "cellsMax": 918,
+        "sheetCellsMax": 918,
+        "domNodesMax": 4387
       },
       "resources": null,
       "runtimeCounts": {
-        "listeners": 216,
+        "listeners": 1050,
         "mutationObservers": 1,
-        "resizeObservers": 1,
+        "resizeObservers": 2,
         "intersectionObservers": 0,
         "performanceObservers": 0,
         "timers": 0,
         "intervals": 1,
-        "animationFrames": 0
+        "animationFrames": 2
       },
       "memory": {
         "observable": true,
         "source": "performance.memory",
-        "usedJSHeapSize": 167000000,
-        "totalJSHeapSize": 225000000,
+        "usedJSHeapSize": 304000000,
+        "totalJSHeapSize": 364000000,
         "jsHeapSizeLimit": 3760000000
       }
     }
   },
-  "screenshots": [
-    {
-      "file": "tests/visual/baselines/sheet-base.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772",
-      "title": "Tactile — Performance root",
-      "phase": null,
-      "layerCount": 0
-    },
-    {
-      "file": "tests/visual/baselines/in-out-origin.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772",
-      "title": "Tactile — Performance root",
-      "phase": null,
-      "layerCount": 0
-    },
-    {
-      "file": "tests/visual/baselines/in-out-floating.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-layer-1-sheet&mode=floating&from=perf-root-sheet&cell=A1",
-      "title": "Tactile — Layer one",
-      "phase": "floating",
-      "layerCount": 1
-    },
-    {
-      "file": "tests/visual/baselines/in-out-full.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-layer-1-sheet&mode=full&from=perf-root-sheet&cell=A1",
-      "title": "Tactile — Layer one",
-      "phase": "full",
-      "layerCount": 1
-    },
-    {
-      "file": "tests/visual/baselines/in-out-closing.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772",
-      "title": "Tactile — Performance root",
-      "phase": null,
-      "layerCount": 0
-    },
-    {
-      "file": "tests/visual/baselines/in-out-nested-floating.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-250kb-markdown&mode=floating&from=perf-layer-4-sheet&cell=A1&depth=5",
-      "title": "Tactile — 250 KiB Markdown",
-      "phase": "floating",
-      "layerCount": 5
-    },
-    {
-      "file": "tests/visual/baselines/in-out-nested-full.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-250kb-markdown&mode=full&from=perf-layer-4-sheet&cell=A1&depth=5",
-      "title": "Tactile — 250 KiB Markdown",
-      "phase": "full",
-      "layerCount": 5
-    },
-    {
-      "file": "tests/visual/baselines/in-out-nested-closing.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772&in=perf-layer-4-sheet&mode=floating&from=perf-layer-3-sheet&cell=A1&depth=4",
-      "title": "Tactile — Layer four",
-      "phase": "floating",
-      "layerCount": 4
-    },
-    {
-      "file": "tests/visual/baselines/in-out-returned.jpg",
-      "url": "http://127.0.0.1:5187/?perf=1786503730772",
-      "title": "Tactile — Performance root",
-      "phase": null,
-      "layerCount": 0
-    }
+  "screenshots": [],
+  "limitations": [
+    "One or more interaction states were unavailable to the baseline harness."
   ],
-  "limitations": [],
+  "reason": "Browser baseline stopped after a scenario failure: locator.waitFor: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-object-id=\"perf-root-sheet\"][data-cell-address=\"A1\"]')\u001b[22m\n",
   "playwright": "playwright",
   "browser": "chromium",
   "viewport": {
@@ -415,165 +464,8 @@
     "height": 900,
     "deviceScaleFactor": 1
   },
-  "resources": [
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=43702f32",
-      "transferSize": 12806,
-      "encodedBodySize": 12506,
-      "decodedBodySize": 12506
-    },
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/react.js?v=43702f32",
-      "transferSize": 1324,
-      "encodedBodySize": 1024,
-      "decodedBodySize": 1024
-    },
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/react-dom_client.js?v=43702f32",
-      "transferSize": 1005907,
-      "encodedBodySize": 1005607,
-      "decodedBodySize": 1005607
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/fonts.css",
-      "transferSize": 4979,
-      "encodedBodySize": 4679,
-      "decodedBodySize": 4679
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/styles.css",
-      "transferSize": 104295,
-      "encodedBodySize": 103995,
-      "decodedBodySize": 103995
-    },
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/chunk-PR4QN5HX.js?v=4b0c02fa",
-      "transferSize": 10423,
-      "encodedBodySize": 10123,
-      "decodedBodySize": 10123
-    },
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/chunk-6EXAMU6Q.js?v=4b0c02fa",
-      "transferSize": 45963,
-      "encodedBodySize": 45663,
-      "decodedBodySize": 45663
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/export.js",
-      "transferSize": 52943,
-      "encodedBodySize": 52643,
-      "decodedBodySize": 52643
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/hooks/useLocalWorkspace.js",
-      "transferSize": 114268,
-      "encodedBodySize": 113968,
-      "decodedBodySize": 113968
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/model.js",
-      "transferSize": 57276,
-      "encodedBodySize": 56976,
-      "decodedBodySize": 56976
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/sheet/coordinates.js",
-      "transferSize": 8437,
-      "encodedBodySize": 8137,
-      "decodedBodySize": 8137
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/sheet/ranges.js",
-      "transferSize": 31690,
-      "encodedBodySize": 31390,
-      "decodedBodySize": 31390
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/themes.js",
-      "transferSize": 35156,
-      "encodedBodySize": 34856,
-      "decodedBodySize": 34856
-    },
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/chunk-GDZKV5FY.js?v=4b0c02fa",
-      "transferSize": 16833,
-      "encodedBodySize": 16533,
-      "decodedBodySize": 16533
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/objects/objectTypes.js",
-      "transferSize": 4280,
-      "encodedBodySize": 3980,
-      "decodedBodySize": 3980
-    },
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/@tabler_icons-react.js?v=425fbc2b",
-      "transferSize": 4276695,
-      "encodedBodySize": 4276395,
-      "decodedBodySize": 4276395
-    },
-    {
-      "name": "http://127.0.0.1:5187/node_modules/.vite/deps/jszip.js?v=84b6d186",
-      "transferSize": 151945,
-      "encodedBodySize": 151645,
-      "decodedBodySize": 151645
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/format/csv.js",
-      "transferSize": 24149,
-      "encodedBodySize": 23849,
-      "decodedBodySize": 23849
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/sheet/structure.js",
-      "transferSize": 17299,
-      "encodedBodySize": 16999,
-      "decodedBodySize": 16999
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/storage.js",
-      "transferSize": 13753,
-      "encodedBodySize": 13453,
-      "decodedBodySize": 13453
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/sheet/formulas.js",
-      "transferSize": 87963,
-      "encodedBodySize": 87663,
-      "decodedBodySize": 87663
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/sheet/formatting.js",
-      "transferSize": 3986,
-      "encodedBodySize": 3686,
-      "decodedBodySize": 3686
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/sheet/conditionalFormatting.js",
-      "transferSize": 5210,
-      "encodedBodySize": 4910,
-      "decodedBodySize": 4910
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/sheet/sort.js",
-      "transferSize": 12197,
-      "encodedBodySize": 11897,
-      "decodedBodySize": 11897
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/objects/sheet/useVirtualSheet.js",
-      "transferSize": 40208,
-      "encodedBodySize": 39908,
-      "decodedBodySize": 39908
-    },
-    {
-      "name": "http://127.0.0.1:5187/src/components/controls/menuKeyboard.js",
-      "transferSize": 9476,
-      "encodedBodySize": 9176,
-      "decodedBodySize": 9176
-    }
-  ],
-  "browserUrl": "http://127.0.0.1:5187",
+  "resources": [],
+  "browserUrl": "http://127.0.0.1:5173",
   "runsRequested": 1,
   "measurementNote": "Repeat the command three times on pinned reference hardware for certification medians/p95s."
 }

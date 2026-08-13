@@ -3075,6 +3075,13 @@ kbd {
   pointer-events: auto;
 }
 
+.phase-floating {
+  /* Only the transformed child window owns pointer input while floating;
+     the surrounding parent-visible surface stays observable to hover and
+     document-level outside-click handling. */
+  pointer-events: none;
+}
+
 .transition-backdrop {
   position: absolute;
   inset: 0;
@@ -3082,6 +3089,7 @@ kbd {
   background: color-mix(in srgb, var(--ink) 20%, transparent);
   opacity: 0;
   transition: opacity 220ms ease;
+  pointer-events: none;
 }
 
 .object-window {
@@ -3244,8 +3252,12 @@ kbd {
 }
 
 .phase-floating .transition-backdrop {
+  pointer-events: none;
+  cursor: default;
+}
+
+.phase-floating .object-window {
   pointer-events: auto;
-  cursor: pointer !important;
 }
 
 .phase-origin.is-closing .transition-backdrop {
@@ -4817,8 +4829,9 @@ kbd {
 }
 
 .tactile-app.has-floating-layer .app-bottom-bar {
-  pointer-events: none;
-  cursor: default;
+  /* The dock remains an active navigation surface while a child is
+     floating; only the parent worksheet surface is inert. */
+  pointer-events: auto;
   background: var(--paper);
 }
 
@@ -4843,6 +4856,11 @@ kbd {
 .tactile-app.has-floating-layer .app-dock button,
 .tactile-app.settings-open .app-dock button {
   cursor: default;
+}
+
+.tactile-app.has-floating-layer .app-dock-path {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .tactile-app.has-floating-layer .files-layer {

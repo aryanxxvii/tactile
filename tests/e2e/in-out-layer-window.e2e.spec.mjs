@@ -176,13 +176,13 @@ test("renders only the active parent and child during nested In & Out navigation
   await cellLocator(page, "home", "A1").click();
   await expect(page.locator('[data-layer-object="layer-two"]')).toHaveAttribute("data-spatial-phase", "floating");
   await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
-  await expect(page.locator(".app-bottom-bar")).toHaveAttribute("inert", "");
-  await expect(page.locator(".app-bottom-bar")).toHaveCSS("pointer-events", "none");
+  await expect(page.locator(".app-bottom-bar")).not.toHaveAttribute("inert", "");
+  await expect(page.locator(".app-bottom-bar")).toHaveCSS("pointer-events", "auto");
   await expect(page.locator(".base-object-layer .object-header-parent")).toHaveCount(0);
   await expect(page.locator(".object-header-parent")).toHaveCount(1);
   await expect
     .poll(() => page.locator(".app-dock-path").evaluate((element) => getComputedStyle(element).cursor))
-    .toBe("default");
+    .toBe("pointer");
 
   const advanceDelay = nestedAdvanceDelay(page, "layer-two", "layer-three");
   await cellLocator(page, "layer-two", "A1").click();
@@ -225,7 +225,7 @@ test("opens an embedded tile with Enter just like the In & Out shortcut", async 
   await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
 });
 
-test("keeps the bottom dock visible but inert while a child floats", async ({ page }) => {
+test("keeps the bottom dock available while a child floats", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);
 
@@ -250,13 +250,13 @@ test("keeps the bottom dock visible but inert while a child floats", async ({ pa
   });
   expect(dockState.background).toBe(dockState.parentStatusbarBackground);
   expect(dockState).toMatchObject({
-    pointerEvents: "none",
-    cursor: "default",
+    pointerEvents: "auto",
+    cursor: "auto",
     dockBackground: "rgba(0, 0, 0, 0)",
     dockOpacity: "1",
     dockFilter: "none",
   });
-  await expect(page.locator(".app-bottom-bar")).toHaveAttribute("inert", "");
+  await expect(page.locator(".app-bottom-bar")).not.toHaveAttribute("inert", "");
 
   const backdrop = page.locator('[data-layer-object="layer-two"] .transition-backdrop');
   const backdropBox = await backdrop.boundingBox();
@@ -705,6 +705,7 @@ test("dock breadcrumbs jump directly and reveal the complete path from the ellip
     "Tiles A3",
     "Tiles A2",
     "Tiles A1",
+    "Home",
   ]);
   await expect
     .poll(() =>

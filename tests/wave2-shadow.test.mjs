@@ -59,6 +59,23 @@ test("shadow transition maps a cell edit to one normalized transaction and patch
   shadow.dispose();
 });
 
+test("the normalized transaction engine is the default with an explicit legacy rollback mode", () => {
+  const initial = createBlankWorkspace({ id: "workspace-wave3-default" });
+  const defaultEngine = createWave2Shadow(initial, { persistence: fakePersistence() });
+  const rollbackEngine = createWave2Shadow(initial, {
+    persistence: fakePersistence(),
+    legacyRollback: true,
+  });
+
+  assert.equal(defaultEngine.state.engine, "transaction");
+  assert.equal(defaultEngine.state.mode, "default");
+  assert.equal(rollbackEngine.state.engine, "legacy-rollback");
+  assert.equal(rollbackEngine.state.mode, "rollback");
+
+  defaultEngine.dispose();
+  rollbackEngine.dispose();
+});
+
 test("shadow transition batches a rectangular edit and leaves unrelated objects out of the command", () => {
   const initial = createBlankWorkspace({ id: "workspace-wave2-batch" });
   const next = workspaceWithCell(initial, "A1", { value: "A" });

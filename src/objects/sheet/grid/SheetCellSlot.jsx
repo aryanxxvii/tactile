@@ -16,6 +16,7 @@ const CellSlot = memo(function CellSlot({
   formula,
   displayValue,
   embedObjectId,
+  embedObject,
   embedType,
   embedLinkId,
   role,
@@ -65,6 +66,7 @@ const CellSlot = memo(function CellSlot({
         formula={formula}
         displayValue={displayValue}
         embedObjectId={embedObjectId}
+        embedObject={embedObject}
         embedType={embedType}
         embedLinkId={embedLinkId}
         role={role}

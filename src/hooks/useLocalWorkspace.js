@@ -30,6 +30,12 @@ function initialWorkspace() {
   return normalizeWorkspace(loadWorkspaceCache() || createBlankWorkspace());
 }
 
+function legacyRollbackEnabled() {
+  return typeof globalThis !== "undefined"
+    && (globalThis.__TACTILE_LEGACY_ROLLBACK__ === true
+      || globalThis.__TACTILE_LEGACY_ROLLBACK__ === "true");
+}
+
 function touch(workspace, objects, repairTopology = false) {
   const next = {
     ...workspace,
@@ -145,12 +151,26 @@ export function useLocalWorkspace() {
   const saveTimer = useRef(null);
   const historyRef = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
   const wave2ShadowRef = useRef(null);
+  const legacyRollbackRef = useRef(legacyRollbackEnabled());
+  const workspaceMutationRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    loadWorkspace().then((stored) => {
+    loadWorkspace().then(async (stored) => {
       if (cancelled) return;
-      if (stored) setWorkspace(normalizeWorkspace(stored));
+      const initial = normalizeWorkspace(stored || initialWorkspace());
+      const controller = createWave2Shadow(initial, {
+        legacyRollback: legacyRollbackRef.current,
+        useInitialSnapshot: true,
+      });
+      wave2ShadowRef.current = controller;
+      const resolved = await controller.ready;
+      if (cancelled) {
+        controller.dispose();
+        wave2ShadowRef.current = null;
+        return;
+      }
+      if (!workspaceMutationRef.current) setWorkspace(normalizeWorkspace(resolved || initial));
       historyRef.current = { past: [], future: [], lastKey: null, lastAt: 0 };
       setHydrated(true);
       setSaveState("saved");
@@ -170,12 +190,8 @@ export function useLocalWorkspace() {
   }, [hydrated, workspace]);
 
   useEffect(() => {
-    if (!hydrated || wave2ShadowRef.current) return undefined;
-    wave2ShadowRef.current = createWave2Shadow(workspace);
-    return () => {
-      wave2ShadowRef.current?.dispose();
-      wave2ShadowRef.current = null;
-    };
+    if (!hydrated || !wave2ShadowRef.current) return undefined;
+    return () => undefined;
   }, [hydrated]);
 
   useEffect(() => {
@@ -202,6 +218,7 @@ export function useLocalWorkspace() {
   }, []);
 
   const replaceWorkspace = useCallback((nextWorkspace) => {
+    workspaceMutationRef.current = true;
     historyRef.current = { past: [], future: [], lastKey: null, lastAt: 0 };
     setWorkspace(normalizeWorkspace(nextWorkspace));
   }, []);

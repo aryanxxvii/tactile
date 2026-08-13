@@ -13,7 +13,7 @@ import {
 export const IN_OUT_TIMING = {
   toFloating: 32,
   floatingToFull: 520,
-  nestedAdvance: 300,
+  nestedAdvance: 260,
   closeToOrigin: 460,
   closeComplete: 820,
   floatingCloseToOrigin: 24,

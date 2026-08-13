@@ -3,6 +3,7 @@ import { cellAddress } from "../../../sheet/coordinates.js";
 import { fillChanges, fillRange } from "../../../sheet/ranges.js";
 import { rangeLabel } from "../../../sheet/ranges.js";
 import { rangeValues } from "./useSheetGridProjection.js";
+import { CELL_EDIT_SEED_EVENT } from "../../../components/localEditSession.js";
 
 function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, coordinate) {
   if (!Number.isFinite(coordinate) || coordinate < 0 || !indexMap.length) return null;
@@ -251,11 +252,16 @@ export function useSheetGridGestures({
     if (active.lastLabel === label) return;
     active.lastLabel = label;
     active.callbacks?.setFormulaReferenceRange?.(range);
+    const formula = `${active.prefix}${label},${active.suffix}`;
     active.callbacks?.onCellChange?.(active.sourceCellId, {
-      formula: `${active.prefix}${label},${active.suffix}`,
+      formula,
       value: "",
       embed: null,
     });
+    const editor = document.querySelector(".formula-editor");
+    editor?.dispatchEvent(new CustomEvent(CELL_EDIT_SEED_EVENT, {
+      detail: { value: formula },
+    }));
     window.requestAnimationFrame(() => {
       const editor = document.querySelector(".formula-editor");
       if (!editor) return;
@@ -346,7 +352,7 @@ export function useSheetGridGestures({
     event.preventDefault();
     const input = document.activeElement?.matches?.(".formula-editor") ? document.activeElement : null;
     const source = object.cells?.[formulaEditingCellId];
-    const value = source?.formula || source?.value || "";
+    const value = input?.value ?? source?.formula ?? source?.value ?? "";
     const caret = input?.selectionStart ?? value.length;
     const callbacks = gestureCallbacksRef.current;
     formulaReferenceDragRef.current = {

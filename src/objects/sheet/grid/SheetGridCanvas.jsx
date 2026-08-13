@@ -271,6 +271,7 @@ export function SheetGridCanvas({
               formula={formula}
               displayValue={displayValue}
               embedObjectId={embed?.objectId || ""}
+              embedObject={embed?.objectId ? workspaceObjects?.[embed.objectId] : null}
               embedType={embed?.type || ""}
               embedLinkId={embed?.linkId || ""}
               role={cell?.role || ""}

@@ -89,14 +89,14 @@ test("Backspace clears a focused cell and a selected range", async ({ page }) =>
   }
 });
 
-test("Delete and Backspace retain native behavior while the cell editor is active", async ({ page }) => {
+test("Delete and Backspace retain native behavior while the formula editor is active", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);
 
   const cell = cellLocator(page, "A1");
   await cell.click();
   await cell.press("Enter");
-  const editor = cell.locator(".cell-editor");
+  const editor = page.locator(".formula-editor");
   await expect(editor).toHaveValue("alpha");
 
   await editor.press("End");

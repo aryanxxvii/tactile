@@ -20,6 +20,14 @@ const FilesPanel = lazy(() => import("./components/FilesPanel.jsx").then(({ File
 const SettingsPanel = lazy(() => import("./components/SettingsPanel.jsx").then(({ SettingsPanel: Component }) => ({ default: Component })));
 const TooltipLayer = lazy(() => import("./components/TooltipLayer.jsx").then(({ TooltipLayer: Component }) => ({ default: Component })));
 
+function FilesPanelFallback({ pinned = false }) {
+  return (
+    <div className={`files-layer ${pinned ? "is-pinned" : ""}`} aria-hidden="true">
+      <div className="files-scrim" aria-hidden={pinned ? "true" : undefined} />
+    </div>
+  );
+}
+
 export function App() {
   const workspaceState = useLocalWorkspace();
   const {
@@ -119,6 +127,10 @@ export function App() {
         else shell.openFiles(event.target);
         return;
       }
+      // Let focused controls keep their native keyboard activation. Global
+      // sheet navigation should never consume Enter/Space from a toolbar or
+      // menu button before the browser dispatches its click.
+      if (!command && event.target?.closest?.("button, [role=\"button\"]")) return;
       const historyShortcut = command && (event.key.toLowerCase() === "z" || event.key.toLowerCase() === "y");
       const typingTarget = event.target?.closest?.("input, textarea, [contenteditable=\"true\"]");
       const isPasteProxy = event.target?.dataset?.tactilePasteProxy === "true";
@@ -144,6 +156,13 @@ export function App() {
         // hosts do not dispatch that event for a focused grid cell. Start an
         // async clipboard read from this user gesture as a coordinated fallback.
         void selection.clipboardSelectedCell("paste", request);
+        return;
+      }
+      const formulaEditorTarget = event.target?.closest?.(".formula-editor");
+      if (formulaEditorTarget && !command && inOut.layers.length > 1 && (event.key === "[" || event.key === "]")) {
+        event.preventDefault();
+        if (event.key === "[") inOut.closeTopLayer();
+        else inOut.expandTopLayer();
         return;
       }
       selection.handleKeyboard(
@@ -181,7 +200,7 @@ export function App() {
       window.removeEventListener("paste", handlePaste);
       if (pasteRequestTimeoutRef.current != null) window.clearTimeout(pasteRequestTimeoutRef.current);
     };
-  }, [inOut.closeTopLayer, inOut.expandTopLayer, selection.clipboardSelectedCell, selection.handleKeyboard, selection.handlePaste, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.filesPinned, shell.openFiles, shell.settingsOpen]);
+  }, [inOut.closeTopLayer, inOut.expandTopLayer, inOut.layers.length, selection.clipboardSelectedCell, selection.handleKeyboard, selection.handlePaste, shell.closeFiles, shell.closeSettings, shell.filesOpen, shell.filesPinned, shell.openFiles, shell.settingsOpen]);
 
   const objectPaths = useMemo(() => inOut.layers.map((_, index) => {
     const rootLayer = inOut.layers[0];
@@ -216,7 +235,12 @@ export function App() {
   const currentObject = workspace.objects[inOut.layers[inOut.layers.length - 1]?.objectId || workspaceRootId];
   const currentObjectTitle = currentObject?.title || workspace.name || "Home";
   const activeObjectId = currentObject?.id || workspaceRootId;
-  const activeDockPath = objectPaths.at(-1) || [{ id: workspace.id, title: workspace.name }];
+  const fullDockPath = objectPaths.at(-1) || [{ id: workspace.id, title: workspace.name }];
+  // The root sheet is already named in the header; keep the root dock quiet,
+  // while nested navigation still exposes Home as the first breadcrumb.
+  const activeDockPath = inOut.layers.length === 1 && inOut.layers[0]?.objectId === workspaceRootId
+    ? fullDockPath.slice(0, 1)
+    : fullDockPath;
 
   const handleReparentObject = (payload, target) => {
     const result = reparentObject({
@@ -247,7 +271,9 @@ export function App() {
   const visibleLayers = inOut.layers.slice(visibleLayerStart);
   const topLayer = inOut.layers.at(-1);
   const floatingLayerActive = topLayer?.phase === "floating";
-  const dockBlocked = shell.settingsOpen || floatingLayerActive;
+  // The worksheet and ancestor layers become inert under a floating child,
+  // but the global dock remains available for direct breadcrumb navigation.
+  const dockBlocked = shell.settingsOpen;
   const parentLayerSuspended = visibleLayers.length > 1;
   const parentContextVisible = parentLayerSuspended && topLayer?.phase !== "full";
   const filesSidebarWidth = shell.filesPinned && shell.filesOpen && viewport.width > 620
@@ -384,7 +410,7 @@ export function App() {
       </div>
 
       {shell.filesOpen ? (
-        <Suspense fallback={null}>
+        <Suspense fallback={<FilesPanelFallback pinned={shell.filesPinned} />}>
           <FilesPanel
             index={filesIndex}
             activeObjectId={activeObjectId}

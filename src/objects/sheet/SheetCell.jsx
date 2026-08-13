@@ -45,6 +45,7 @@ export const SheetCell = memo(function SheetCell({
   formula = "",
   displayValue,
   embedObjectId,
+  embedObject,
   embedType,
   embedLinkId,
   role,
@@ -186,7 +187,8 @@ export const SheetCell = memo(function SheetCell({
           && !event.altKey
           && !event.isComposing;
         const isEmpty = !hasEmbed && !value && !formula;
-        if (isPrintable && isEmpty && !formulaEditingCellId) {
+        const isNavigationShortcut = event.key === "[" || event.key === "]";
+        if (isPrintable && !isNavigationShortcut && isEmpty && !formulaEditingCellId) {
           event.preventDefault();
           onFocusFormulaBar?.();
           if (!dispatchCellEditSeed(event.currentTarget, event.key)) onFocusFormulaBar?.(event.key);
@@ -196,7 +198,7 @@ export const SheetCell = memo(function SheetCell({
       <span className="cell-content">
         {hasEmbed ? (
           <ObjectGlyph
-            item={{ type: embedType }}
+            item={embedObject || { type: embedType }}
             className="embed-icon"
             size={14}
             stroke={1.55}
