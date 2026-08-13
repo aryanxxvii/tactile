@@ -1,4 +1,3 @@
-import JSZip from "jszip";
 import { buildPortablePackage, workspaceFromZip } from "../export.js";
 import { materializeCell } from "../model.js";
 import {
@@ -292,6 +291,7 @@ export async function readPortableV4Package(input, options = {}) {
 }
 
 export async function portablePackageToZip(packageData) {
+  const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
   Object.entries(packageData.files || {}).forEach(([path, contents]) => {
     if (contents && typeof contents === "object" && contents.dataUrl) {

@@ -1,4 +1,3 @@
-import JSZip from "jszip";
 import {
   DEFAULT_COLUMNS,
   DEFAULT_ROWS,
@@ -6,6 +5,13 @@ import {
   normalizeWorkspace,
 } from "./model.js";
 import { parseSheetCsv, serializeSheetCsv } from "./format/csv.js";
+
+let jsZipPromise;
+
+function loadJsZip() {
+  jsZipPromise ||= import("jszip").then((module) => module.default || module);
+  return jsZipPromise;
+}
 
 export function safeFileName(value) {
   return String(value || "file")
@@ -149,6 +155,7 @@ function dataUrlParts(dataUrl) {
 
 export async function workspaceToZipBlob(workspace) {
   const packageData = buildPortablePackage(workspace);
+  const JSZip = await loadJsZip();
   const zip = new JSZip();
   Object.entries(packageData.files).forEach(([path, contents]) => {
     if (contents && typeof contents === "object" && contents.dataUrl) {
@@ -206,6 +213,7 @@ function mimeForExtension(extension) {
 }
 
 export async function workspaceFromZip(input) {
+  const JSZip = await loadJsZip();
   const zip = await JSZip.loadAsync(input);
   const indexFile = zip.file("workspace.json");
   if (!indexFile) throw new Error("This bundle is missing workspace.json.");
