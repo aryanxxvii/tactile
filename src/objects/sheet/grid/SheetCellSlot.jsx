@@ -32,7 +32,6 @@ const CellSlot = memo(function CellSlot({
   conditionalTone,
   inSelectedRow,
   inSelectedColumn,
-  editing,
   formulaEditingCellId,
   onEmbeddedClick,
   onEmbeddedDoubleClick,
@@ -46,9 +45,7 @@ const CellSlot = memo(function CellSlot({
   onFormulaReferenceStart,
   onFormulaReferenceMove,
   onFillStart,
-  onEdit,
-  onCommit,
-  onValueChange,
+  onFocusFormulaBar,
   onContextMenu,
 }) {
   return (
@@ -84,7 +81,6 @@ const CellSlot = memo(function CellSlot({
         conditionalTone={conditionalTone}
         inSelectedRow={inSelectedRow}
         inSelectedColumn={inSelectedColumn}
-        editing={editing}
         formulaEditingCellId={formulaEditingCellId}
         onEmbeddedClick={onEmbeddedClick}
         onEmbeddedDoubleClick={onEmbeddedDoubleClick}
@@ -98,9 +94,7 @@ const CellSlot = memo(function CellSlot({
         onFormulaReferenceStart={onFormulaReferenceStart}
         onFormulaReferenceMove={onFormulaReferenceMove}
         onFillStart={onFillStart}
-        onEdit={onEdit}
-        onCommit={onCommit}
-        onValueChange={onValueChange}
+        onFocusFormulaBar={onFocusFormulaBar}
         onContextMenu={onContextMenu}
       />
     </div>

@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { IconBrackets, IconTable } from "@tabler/icons-react";
 import { FormulaBar } from "../../components/FormulaBar.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
@@ -30,6 +31,8 @@ export function SheetObject({
   sheetMetrics,
   onCreateFile,
 }) {
+  const [formulaMode, setFormulaMode] = useState(false);
+  const formulaEditorRef = useRef(null);
   const canonicalSelection = canonicalSheetSelection({
     selectedAddress,
     selectionRange,
@@ -46,13 +49,25 @@ export function SheetObject({
   const selectedRangeSize = rangeSize(canonicalRange);
   const hasConditionalFormat = (object.conditionalFormats || []).some((rule) => rule.range === selectedRangeLabel);
 
-  const handleFormulaChange = (value) => {
+  const handleFormulaChange = (value, nextFormulaMode = value.startsWith("=")) => {
     if (!selectedCell) return;
+    setFormulaMode(nextFormulaMode);
     if (value.startsWith("=")) {
       onUpdateCell(selectedCell.id, { formula: value });
     } else {
       onUpdateCell(selectedCell.id, { value, formula: "" });
     }
+  };
+
+  const focusFormulaBar = (initialValue) => {
+    if (initialValue != null) handleFormulaChange(initialValue);
+    window.requestAnimationFrame(() => {
+      const input = formulaEditorRef.current;
+      if (!input) return;
+      input.focus();
+      const caret = input.value.length;
+      input.setSelectionRange(caret, caret);
+    });
   };
 
   const handleFormat = (patch) => {
@@ -93,7 +108,9 @@ export function SheetObject({
           address={selectedCell?.address || "A1"}
           rangeLabel={selectedRangeLabel}
           cell={selectedCell}
+          inputRef={formulaEditorRef}
           onChange={handleFormulaChange}
+          onFormulaModeChange={setFormulaMode}
           onAddressChange={onSelectAddress}
           onFormat={handleFormat}
           onConditionalFormat={handleConditionalFormat}
@@ -106,8 +123,10 @@ export function SheetObject({
           workspaceObjects={workspaceObjects}
           selectedAddress={canonicalSelectedAddress}
           selectionRange={canonicalRange}
+          formulaEditingCellId={formulaMode ? selectedCell?.id : null}
           onSelect={onSelectAddress}
           onSelectRange={onSelectRange}
+          onFocusFormulaBar={focusFormulaBar}
           onCellChange={onUpdateCell}
           onCellsChange={onUpdateCells}
           onUpdateObject={onUpdateObject}

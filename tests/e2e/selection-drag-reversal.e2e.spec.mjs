@@ -13,6 +13,15 @@ async function cellCenter(page, address) {
   };
 }
 
+async function setCellValue(page, address, value) {
+  const cell = cellLocator(page, address);
+  await cell.click();
+  const editor = page.locator(".formula-editor");
+  await editor.fill(value);
+  await editor.press("Enter");
+  await expect(cell.locator(".cell-value")).toHaveText(value);
+}
+
 async function selectionSnapshot(page) {
   return page.evaluate(() => {
     const selected = document.querySelector('.sheet-cell[aria-selected="true"]');
@@ -72,8 +81,9 @@ test("keeps cell values out of the bottom status dock", async ({ page }) => {
   await page.goto("/");
 
   const cell = page.locator('.sheet-cell[data-cell-address="A1"]');
-  await cell.dblclick();
-  const editor = cell.locator(".cell-editor");
+  await cell.click();
+  const editor = page.locator(".formula-editor");
+  await editor.click();
   await editor.fill("Visible value");
   await editor.press("Enter");
 
@@ -223,19 +233,14 @@ test("uses Paper selection colors in the go-to-tile address field", async ({ pag
     .not.toBe("rgba(0, 0, 0, 0)");
 });
 
-test("double-clicking a value cell enters editing with one active outline", async ({ page }) => {
+test("double-clicking a value cell focuses the formula bar without an inline editor", async ({ page }) => {
   await page.goto("/");
 
   const cell = cellLocator(page, "B2");
-  await cell.click();
-  await cell.press("x");
-  const editor = page.locator('input[aria-label="Edit B2"]');
-  await expect(editor).toBeVisible();
-  await editor.press("Enter");
-  await expect(editor).toBeHidden();
-
   await cell.dblclick();
-  await expect(editor).toBeVisible();
+  const editor = page.locator(".formula-editor");
+  await expect(editor).toBeFocused();
+  await expect(page.locator(".cell-editor")).toHaveCount(0);
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -243,17 +248,17 @@ test("double-clicking a value cell enters editing with one active outline", asyn
         const after = getComputedStyle(active, "::after");
         const before = getComputedStyle(active, "::before");
         return {
-          editing: Boolean(active?.querySelector("input.cell-editor")),
           outlineStyle: getComputedStyle(active).outlineStyle,
           afterDisplay: after.display,
           beforeDisplay: before.display,
         };
       }),
     )
-    .toEqual({ editing: true, outlineStyle: "none", afterDisplay: "none", beforeDisplay: "none" });
+    .toEqual({ outlineStyle: "none", afterDisplay: "block", beforeDisplay: "none" });
 
   await editor.press("Enter");
-  await expect(editor).toBeHidden();
+  await expect(editor).toBeVisible();
+  await expect(page.locator(".cell-editor")).toHaveCount(0);
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -274,12 +279,7 @@ test("repeats a constant selected block when filled downward", async ({ page }) 
   await page.goto("/");
 
   for (const address of ["B1", "B2", "B3"]) {
-    const cell = cellLocator(page, address);
-    await cell.click();
-    await cell.press("1");
-    const editor = page.locator(`input[aria-label="Edit ${address}"]`);
-    await expect(editor).toBeVisible();
-    await editor.press("Enter");
+    await setCellValue(page, address, "1");
   }
 
   const start = await cellCenter(page, "B1");
@@ -317,12 +317,7 @@ test("continues matching numeric columns when a rectangular selection is filled 
   for (let row = 1; row <= 6; row += 1) {
     for (const column of ["B", "C"]) {
       const address = `${column}${row}`;
-      const cell = cellLocator(page, address);
-      await cell.click();
-      await cell.press(String(row));
-      const editor = page.locator(`input[aria-label="Edit ${address}"]`);
-      await expect(editor).toBeVisible();
-      await editor.press("Enter");
+      await setCellValue(page, address, String(row));
     }
   }
 

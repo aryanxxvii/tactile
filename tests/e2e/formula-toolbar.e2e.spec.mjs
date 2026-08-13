@@ -37,15 +37,39 @@ test("centers the compact formatting controls without a visible section label", 
   await expect(page.getByRole("button", { name: "Remove bold", exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("shows formula hints inside the editing tile and inserts a clicked cell reference", async ({ page }) => {
+test("keeps cells selection-only and routes deliberate edits through the formula bar", async ({ page }) => {
+  await page.goto("/");
+
+  const cell = page.locator('.sheet-cell[data-cell-address="B2"]');
+  const editor = page.locator(".formula-editor");
+  await cell.click();
+  await cell.dblclick();
+
+  await expect(page.locator(".cell-editor")).toHaveCount(0);
+  await expect(editor).toBeFocused();
+  await expect(cell).toHaveAttribute("aria-selected", "true");
+
+  await editor.fill("Edited from the formula bar");
+  await expect(cell.locator(".cell-value")).toHaveText("Edited from the formula bar");
+
+  const emptyCell = page.locator('.sheet-cell[data-cell-address="C20"]');
+  await emptyCell.click();
+  await emptyCell.press("x");
+  await expect(page.locator(".cell-editor")).toHaveCount(0);
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveValue("x");
+});
+
+test("shows formula hints in the formula bar and inserts a clicked cell reference", async ({ page }) => {
   await page.goto("/");
 
   const source = page.locator('.sheet-cell[data-cell-address="A4"]');
-  await source.press("Enter");
-  const editor = source.locator(".cell-editor");
+  await source.click();
+  const editor = page.locator(".formula-editor");
+  await editor.click();
   await editor.fill("=SUM");
 
-  const hints = source.getByRole("listbox", { name: "Formula suggestions for A4" });
+  const hints = page.getByRole("listbox", { name: "Formula suggestions" });
   await expect(hints).toBeVisible();
   await expect(hints.getByRole("option").first()).toContainText("SUM");
   await hints.getByRole("option").first().click();
@@ -53,6 +77,8 @@ test("shows formula hints inside the editing tile and inserts a clicked cell ref
 
   await page.locator('.sheet-cell[data-cell-address="A2"]').click();
   await expect(editor).toHaveValue("=SUM(A2,");
+  await expect(source).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".cell-editor")).toHaveCount(0);
   await expect(page.locator('.sheet-cell[data-cell-address="A2"]')).toHaveCSS("border-color", /rgb/);
   const clickedReferenceOutline = page.locator('.sheet-cell[data-cell-address="A2"] .formula-reference-outline');
   await expect(clickedReferenceOutline).toHaveCount(1);
@@ -60,14 +86,15 @@ test("shows formula hints inside the editing tile and inserts a clicked cell ref
   await expect(clickedReferenceOutline.locator("rect")).toHaveCSS("animation-duration", "7.5s");
 });
 
-test("inserts a selected cell range into an in-tile formula", async ({ page }) => {
+test("inserts a selected cell range into a formula-bar formula", async ({ page }) => {
   await page.goto("/");
 
   const source = page.locator('.sheet-cell[data-cell-address="A4"]');
-  await source.press("Enter");
-  const editor = source.locator(".cell-editor");
+  await source.click();
+  const editor = page.locator(".formula-editor");
+  await editor.click();
   await editor.fill("=SUM");
-  await source.getByRole("listbox", { name: "Formula suggestions for A4" }).getByRole("option").first().click();
+  await page.getByRole("listbox", { name: "Formula suggestions" }).getByRole("option").first().click();
 
   const start = await page.locator('.sheet-cell[data-cell-address="A2"]').boundingBox();
   const end = await page.locator('.sheet-cell[data-cell-address="A4"]').boundingBox();

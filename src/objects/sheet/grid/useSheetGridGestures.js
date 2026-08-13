@@ -52,7 +52,7 @@ function captureGesturePointer(gesture, event) {
 
 function focusSelectedGestureCell(objectId, address, attempt = 0) {
   window.requestAnimationFrame(() => {
-    if (document.activeElement?.matches(".cell-editor")) return;
+    if (document.activeElement?.matches(".formula-editor")) return;
     const nextCell = document.querySelector(
       `[data-object-id="${objectId}"][data-cell-address="${address}"]`,
     );
@@ -68,6 +68,7 @@ export function useSheetGridGestures({
   object,
   selectedAddress,
   selectionRange,
+  formulaEditingCellId,
   selectedCoordinates,
   normalizedSelection,
   scrollRef,
@@ -91,7 +92,6 @@ export function useSheetGridGestures({
   fillTarget,
   setFillTarget,
 }) {
-  const [editingCellId, setEditingCellId] = useState(null);
   const [formulaReferenceRange, setFormulaReferenceRange] = useState(null);
   const selectionDragRef = useRef(null);
   const formulaReferenceDragRef = useRef(null);
@@ -144,7 +144,7 @@ export function useSheetGridGestures({
     const scroller = scrollRef.current;
     if (!scroller) return;
     const activeElement = document.activeElement;
-    const restoreGridFocus = !editingCellId
+    const restoreGridFocus = !formulaEditingCellId
       && !selectionDragRef.current
       && activeElement instanceof Element
       && Boolean(activeElement.closest(".sheet-grid-shell"));
@@ -173,14 +173,14 @@ export function useSheetGridGestures({
     }
     if (restoreGridFocus) {
       window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-        if (document.activeElement?.matches(".cell-editor")) return;
+        if (document.activeElement?.matches(".formula-editor")) return;
         const nextCell = document.querySelector(
           `[data-object-id="${object.id}"][data-cell-address="${selectedAddress}"]`,
         );
         nextCell?.focus({ preventScroll: true });
       }));
     }
-  }, [columnOffsetForPosition, columnPositionForIndex, columnSizeForPosition, editingCellId, metrics, object.id, rowOffsetForPosition, rowPositionForIndex, rowSizeForPosition, scrollRef, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
+  }, [columnOffsetForPosition, columnPositionForIndex, columnSizeForPosition, formulaEditingCellId, metrics, object.id, rowOffsetForPosition, rowPositionForIndex, rowSizeForPosition, scrollRef, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
 
   const cellAddressAtPoint = useCallback((event) => {
     const geometry = gestureGeometryRef.current;
@@ -223,11 +223,11 @@ export function useSheetGridGestures({
   };
 
   useEffect(() => {
-    if (!editingCellId) {
+    if (!formulaEditingCellId) {
       formulaReferenceDragRef.current = null;
       setFormulaReferenceRange(null);
     }
-  }, [editingCellId]);
+  }, [formulaEditingCellId]);
 
   const updateFormulaReference = useCallback((reference) => {
     const active = formulaReferenceDragRef.current;
@@ -244,7 +244,7 @@ export function useSheetGridGestures({
       embed: null,
     });
     window.requestAnimationFrame(() => {
-      const editor = document.querySelector(".cell-editor");
+      const editor = document.querySelector(".formula-editor");
       if (!editor) return;
       editor.focus();
       const caret = active.prefix.length + label.length + 1;
@@ -329,15 +329,15 @@ export function useSheetGridGestures({
   }, [metrics, scrollRef, updateSelectionAtPoint]);
 
   const startFormulaReference = useCallback((event, cell) => {
-    if (event.button !== 0 || !editingCellId || cell.id === editingCellId) return;
+    if (event.button !== 0 || !formulaEditingCellId || cell.id === formulaEditingCellId) return;
     event.preventDefault();
-    const input = document.activeElement?.matches?.(".cell-editor") ? document.activeElement : null;
-    const source = object.cells?.[editingCellId];
+    const input = document.activeElement?.matches?.(".formula-editor") ? document.activeElement : null;
+    const source = object.cells?.[formulaEditingCellId];
     const value = source?.formula || source?.value || "";
     const caret = input?.selectionStart ?? value.length;
     const callbacks = gestureCallbacksRef.current;
     formulaReferenceDragRef.current = {
-      sourceCellId: editingCellId,
+      sourceCellId: formulaEditingCellId,
       anchor: cell.address,
       focus: cell.address,
       prefix: value.slice(0, caret),
@@ -347,7 +347,7 @@ export function useSheetGridGestures({
       callbacks,
     };
     updateFormulaReference(cell.address);
-  }, [editingCellId, object.cells, updateFormulaReference]);
+  }, [formulaEditingCellId, object.cells, updateFormulaReference]);
 
   const moveFormulaReference = useCallback((cell) => {
     if (formulaReferenceDragRef.current) updateFormulaReference(cell.address);
@@ -454,7 +454,7 @@ export function useSheetGridGestures({
   }, [onUpdateObject]);
 
   const startSelection = useCallback((event, cell) => {
-    if (event.button !== 0 || editingCellId) return;
+    if (event.button !== 0 || formulaEditingCellId) return;
     event.currentTarget.focus({ preventScroll: true });
     const anchor = event.shiftKey
       ? (selectionRange?.anchor || selectedAddress)
@@ -478,7 +478,7 @@ export function useSheetGridGestures({
         clientY: event.clientY,
       };
     }
-  }, [editingCellId, onSelect, onSelectRange, scrollRef, selectedAddress, selectionRange?.anchor]);
+  }, [formulaEditingCellId, onSelect, onSelectRange, scrollRef, selectedAddress, selectionRange?.anchor]);
 
   const moveSelectionGesture = useCallback((cell) => {
     if (fillDragRef.current) {
@@ -520,17 +520,6 @@ export function useSheetGridGestures({
     window.addEventListener("pointermove", moveSelectionFromPointer, true);
     return () => window.removeEventListener("pointermove", moveSelectionFromPointer, true);
   }, [cellAddressAtPoint, moveFormulaReference, scheduleSelectionAutoScroll, updateSelectionAtPoint]);
-
-  const startCellEditing = useCallback((cellId, initialValue = "") => {
-    setEditingCellId(cellId);
-    if (!initialValue) return;
-    onCellChange?.(
-      cellId,
-      initialValue.startsWith("=")
-        ? { formula: initialValue, value: "", embed: null }
-        : { value: initialValue, formula: "", embed: null },
-    );
-  }, [onCellChange]);
 
   const startFill = useCallback((event, cell) => {
     event.preventDefault();
@@ -679,14 +668,11 @@ export function useSheetGridGestures({
   }, [onSelect, onUpdateObject, selectedCoordinates.column, selectedCoordinates.row]);
 
   return {
-    editingCellId,
     formulaReferenceRange,
-    setEditingCellId,
     fillTarget,
     selectionDragRef,
     startSelection,
     moveSelectionGesture,
-    startCellEditing,
     startFormulaReference,
     moveFormulaReference,
     startFill,

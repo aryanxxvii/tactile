@@ -14,8 +14,10 @@ export function SheetGrid({
   workspaceObjects,
   selectedAddress,
   selectionRange,
+  formulaEditingCellId,
   onSelect,
   onSelectRange,
+  onFocusFormulaBar,
   onCellChange,
   onCellsChange,
   onUpdateObject,
@@ -52,6 +54,7 @@ export function SheetGrid({
     object,
     selectedAddress,
     selectionRange,
+    formulaEditingCellId,
     fillTarget,
     sheetMetrics,
   });
@@ -59,6 +62,7 @@ export function SheetGrid({
     object,
     selectedAddress: projection.selectedAddress,
     selectionRange: projection.normalizedSelection,
+    formulaEditingCellId,
     selectedCoordinates: projection.selectedCoordinates,
     normalizedSelection: projection.normalizedSelection,
     scrollRef: projection.scrollRef,
@@ -125,7 +129,7 @@ export function SheetGrid({
         showActiveRowContext={projection.showActiveRowContext}
         showActiveColumnContext={projection.showActiveColumnContext}
         selectedCoordinates={projection.selectedCoordinates}
-        editingCellId={gestures.editingCellId}
+        formulaEditingCellId={formulaEditingCellId}
         formulaReferenceRange={gestures.formulaReferenceRange}
         onSelect={onSelect}
         onSelectRange={onSelectRange}
@@ -134,14 +138,7 @@ export function SheetGrid({
         onFormulaReferenceStart={gestures.startFormulaReference}
         onFormulaReferenceMove={gestures.moveFormulaReference}
         onFillStart={gestures.startFill}
-        onEdit={gestures.startCellEditing}
-        onCommit={() => gestures.setEditingCellId(null)}
-        onValueChange={(cellId, value) => onCellChange(
-          cellId,
-          value.startsWith("=")
-            ? { formula: value, value: "", embed: null }
-            : { value, formula: "", embed: null },
-        )}
+        onFocusFormulaBar={onFocusFormulaBar}
         onOpenObject={onOpenObject}
         dropTargetAddress={dropTargetAddress}
         onObjectDragOver={handleObjectDragOver}

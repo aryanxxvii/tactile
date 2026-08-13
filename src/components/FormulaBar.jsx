@@ -74,8 +74,9 @@ function formulaQuery(value, caret) {
   return { prefix, start: caret - match[1].length, end: caret };
 }
 
-function FormulaEditor({ value, address, onChange }) {
-  const inputRef = useRef(null);
+function FormulaEditor({ value, address, inputRef, onChange, onFormulaModeChange }) {
+  const localInputRef = useRef(null);
+  const editorRef = inputRef || localInputRef;
   const [query, setQuery] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const suggestions = useMemo(() => {
@@ -103,8 +104,8 @@ function FormulaEditor({ value, address, onChange }) {
     onChange(nextValue);
     setQuery(null);
     window.requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.setSelectionRange(nextCaret, nextCaret);
+      editorRef.current?.focus();
+      editorRef.current?.setSelectionRange(nextCaret, nextCaret);
     });
   };
 
@@ -113,12 +114,18 @@ function FormulaEditor({ value, address, onChange }) {
   return (
     <div className="formula-editor-shell">
       <input
-        ref={inputRef}
+        ref={editorRef}
         className="formula-editor"
         value={value}
         onChange={(event) => {
-          onChange(event.target.value);
+          const nextValue = event.target.value;
+          onChange(nextValue);
+          onFormulaModeChange?.(nextValue.startsWith("="));
           inspectCaret(event.target);
+        }}
+        onFocus={(event) => {
+          onFormulaModeChange?.(event.currentTarget.value.startsWith("="));
+          inspectCaret(event.currentTarget);
         }}
         onClick={(event) => inspectCaret(event.currentTarget)}
         onKeyUp={(event) => {
@@ -126,22 +133,38 @@ function FormulaEditor({ value, address, onChange }) {
           inspectCaret(event.currentTarget);
         }}
         onKeyDown={(event) => {
-          if (!listOpen) return;
-          if (event.key === "ArrowDown") {
+          if (listOpen && event.key === "ArrowDown") {
             event.preventDefault();
             setActiveIndex((current) => (current + 1) % suggestions.length);
-          } else if (event.key === "ArrowUp") {
+            return;
+          }
+          if (listOpen && event.key === "ArrowUp") {
             event.preventDefault();
             setActiveIndex((current) => (current - 1 + suggestions.length) % suggestions.length);
-          } else if (event.key === "Enter" || event.key === "Tab") {
+            return;
+          }
+          if (listOpen && (event.key === "Enter" || event.key === "Tab")) {
             event.preventDefault();
             choose(suggestions[activeIndex]);
-          } else if (event.key === "Escape") {
+            return;
+          }
+          if (listOpen && event.key === "Escape") {
             event.preventDefault();
             setQuery(null);
+            onFormulaModeChange?.(false);
+            editorRef.current?.blur();
+            return;
+          }
+          if (!listOpen && (event.key === "Enter" || event.key === "Escape")) {
+            event.preventDefault();
+            onFormulaModeChange?.(false);
+            editorRef.current?.blur();
           }
         }}
-        onBlur={() => window.setTimeout(() => setQuery(null), 100)}
+        onBlur={() => {
+          onFormulaModeChange?.(false);
+          window.setTimeout(() => setQuery(null), 100);
+        }}
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={listOpen}
@@ -179,7 +202,7 @@ function FormulaEditor({ value, address, onChange }) {
   );
 }
 
-export function FormulaBar({ address, rangeLabel, cell, onChange, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
+export function FormulaBar({ address, rangeLabel, cell, inputRef, onChange, onFormulaModeChange, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
   const formulaValue = cell?.formula || cell?.value || "";
 
   return (
@@ -204,7 +227,9 @@ export function FormulaBar({ address, rangeLabel, cell, onChange, onAddressChang
         <FormulaEditor
           value={formulaValue}
           address={address}
-          onChange={(value) => onChange(value, Boolean(cell?.formula))}
+          inputRef={inputRef}
+          onChange={(value) => onChange(value)}
+          onFormulaModeChange={onFormulaModeChange}
         />
       </div>
     </div>
