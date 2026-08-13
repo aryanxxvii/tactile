@@ -53,7 +53,10 @@
   - Local drafts now cover sheet cells, the formula bar, object titles, and Markdown; commits are deferred to logical edit-session boundaries while formula previews use the worker without mutating the workspace.
   - First printable input seeds an empty cell, focus/caret state is preserved, and the active sheet is supplied for neighboring-reference previews.
   - Committed in `a6345e0`; 71/71 unit tests, typecheck, lint, and production build pass (lint retains existing warnings only).
-- [ ] D02 — Transient gestures
+- [x] D02 — Transient gestures
+  - Resize and axis reorder now capture the active pointer, attach listeners only while active, retain transient preview state, and commit once on pointer release; pointer-cancel cleans up without writing.
+  - Existing selection and fill gestures retain their release-time transaction behavior and viewport lock.
+  - Committed on the reviewed branch as `05b0955` and merged into `main` via `d84bd33`; 71/71 tests, typecheck, lint, and production build pass (lint retains existing warnings only).
 - [ ] D03 — In & Out lifecycle and compositing
 - [ ] D04 — CSS consolidation and code splitting
 - [ ] G3 — Wave 3 gate
