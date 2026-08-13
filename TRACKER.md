@@ -80,10 +80,10 @@
 
 ## Wave 5 — Acquisition and release readiness
 
-- [ ] F01 — Functional, accessibility, and recovery test pyramid
-- [ ] F02 — Final performance certification
-- [ ] F03 — CI, packaging, and release
-- [ ] F04 — Handoff documentation and supply-chain posture
+- [x] F01 — Functional, accessibility, and recovery test pyramid
+- [x] F02 — Final performance certification (strict certification records release blockers)
+- [x] F03 — CI, packaging, and release
+- [x] F04 — Handoff documentation and supply-chain posture
 - [ ] G5 — Wave 5 gate
 
 ## Wave 6 — Final integration and legacy removal
