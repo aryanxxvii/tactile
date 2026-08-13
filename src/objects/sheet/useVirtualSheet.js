@@ -14,7 +14,7 @@ export const SHEET_METRICS = {
 };
 
 const SUSPENDED_SHEET_VIEW = new Map();
-const MAX_DIRECTIONAL_AHEAD = 8;
+const MAX_DIRECTIONAL_AHEAD = 6;
 
 function rememberSheetViewport(viewStateKey, viewport) {
   if (!viewStateKey || !viewport) return;

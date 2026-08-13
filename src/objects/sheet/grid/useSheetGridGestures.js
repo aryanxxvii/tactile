@@ -148,7 +148,7 @@ export function useSheetGridGestures({
     const restoreGridFocus = !formulaEditingCellId
       && !selectionDragRef.current
       && activeElement instanceof Element
-      && scroller.contains(activeElement);
+      && (activeElement === document.body || scroller.contains(activeElement));
     // A drag owns its viewport while it is live. Letting the active-cell
     // effect scroll the surface here makes the endpoint jump to whichever
     // virtual cell happened to render first. Edge scrolling below is the
@@ -472,6 +472,7 @@ export function useSheetGridGestures({
       : cell.address;
     if (event.shiftKey) onSelectRange?.(anchor, cell.address);
     else onSelect(cell.address);
+    focusSelectedGestureCell(object.id, cell.address);
     if (!cell.embed) {
       const captureTarget = scrollRef.current || event.currentTarget;
       selectionDragRef.current = {
@@ -489,7 +490,7 @@ export function useSheetGridGestures({
         clientY: event.clientY,
       };
     }
-  }, [formulaEditingCellId, onSelect, onSelectRange, scrollRef, selectedAddress, selectionRange?.anchor]);
+  }, [formulaEditingCellId, object.id, onSelect, onSelectRange, scrollRef, selectedAddress, selectionRange?.anchor]);
 
   const moveSelectionGesture = useCallback((cell) => {
     if (fillDragRef.current) {
