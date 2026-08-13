@@ -868,6 +868,7 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
       if (event.target instanceof Element && event.target.closest(".files-layer")) return;
       if (event.target instanceof Element && event.target.closest(".app-bottom-bar")) return;
       if (event.target instanceof Element && event.target.closest(".app-dock-path-popover")) return;
+      if (event.target instanceof Element && event.target.closest("[data-floating-interactive=\"true\"]")) return;
       if (event.target instanceof Element && event.target.closest(".object-window")) return;
       if (event.target instanceof Element && event.target.closest(".transition-backdrop")) return;
       closeTopLayer();

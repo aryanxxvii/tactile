@@ -3868,13 +3868,6 @@ kbd {
   padding: 1px 1px 1px 0;
 }
 
-/* Leave a small breathing seam below the sticky column labels so the first
-   row's hover and focus lift cannot tuck underneath the rail. */
-.virtual-cell-slot[data-row="0"] {
-  box-sizing: border-box;
-  padding-top: 3px;
-}
-
 .sheet-cell {
   padding: 0 6px;
   border-radius: var(--cell-radius);
@@ -4927,6 +4920,8 @@ kbd {
   position: relative;
   min-width: 0;
   overflow: visible;
+  align-self: stretch;
+  background: var(--paper);
 }
 
 .app-dock-path-part {

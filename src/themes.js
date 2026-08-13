@@ -528,6 +528,8 @@ export function themeSheetMetrics(theme) {
     columnWidth: Math.max(76, Number(tokens.columnWidth)),
     rowHeaderWidth: Math.max(28, Number(tokens.rowHeaderWidth)),
     columnHeaderHeight: Math.max(20, Number(tokens.columnHeaderHeight)),
+    bodyLeftInset: 3,
+    bodyTopInset: 3,
     overscan: 3,
   };
 }

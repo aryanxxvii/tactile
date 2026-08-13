@@ -157,20 +157,20 @@ export function useSheetGridGestures({
     // virtual cell happened to render first. Edge scrolling below is the
     // only scroll path during a range gesture.
     if (selectionDragRef.current || selectionViewportLockRef.current) return;
-    const { rowHeaderWidth, columnHeaderHeight } = metrics;
+    const { rowHeaderWidth, columnHeaderHeight, bodyLeftInset, bodyTopInset } = metrics;
     const selectedColumnPosition = columnPositionForIndex(selectedCoordinates.column);
     if (!Number.isInteger(selectedColumnPosition)) return;
-    const left = rowHeaderWidth + columnOffsetForPosition(selectedColumnPosition);
+    const left = rowHeaderWidth + bodyLeftInset + columnOffsetForPosition(selectedColumnPosition);
     const right = left + columnSizeForPosition(selectedColumnPosition);
     const selectedRowPosition = rowPositionForIndex(selectedCoordinates.row);
     if (!Number.isInteger(selectedRowPosition)) return;
-    const top = columnHeaderHeight + rowOffsetForPosition(selectedRowPosition);
+    const top = columnHeaderHeight + bodyTopInset + rowOffsetForPosition(selectedRowPosition);
     const bottom = top + rowSizeForPosition(selectedRowPosition);
     let nextLeft = scroller.scrollLeft;
     let nextTop = scroller.scrollTop;
-    if (left < scroller.scrollLeft + rowHeaderWidth) nextLeft = Math.max(0, left - rowHeaderWidth);
+    if (left < scroller.scrollLeft + rowHeaderWidth + bodyLeftInset) nextLeft = Math.max(0, left - rowHeaderWidth - bodyLeftInset);
     else if (right > scroller.scrollLeft + scroller.clientWidth) nextLeft = right - scroller.clientWidth;
-    if (top < scroller.scrollTop + columnHeaderHeight) nextTop = Math.max(0, top - columnHeaderHeight);
+    if (top < scroller.scrollTop + columnHeaderHeight + bodyTopInset) nextTop = Math.max(0, top - columnHeaderHeight - bodyTopInset);
     else if (bottom > scroller.scrollTop + scroller.clientHeight) nextTop = bottom - scroller.clientHeight;
     if (nextLeft !== scroller.scrollLeft || nextTop !== scroller.scrollTop) {
       scroller.scrollTo({ left: nextLeft, top: nextTop, behavior: "auto" });
@@ -212,13 +212,13 @@ export function useSheetGridGestures({
       geometry.columnIndexMap,
       geometry.columnOffsetForPosition,
       geometry.columnSizeForPosition,
-      localX - geometry.metrics.rowHeaderWidth,
+      localX - geometry.metrics.rowHeaderWidth - geometry.metrics.bodyLeftInset,
     );
     const rowPosition = axisPositionAtCoordinate(
       geometry.rowIndexMap,
       geometry.rowOffsetForPosition,
       geometry.rowSizeForPosition,
-      localY - geometry.metrics.columnHeaderHeight,
+      localY - geometry.metrics.columnHeaderHeight - geometry.metrics.bodyTopInset,
     );
     if (!Number.isInteger(columnPosition) || !Number.isInteger(rowPosition)) return null;
     return cellAddress(
@@ -280,8 +280,8 @@ export function useSheetGridGestures({
     const layoutHeight = scroller.clientHeight || bounds.height;
     const scaleX = layoutWidth > 0 ? bounds.width / layoutWidth : 1;
     const scaleY = layoutHeight > 0 ? bounds.height / layoutHeight : 1;
-    const bodyLeft = bounds.left + geometry.metrics.rowHeaderWidth * scaleX;
-    const bodyTop = bounds.top + geometry.metrics.columnHeaderHeight * scaleY;
+    const bodyLeft = bounds.left + (geometry.metrics.rowHeaderWidth + geometry.metrics.bodyLeftInset) * scaleX;
+    const bodyTop = bounds.top + (geometry.metrics.columnHeaderHeight + geometry.metrics.bodyTopInset) * scaleY;
     const bodyRight = bounds.left + layoutWidth * scaleX;
     const bodyBottom = bounds.top + layoutHeight * scaleY;
     return {
@@ -321,8 +321,8 @@ export function useSheetGridGestures({
       const layoutHeight = scroller.clientHeight || bounds.height;
       const scaleX = layoutWidth > 0 ? bounds.width / layoutWidth : 1;
       const scaleY = layoutHeight > 0 ? bounds.height / layoutHeight : 1;
-      const bodyLeft = bounds.left + metrics.rowHeaderWidth * scaleX;
-      const bodyTop = bounds.top + metrics.columnHeaderHeight * scaleY;
+      const bodyLeft = bounds.left + (metrics.rowHeaderWidth + metrics.bodyLeftInset) * scaleX;
+      const bodyTop = bounds.top + (metrics.columnHeaderHeight + metrics.bodyTopInset) * scaleY;
       const bodyRight = bounds.left + layoutWidth * scaleX;
       const bodyBottom = bounds.top + layoutHeight * scaleY;
       const deltaX = edgeScrollStep(pointer.clientX, bodyLeft, bodyRight);

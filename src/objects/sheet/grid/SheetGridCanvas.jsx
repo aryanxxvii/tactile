@@ -57,7 +57,7 @@ export function SheetGridCanvas({
   onToggleRowGroup,
   onToggleColumnGroup,
 }) {
-  const { rowHeaderWidth, columnHeaderHeight } = metrics;
+  const { rowHeaderWidth, columnHeaderHeight, bodyLeftInset, bodyTopInset } = metrics;
   const conditionalRules = useMemo(
     () => compileConditionalRules(object.conditionalFormats),
     [object.conditionalFormats],
@@ -144,7 +144,7 @@ export function SheetGridCanvas({
                 }
               }}
               style={{
-                left: rowHeaderWidth + columnOffsetForPosition(position),
+                left: rowHeaderWidth + bodyLeftInset + columnOffsetForPosition(position),
                 top: 0,
                 width: columnSizeForPosition(position),
                 height: columnHeaderHeight,
@@ -208,7 +208,7 @@ export function SheetGridCanvas({
               }}
               style={{
                 left: 0,
-                top: columnHeaderHeight + rowOffsetForPosition(position),
+                top: columnHeaderHeight + bodyTopInset + rowOffsetForPosition(position),
                 width: rowHeaderWidth,
                 height: rowSizeForPosition(position),
                 transform: "translate3d(var(--sheet-scroll-x, 0px), 0, 0)",
@@ -263,8 +263,8 @@ export function SheetGridCanvas({
               column={column}
               cellId={id}
               address={address}
-              left={rowHeaderWidth + columnOffsetForPosition(columnPosition)}
-              top={columnHeaderHeight + rowOffsetForPosition(position)}
+              left={rowHeaderWidth + bodyLeftInset + columnOffsetForPosition(columnPosition)}
+              top={columnHeaderHeight + bodyTopInset + rowOffsetForPosition(position)}
               width={columnSizeForPosition(columnPosition)}
               height={rowSizeForPosition(position)}
               value={rawValue}

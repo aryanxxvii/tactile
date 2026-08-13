@@ -65,6 +65,10 @@ export function PaperPortal({ children, className = "", themeSource = null }) {
     const element = document.createElement("div");
     element.className = ["tactile-overlay-layer", className].filter(Boolean).join(" ");
     element.dataset.overlayLayer = "true";
+    // Portaled controls still belong to the active object surface. In particular,
+    // a floating child must not be dismissed when its document-level menu is
+    // clicked, even though the menu cannot remain inside the clipped window.
+    element.dataset.floatingInteractive = "true";
     if (className.includes("tactile-tooltip-layer")) element.dataset.tooltipLayer = "true";
     document.body.appendChild(element);
     setRoot(element);

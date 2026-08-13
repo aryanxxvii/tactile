@@ -50,6 +50,36 @@ async function openMarkdownObject(page) {
   return layer;
 }
 
+async function openMarkdownFloating(page) {
+  const cell = page.locator('[data-object-id="home"][data-cell-address="A1"]');
+  await expect(cell).toHaveClass(/is-embedded/);
+  await cell.scrollIntoViewIfNeeded();
+  await cell.click();
+  const layer = page.locator('[data-layer-object="meeting-notes"]');
+  await expect(layer).toHaveAttribute("data-spatial-phase", "floating");
+  return layer;
+}
+
+test("portaled Markdown color menus stay inside a floating child", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownFloating(page);
+  const surface = layer.locator(".markdown-object");
+
+  await surface.getByRole("button", { name: "Text color" }).click();
+  await expect(page.getByRole("menu", { name: "Text color" })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Text color: Rust" }).click();
+  await expect(layer).toHaveAttribute("data-spatial-phase", "floating");
+  await expect(layer).toHaveCount(1);
+
+  await surface.getByRole("button", { name: "Highlight color" }).click();
+  await expect(page.getByRole("menu", { name: "Highlight color" })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Highlight color: Yellow" }).click();
+  await expect(layer).toHaveAttribute("data-spatial-phase", "floating");
+  await expect(layer).toHaveCount(1);
+});
+
 test("Markdown surfaces hide file metadata while linked editing and navigation still work", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);

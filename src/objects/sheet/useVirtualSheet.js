@@ -6,6 +6,8 @@ export const SHEET_METRICS = {
   columnWidth: 126,
   rowHeaderWidth: 34,
   columnHeaderHeight: 25,
+  bodyLeftInset: 3,
+  bodyTopInset: 3,
   overscan: 3,
   // Keep a larger mounted band than the visible slice. The band is the
   // hysteresis that prevents a smooth scroll from rebasing the React window
@@ -111,6 +113,8 @@ export function buildVirtualRange(
 ) {
   const rowHeaderWidth = numericMetric(metrics?.rowHeaderWidth, 0);
   const columnHeaderHeight = numericMetric(metrics?.columnHeaderHeight, 0);
+  const bodyLeftInset = numericMetric(metrics?.bodyLeftInset, 0);
+  const bodyTopInset = numericMetric(metrics?.bodyTopInset, 0);
   const rowMax = axisMax(rowCount, rowGeometry);
   const columnMax = axisMax(columnCount, columnGeometry);
   if (rowMax < 0 || columnMax < 0) {
@@ -123,27 +127,27 @@ export function buildVirtualRange(
   const width = Math.max(0, finiteCoordinate(viewport?.width));
   return {
     rowStart: clamp(
-      firstVisiblePosition(rowGeometry.offsets, scrollTop - columnHeaderHeight) - padding.top,
+      firstVisiblePosition(rowGeometry.offsets, scrollTop - columnHeaderHeight - bodyTopInset) - padding.top,
       0,
       rowMax,
     ),
     rowEnd: clamp(
       firstVisiblePosition(
         rowGeometry.offsets,
-        scrollTop + height - columnHeaderHeight,
+        scrollTop + height - columnHeaderHeight - bodyTopInset,
       ) + padding.bottom,
       0,
       rowMax,
     ),
     columnStart: clamp(
-      firstVisiblePosition(columnGeometry.offsets, scrollLeft - rowHeaderWidth) - padding.left,
+      firstVisiblePosition(columnGeometry.offsets, scrollLeft - rowHeaderWidth - bodyLeftInset) - padding.left,
       0,
       columnMax,
     ),
     columnEnd: clamp(
       firstVisiblePosition(
         columnGeometry.offsets,
-        scrollLeft + width - rowHeaderWidth,
+        scrollLeft + width - rowHeaderWidth - bodyLeftInset,
       ) + padding.right,
       0,
       columnMax,
@@ -223,6 +227,8 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       columnWidth: customMetrics?.columnWidth ?? SHEET_METRICS.columnWidth,
       rowHeaderWidth: customMetrics?.rowHeaderWidth ?? SHEET_METRICS.rowHeaderWidth,
       columnHeaderHeight: customMetrics?.columnHeaderHeight ?? SHEET_METRICS.columnHeaderHeight,
+      bodyLeftInset: customMetrics?.bodyLeftInset ?? SHEET_METRICS.bodyLeftInset,
+      bodyTopInset: customMetrics?.bodyTopInset ?? SHEET_METRICS.bodyTopInset,
       overscan,
       overscanHysteresis: numericMetric(
         customMetrics?.overscanHysteresis,
@@ -231,6 +237,8 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     };
   }, [
     customMetrics?.columnHeaderHeight,
+    customMetrics?.bodyLeftInset,
+    customMetrics?.bodyTopInset,
     customMetrics?.columnWidth,
     customMetrics?.overscan,
     customMetrics?.overscanHysteresis,
@@ -420,9 +428,9 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   }, [syncViewport]);
 
   const canvasSize = useMemo(() => ({
-    width: metrics.rowHeaderWidth + columnGeometry.total,
-    height: metrics.columnHeaderHeight + rowGeometry.total,
-  }), [columnGeometry.total, metrics.columnHeaderHeight, metrics.rowHeaderWidth, rowGeometry.total]);
+    width: metrics.rowHeaderWidth + metrics.bodyLeftInset + columnGeometry.total,
+    height: metrics.columnHeaderHeight + metrics.bodyTopInset + rowGeometry.total,
+  }), [columnGeometry.total, metrics.bodyLeftInset, metrics.bodyTopInset, metrics.columnHeaderHeight, metrics.rowHeaderWidth, rowGeometry.total]);
 
   const rowPositionForIndex = useCallback((row) => rowPositionMap.get(row), [rowPositionMap]);
   const columnPositionForIndex = useCallback((column) => columnPositionMap.get(column), [columnPositionMap]);
