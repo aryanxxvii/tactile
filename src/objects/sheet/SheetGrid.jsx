@@ -102,10 +102,13 @@ export function SheetGrid({
         showActiveColumnContext={projection.showActiveColumnContext}
         selectedCoordinates={projection.selectedCoordinates}
         editingCellId={gestures.editingCellId}
+        formulaReferenceRange={gestures.formulaReferenceRange}
         onSelect={onSelect}
         onSelectRange={onSelectRange}
         onSelectionStart={gestures.startSelection}
         onSelectionMove={gestures.moveSelectionGesture}
+        onFormulaReferenceStart={gestures.startFormulaReference}
+        onFormulaReferenceMove={gestures.moveFormulaReference}
         onFillStart={gestures.startFill}
         onEdit={gestures.startCellEditing}
         onCommit={() => gestures.setEditingCellId(null)}

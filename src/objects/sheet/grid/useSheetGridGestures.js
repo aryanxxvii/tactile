@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cellAddress } from "../../../sheet/coordinates.js";
 import { fillChanges, fillRange } from "../../../sheet/ranges.js";
+import { rangeLabel } from "../../../sheet/ranges.js";
 import { rangeValues } from "./useSheetGridProjection.js";
 
 function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, coordinate) {
@@ -76,7 +77,9 @@ export function useSheetGridGestures({
   setFillTarget,
 }) {
   const [editingCellId, setEditingCellId] = useState(null);
+  const [formulaReferenceRange, setFormulaReferenceRange] = useState(null);
   const selectionDragRef = useRef(null);
+  const formulaReferenceDragRef = useRef(null);
   const fillDragRef = useRef(null);
   const fillTargetRef = useRef(null);
   const resizeRef = useRef(null);
@@ -181,13 +184,69 @@ export function useSheetGridGestures({
     );
   }, []);
 
-  gestureCallbacksRef.current = { object, onCellsChange, onSelectRange, setFillTarget };
+  gestureCallbacksRef.current = {
+    object,
+    onCellChange,
+    onCellsChange,
+    onSelectRange,
+    setFillTarget,
+    setFormulaReferenceRange,
+  };
+
+  useEffect(() => {
+    if (!editingCellId) {
+      formulaReferenceDragRef.current = null;
+      setFormulaReferenceRange(null);
+    }
+  }, [editingCellId]);
+
+  const updateFormulaReference = useCallback((reference) => {
+    const active = formulaReferenceDragRef.current;
+    if (!active) return;
+    active.focus = reference;
+    const range = { anchor: active.anchor, focus: reference };
+    const label = rangeLabel(range);
+    if (active.lastLabel === label) return;
+    active.lastLabel = label;
+    active.callbacks?.setFormulaReferenceRange?.(range);
+    active.callbacks?.onCellChange?.(active.sourceCellId, {
+      formula: `${active.prefix}${label}${active.suffix}`,
+      value: "",
+      embed: null,
+    });
+  }, []);
+
+  const startFormulaReference = useCallback((event, cell) => {
+    if (event.button !== 0 || !editingCellId || cell.id === editingCellId) return;
+    event.preventDefault();
+    const input = document.activeElement?.matches?.(".cell-editor") ? document.activeElement : null;
+    const source = object.cells?.[editingCellId];
+    const value = source?.formula || source?.value || "";
+    const caret = input?.selectionStart ?? value.length;
+    const callbacks = gestureCallbacksRef.current;
+    formulaReferenceDragRef.current = {
+      sourceCellId: editingCellId,
+      anchor: cell.address,
+      focus: cell.address,
+      prefix: value.slice(0, caret),
+      suffix: value.slice(caret),
+      lastLabel: null,
+      pointerId: event.pointerId,
+      callbacks,
+    };
+    updateFormulaReference(cell.address);
+  }, [editingCellId, object.cells, updateFormulaReference]);
+
+  const moveFormulaReference = useCallback((cell) => {
+    if (formulaReferenceDragRef.current) updateFormulaReference(cell.address);
+  }, [updateFormulaReference]);
 
   useEffect(() => {
     const finishPointerGesture = (event) => {
       const selectionDrag = selectionDragRef.current;
       const fill = fillDragRef.current;
-      const activeGesture = selectionDrag || fill;
+      const formulaReference = formulaReferenceDragRef.current;
+      const activeGesture = selectionDrag || fill || formulaReference;
       if (!activeGesture) return;
       if (activeGesture.pointerId != null && event?.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
       if (selectionDrag && event?.type === "pointerup") {
@@ -199,6 +258,12 @@ export function useSheetGridGestures({
           callbacks?.onSelectRange?.(selectionDrag.anchor, address);
         }
       }
+      if (formulaReference && event?.type === "pointerup") {
+        const callbacks = gestureCallbacksRef.current;
+        const address = cellAddressAtPoint(event)
+          || domCellAddressAtPoint(event, callbacks?.object?.id);
+        if (address) updateFormulaReference(address);
+      }
       const releaseTarget = activeGesture.captureTarget;
       if (activeGesture.captured && releaseTarget && activeGesture.pointerId != null) {
         try {
@@ -208,11 +273,13 @@ export function useSheetGridGestures({
         }
       }
       selectionDragRef.current = null;
+      formulaReferenceDragRef.current = null;
       const target = fillTargetRef.current;
       fillDragRef.current = null;
       fillTargetRef.current = null;
       const callbacks = gestureCallbacksRef.current;
       callbacks?.setFillTarget(null);
+      if (formulaReference) callbacks?.setFormulaReferenceRange?.({ anchor: formulaReference.anchor, focus: formulaReference.focus });
       if (fill && target && target !== fill.sourceAddress) {
         const changes = fillChanges(callbacks.object, fill.sourceAddress, target, fill.sourceRange);
         callbacks.onCellsChange?.(changes, "fill");
@@ -229,7 +296,7 @@ export function useSheetGridGestures({
       window.removeEventListener("pointerup", finishPointerGesture, true);
       window.removeEventListener("pointercancel", finishPointerGesture, true);
     };
-  }, [cellAddressAtPoint]);
+  }, [cellAddressAtPoint, updateFormulaReference]);
 
   useEffect(() => {
     const moveResize = (event) => {
@@ -298,18 +365,21 @@ export function useSheetGridGestures({
 
   useEffect(() => {
     const moveSelectionFromPointer = (event) => {
-      const activeGesture = selectionDragRef.current || fillDragRef.current;
+      const activeGesture = selectionDragRef.current || fillDragRef.current || formulaReferenceDragRef.current;
       if (!activeGesture) return;
       if (activeGesture.pointerId != null && event.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
       captureGesturePointer(activeGesture, event);
       const callbacks = gestureCallbacksRef.current;
       const address = cellAddressAtPoint(event)
         || domCellAddressAtPoint(event, callbacks?.object?.id);
-      if (address) moveSelectionGestureRef.current?.({ address });
+      if (address) {
+        if (formulaReferenceDragRef.current) moveFormulaReference({ address });
+        else moveSelectionGestureRef.current?.({ address });
+      }
     };
     window.addEventListener("pointermove", moveSelectionFromPointer, true);
     return () => window.removeEventListener("pointermove", moveSelectionFromPointer, true);
-  }, [cellAddressAtPoint]);
+  }, [cellAddressAtPoint, moveFormulaReference]);
 
   const startCellEditing = useCallback((cellId, initialValue = "") => {
     setEditingCellId(cellId);
@@ -467,12 +537,15 @@ export function useSheetGridGestures({
 
   return {
     editingCellId,
+    formulaReferenceRange,
     setEditingCellId,
     fillTarget,
     selectionDragRef,
     startSelection,
     moveSelectionGesture,
     startCellEditing,
+    startFormulaReference,
+    moveFormulaReference,
     startFill,
     startResize,
     resizeAxisWithKeyboard,

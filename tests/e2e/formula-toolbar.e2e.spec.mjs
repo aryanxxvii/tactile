@@ -37,6 +37,45 @@ test("centers the compact formatting controls without a visible section label", 
   await expect(page.getByRole("button", { name: "Remove bold", exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("shows formula hints inside the editing tile and inserts a clicked cell reference", async ({ page }) => {
+  await page.goto("/");
+
+  const source = page.locator('.sheet-cell[data-cell-address="A4"]');
+  await source.press("Enter");
+  const editor = source.locator(".cell-editor");
+  await editor.fill("=SUM");
+
+  const hints = source.getByRole("listbox", { name: "Formula suggestions for A4" });
+  await expect(hints).toBeVisible();
+  await expect(hints.getByRole("option").first()).toContainText("SUM");
+  await hints.getByRole("option").first().click();
+  await expect(editor).toHaveValue("=SUM(");
+
+  await page.locator('.sheet-cell[data-cell-address="A2"]').click();
+  await expect(editor).toHaveValue("=SUM(A2");
+});
+
+test("inserts a selected cell range into an in-tile formula", async ({ page }) => {
+  await page.goto("/");
+
+  const source = page.locator('.sheet-cell[data-cell-address="A4"]');
+  await source.press("Enter");
+  const editor = source.locator(".cell-editor");
+  await editor.fill("=SUM");
+  await source.getByRole("listbox", { name: "Formula suggestions for A4" }).getByRole("option").first().click();
+
+  const start = await page.locator('.sheet-cell[data-cell-address="A2"]').boundingBox();
+  const end = await page.locator('.sheet-cell[data-cell-address="A4"]').boundingBox();
+  if (!start || !end) throw new Error("Formula reference cells are not measurable");
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 4 });
+  await page.mouse.up();
+
+  await expect(editor).toHaveValue("=SUM(A2:A4");
+  await expect(page.locator('.sheet-cell[data-cell-address="A4"]')).toHaveClass(/is-formula-reference/);
+});
+
 test("applies top, middle, and bottom vertical alignment to the active tile", async ({ page }) => {
   await page.goto("/");
 

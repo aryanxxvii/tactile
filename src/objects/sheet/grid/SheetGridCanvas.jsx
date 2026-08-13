@@ -34,10 +34,13 @@ export function SheetGridCanvas({
   showActiveColumnContext,
   selectedCoordinates,
   editingCellId,
+  formulaReferenceRange,
   onSelect,
   onSelectRange,
   onSelectionStart,
   onSelectionMove,
+  onFormulaReferenceStart,
+  onFormulaReferenceMove,
   onFillStart,
   onEdit,
   onCommit,
@@ -252,6 +255,7 @@ export function SheetGridCanvas({
                 conditionalTone={conditionalToneForCell(object, cell, calculatedValue)}
                 selected={isActiveCell}
                 inRange={rangeContains(normalizedSelection, row, column)}
+                inFormulaRange={rangeContains(formulaReferenceRange, row, column)}
                 fillPreview={rangeContains(fillPreviewRange, row, column)}
                 inSelectedRow={showActiveRowContext && selectedCoordinates.row === row}
                 inSelectedColumn={showActiveColumnContext && selectedCoordinates.column === column}
@@ -259,6 +263,9 @@ export function SheetGridCanvas({
                 onSelect={onSelect}
                 onSelectionStart={onSelectionStart}
                 onSelectionMove={onSelectionMove}
+                formulaEditingCellId={editingCellId}
+                onFormulaReferenceStart={onFormulaReferenceStart}
+                onFormulaReferenceMove={onFormulaReferenceMove}
                 onFillStart={onFillStart}
                 onEdit={onEdit}
                 onCommit={onCommit}
