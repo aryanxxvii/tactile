@@ -12,6 +12,18 @@ function isGridTarget(target) {
   return Boolean(target?.closest?.(".sheet-grid-shell"));
 }
 
+function activeElement() {
+  return typeof document === "undefined" ? null : document.activeElement;
+}
+
+function isTypingSurface(target) {
+  return isTypingTarget(target) || isTypingTarget(activeElement());
+}
+
+function isGridSurface(target) {
+  return isGridTarget(target) || isGridTarget(activeElement());
+}
+
 function clipboardMethodAvailable(method) {
   return typeof navigator !== "undefined" && typeof navigator.clipboard?.[method] === "function";
 }
@@ -207,7 +219,7 @@ export function useSelectionCommands({
   }, [layers, selectRange, selectedByObject, workspace.objects]);
 
   const handleKeyboard = useCallback((event, settingsOpen, closeSettings, closeTopLayer, expandTopLayer) => {
-    if (isTypingTarget(event.target) || event.defaultPrevented) return;
+    if (isTypingSurface(event.target) || event.defaultPrevented) return;
 
     const command = event.ctrlKey || event.metaKey;
     if (command && event.key.toLowerCase() === "z") {
@@ -258,7 +270,7 @@ export function useSelectionCommands({
       closeTopLayer();
       return;
     }
-    if (event.key === "Delete" || event.key === "Backspace") {
+    if ((event.key === "Delete" || event.key === "Backspace") && isGridSurface(event.target)) {
       event.preventDefault();
       clearSelectedCell();
       return;
