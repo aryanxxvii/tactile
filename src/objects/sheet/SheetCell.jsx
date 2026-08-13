@@ -187,7 +187,8 @@ export const SheetCell = memo(function SheetCell({
           && !event.altKey
           && !event.isComposing;
         const isEmpty = !hasEmbed && !value && !formula;
-        if (isPrintable && isEmpty && !formulaEditingCellId) {
+        const isNavigationShortcut = event.key === "[" || event.key === "]";
+        if (isPrintable && !isNavigationShortcut && isEmpty && !formulaEditingCellId) {
           event.preventDefault();
           onFocusFormulaBar?.();
           if (!dispatchCellEditSeed(event.currentTarget, event.key)) onFocusFormulaBar?.(event.key);

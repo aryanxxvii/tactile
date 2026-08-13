@@ -1,4 +1,3 @@
-import { createPortal } from "react-dom";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   IconArrowBackUp,
@@ -6,6 +5,7 @@ import {
   IconFolderOpen,
   IconSettings,
 } from "@tabler/icons-react";
+import { PaperPortal } from "./PaperPortal.jsx";
 
 const PATH_CLOSE_DELAY = 360;
 
@@ -36,17 +36,21 @@ function DockPathButton({ item, onNavigate, current = false, overflow = false, c
   );
 }
 
-function FullPathPopover({ id, path, anchorRect, onNavigate, onPointerEnter, onPointerLeave }) {
+function FullPathPopover({ id, path, anchorRect, themeSource, onNavigate, onPointerEnter, onPointerLeave }) {
   const popoverRef = useRef(null);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [marqueeDistances, setMarqueeDistances] = useState({});
   const parentPath = useMemo(() => path.slice(1).reverse(), [path]);
 
   useLayoutEffect(() => {
-    if (!anchorRect || !popoverRef.current) return undefined;
+    if (!anchorRect) return undefined;
+    let frame = 0;
     const updatePosition = () => {
       const popoverBox = popoverRef.current?.getBoundingClientRect();
-      if (!popoverBox) return;
+      if (!popoverBox) {
+        frame = window.requestAnimationFrame(updatePosition);
+        return;
+      }
       const gutter = 8;
       const left = Math.min(
         Math.max(anchorRect.left + anchorRect.width / 2, gutter + popoverBox.width / 2),
@@ -59,6 +63,7 @@ function FullPathPopover({ id, path, anchorRect, onNavigate, onPointerEnter, onP
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
@@ -90,41 +95,42 @@ function FullPathPopover({ id, path, anchorRect, onNavigate, onPointerEnter, onP
     };
   }, [parentPath]);
 
-  return createPortal(
-    <div
-      ref={popoverRef}
-      id={id}
-      className="app-dock-path-popover"
-      role="menu"
-      aria-label="Full object path"
-      style={{ left: position.left, top: position.top }}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
-    >
-      <div className="app-dock-path-popover-row">
-        {parentPath.map((item, index) => (
-          <span className="app-dock-path-popover-part" key={`${item.id}-${index}`}>
-            <button
-              className={`${index === 0 ? "is-current" : ""} ${marqueeDistances[`${item.id}-${index}`] ? "is-marquee" : ""}`.trim()}
-              type="button"
-              role="menuitem"
-              onClick={() => onNavigate?.(item)}
-              aria-label={`Go to ${item.title}`}
-              aria-current={index === 0 ? "location" : undefined}
-              data-path-object-id={item.id}
-              style={marqueeDistances[`${item.id}-${index}`]
-                ? { "--marquee-distance": `${marqueeDistances[`${item.id}-${index}`]}px` }
-                : undefined}
-            >
-              <span className="app-dock-path-popover-label" data-ancestry-label={`${item.id}-${index}`}>
-                {item.title}
-              </span>
-            </button>
-          </span>
-        ))}
+  return (
+    <PaperPortal className="app-dock-path-portal" themeSource={themeSource}>
+      <div
+        ref={popoverRef}
+        id={id}
+        className="app-dock-path-popover"
+        role="menu"
+        aria-label="Full object path"
+        style={{ left: position.left, top: position.top }}
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+      >
+        <div className="app-dock-path-popover-row">
+          {parentPath.map((item, index) => (
+            <span className="app-dock-path-popover-part" key={`${item.id}-${index}`}>
+              <button
+                className={`${index === 0 ? "is-current" : ""} ${marqueeDistances[`${item.id}-${index}`] ? "is-marquee" : ""}`.trim()}
+                type="button"
+                role="menuitem"
+                onClick={() => onNavigate?.(item)}
+                aria-label={`Go to ${item.title}`}
+                aria-current={index === 0 ? "location" : undefined}
+                data-path-object-id={item.id}
+                style={marqueeDistances[`${item.id}-${index}`]
+                  ? { "--marquee-distance": `${marqueeDistances[`${item.id}-${index}`]}px` }
+                  : undefined}
+              >
+                <span className="app-dock-path-popover-label" data-ancestry-label={`${item.id}-${index}`}>
+                  {item.title}
+                </span>
+              </button>
+            </span>
+          ))}
+        </div>
       </div>
-    </div>,
-    document.body,
+    </PaperPortal>
   );
 }
 
@@ -214,6 +220,7 @@ export function AppDock({
                       id={pathPopoverId}
                       path={path}
                       anchorRect={pathAnchor}
+                      themeSource={overflowButtonRef.current}
                       onNavigate={navigatePath}
                       onPointerEnter={openPathPopover}
                       onPointerLeave={closePathPopover}

@@ -682,6 +682,7 @@ test("dock breadcrumbs jump directly and reveal the complete path from the ellip
     const anchorRect = anchor.getBoundingClientRect();
     const panelRect = panel.getBoundingClientRect();
     const buttonStyle = getComputedStyle(button);
+    const panelStyle = getComputedStyle(panel);
     return {
       anchorCenter: (anchorRect.left + anchorRect.right) / 2,
       panelCenter: (panelRect.left + panelRect.right) / 2,
@@ -689,6 +690,8 @@ test("dock breadcrumbs jump directly and reveal the complete path from the ellip
       background: buttonStyle.backgroundColor,
       borderLeft: buttonStyle.borderLeftColor,
       boxShadow: buttonStyle.boxShadow,
+      panelBackground: panelStyle.backgroundColor,
+      panelBorderLeft: panelStyle.borderLeftColor,
     };
   });
   expect(ancestryGeometry).not.toBeNull();
@@ -699,6 +702,8 @@ test("dock breadcrumbs jump directly and reveal the complete path from the ellip
     borderLeft: "rgba(0, 0, 0, 0)",
     boxShadow: "none",
   });
+  expect(ancestryGeometry.panelBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(ancestryGeometry.panelBorderLeft).not.toBe("rgba(0, 0, 0, 0)");
   expect(await fullPath.getByRole("menuitem").allTextContents()).toEqual([
     "Tiles A5",
     "Tiles A4",

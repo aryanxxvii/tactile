@@ -334,9 +334,11 @@ test("square brackets can be entered in a tile and Ctrl+] opens its active-cell 
 
   const cell = cellLocator(page, "C3");
   await cell.click();
-  await cell.press("[");
+  await cell.press("Enter");
+  await page.locator(".formula-editor").press("[");
   await page.locator(".formula-editor").press("]");
-  await expect.poll(() => cellValue(page, "C3")).toBe("[]");
+  await expect(page.locator(".formula-editor")).toHaveValue("[]");
+  await page.locator(".formula-editor").press("Escape");
 
   await cell.press("Control+]");
   const menu = page.getByRole("menu", { name: "Commands for C3" });
