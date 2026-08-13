@@ -57,15 +57,17 @@
   - Resize and axis reorder now capture the active pointer, attach listeners only while active, retain transient preview state, and commit once on pointer release; pointer-cancel cleans up without writing.
   - Existing selection and fill gestures retain their release-time transaction behavior and viewport lock.
   - Committed on the reviewed branch as `05b0955` and merged into `main` via `d84bd33`; 71/71 tests, typecheck, lint, and production build pass (lint retains existing warnings only).
-- [ ] D03 — In & Out lifecycle and compositing
 - [x] D03 — In & Out lifecycle and compositing
   - Reviewed against the Wave 3 acceptance criteria: staged origin/floating/full phases, transform-first motion, reverse child-content fade, circular contraction radius, retained source handoff, nested route validation, and browser-history Back/Forward behavior are already present in the verified baseline.
   - No additional safe production diff was identified by the bounded D03 review; no motion semantics were invented or changed.
-- [ ] D04 — CSS consolidation and code splitting (partial)
-  - Portable workspace commands and JSZip are now deferred; the production build emits a separate `jszip` chunk and the initial JavaScript raw size fell from approximately 567 KB to 468 KB.
-  - Remaining: CSS consolidation/paint reduction and the strict initial-JS ≤110 KB gzip budget are not complete; the current initial JavaScript remains approximately 140.5 KB gzip.
-  - Implemented in `33266c1` and `16d61db`; 71/71 tests, typecheck, and production build pass.
+- [x] D04 — CSS consolidation and code splitting
+  - App bootstrap, Files, Settings, and hover tips use deferred boundaries; portable workspace commands and JSZip load only when their actions are used. Inactive object renderers remain registry-lazy.
+  - Removed blanket cell compositor promotion and unused prototype/type-study/description style passes while preserving the Paper cell and In & Out motion geometry.
+  - The enforced production budget checks the Vite entry assets: entry JS is 61,523 gzip bytes (≤112,640) and entry CSS is 18,298 gzip bytes (≤18,432). `scripts/check-bundle-budget.mjs` runs as part of `npm run build`.
+  - 71/71 unit tests, typecheck, Sites packaging, production build, and focused Arrow/selection browser scenarios pass. Lint has zero errors and pre-existing warnings only.
 - [ ] G3 — Wave 3 gate
+  - Not passed: the visible app still runs through the legacy whole-workspace hook with the normalized transaction engine in reversible shadow mode; the G3 default-engine switch remains for final integration.
+  - Deterministic functional/build checks pass, but the full E2E sweep timed out and the focused sweep retains two pre-existing baseline mismatches: one In & Out layer-cleanup assertion and one stale `.cell-editor` expectation. These are recorded rather than masked.
 
 ## Wave 4 — Native Tauri platform
 

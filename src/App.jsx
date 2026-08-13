@@ -1,9 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AppDock } from "./components/AppDock.jsx";
-import { FilesPanel } from "./components/FilesPanel.jsx";
-import { SettingsPanel } from "./components/SettingsPanel.jsx";
 import { SpatialLayer } from "./components/SpatialLayer.jsx";
-import { TooltipLayer } from "./components/TooltipLayer.jsx";
 import { useLocalWorkspace } from "./hooks/useLocalWorkspace.js";
 import { ObjectSurface } from "./shell/ObjectSurface.jsx";
 import { layerHistoryEntry, MAX_VISIBLE_LAYERS, useInOut } from "./shell/inOut.js";
@@ -18,6 +15,10 @@ import {
   themeSheetMetrics,
   themeStyle,
 } from "./themes.js";
+
+const FilesPanel = lazy(() => import("./components/FilesPanel.jsx").then(({ FilesPanel: Component }) => ({ default: Component })));
+const SettingsPanel = lazy(() => import("./components/SettingsPanel.jsx").then(({ SettingsPanel: Component }) => ({ default: Component })));
+const TooltipLayer = lazy(() => import("./components/TooltipLayer.jsx").then(({ TooltipLayer: Component }) => ({ default: Component })));
 
 export function App() {
   const workspaceState = useLocalWorkspace();
@@ -383,51 +384,57 @@ export function App() {
       </div>
 
       {shell.filesOpen ? (
-        <FilesPanel
-          index={filesIndex}
-          activeObjectId={activeObjectId}
-          pinned={shell.filesPinned}
-          width={shell.filesWidth}
-          onOpenRoute={(route) => inOut.navigateToRoute(route, { mode: "full", immediate: true })}
-          onUpdateObject={updateObject}
-          onReparentObject={handleReparentObject}
-          onDeleteObject={(objectId) => {
-            const title = workspace.objects[objectId]?.title || "Object";
-            deleteObject(objectId);
-            shell.showNotice(`${title} deleted`);
-          }}
-          onSetHome={(objectId, route) => {
-            setHomeObject(objectId, route?.segments || inOut.homePathForObject(objectId));
-            shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now the start object`);
-          }}
-          onNotice={shell.showNotice}
-          onTogglePinned={shell.toggleFilesPinned}
-          onResize={shell.updateFilesWidth}
-          onResizeStateChange={shell.setFilesResizing}
-          onClose={shell.closeFiles}
-        />
+        <Suspense fallback={null}>
+          <FilesPanel
+            index={filesIndex}
+            activeObjectId={activeObjectId}
+            pinned={shell.filesPinned}
+            width={shell.filesWidth}
+            onOpenRoute={(route) => inOut.navigateToRoute(route, { mode: "full", immediate: true })}
+            onUpdateObject={updateObject}
+            onReparentObject={handleReparentObject}
+            onDeleteObject={(objectId) => {
+              const title = workspace.objects[objectId]?.title || "Object";
+              deleteObject(objectId);
+              shell.showNotice(`${title} deleted`);
+            }}
+            onSetHome={(objectId, route) => {
+              setHomeObject(objectId, route?.segments || inOut.homePathForObject(objectId));
+              shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now the start object`);
+            }}
+            onNotice={shell.showNotice}
+            onTogglePinned={shell.toggleFilesPinned}
+            onResize={shell.updateFilesWidth}
+            onResizeStateChange={shell.setFilesResizing}
+            onClose={shell.closeFiles}
+          />
+        </Suspense>
       ) : null}
 
       {shell.settingsOpen ? (
-        <SettingsPanel
-          activeTheme={activeTheme}
-          customThemes={workspace.themes}
-          settings={workspace.settings}
-          onSelectTheme={setActiveTheme}
-          onCloneTheme={(theme) => saveTheme(cloneTheme(theme))}
-          onUpdateTheme={updateTheme}
-          onDeleteTheme={deleteTheme}
-          onImportTheme={commands.importTheme}
-          onExportTheme={commands.downloadTheme}
-          onUpdateSettings={updateSettings}
-          onExportWorkspace={commands.exportWorkspace}
-          onImportWorkspace={commands.importWorkspace}
-          onClose={shell.closeSettings}
-        />
+        <Suspense fallback={null}>
+          <SettingsPanel
+            activeTheme={activeTheme}
+            customThemes={workspace.themes}
+            settings={workspace.settings}
+            onSelectTheme={setActiveTheme}
+            onCloneTheme={(theme) => saveTheme(cloneTheme(theme))}
+            onUpdateTheme={updateTheme}
+            onDeleteTheme={deleteTheme}
+            onImportTheme={commands.importTheme}
+            onExportTheme={commands.downloadTheme}
+            onUpdateSettings={updateSettings}
+            onExportWorkspace={commands.exportWorkspace}
+            onImportWorkspace={commands.importWorkspace}
+            onClose={shell.closeSettings}
+          />
+        </Suspense>
       ) : null}
 
       {shell.notice ? <div className="app-notice" role="status">{shell.notice}</div> : null}
-      <TooltipLayer />
+      <Suspense fallback={null}>
+        <TooltipLayer />
+      </Suspense>
     </div>
   );
 }
