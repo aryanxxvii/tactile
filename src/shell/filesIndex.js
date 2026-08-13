@@ -160,6 +160,18 @@ export function buildFilesIndex(workspace, previousIndex = null) {
     aliasEdgesByObject,
     parentByObject,
   } = topology;
+  const homeObjectIds = new Set(Object.entries(objects)
+    .filter(([objectId, object]) => (
+      objectId === "home"
+      || (object?.type === "sheet" && object?.title === "Home" && !parentByObject.get(objectId))
+    ))
+    .map(([objectId]) => objectId));
+  const protectedObjectIds = new Set(homeObjectIds);
+  let protectedId = String(workspace?.homeObjectId || "");
+  while (protectedId && !protectedObjectIds.has(protectedId)) {
+    protectedObjectIds.add(protectedId);
+    protectedId = canonicalByChild.get(protectedId)?.sourceObjectId || "";
+  }
   const entries = [];
 
   const roots = sortObjectIds(
@@ -195,6 +207,8 @@ export function buildFilesIndex(workspace, previousIndex = null) {
     const title = object?.title || "Untitled object";
     const isRoot = topology.roots.includes(objectId);
     const isStart = objectId === workspace?.homeObjectId;
+    const isHome = homeObjectIds.has(objectId);
+    const deleteBlocked = protectedObjectIds.has(objectId);
     entries.push({
       objectId,
       title,
@@ -206,6 +220,15 @@ export function buildFilesIndex(workspace, previousIndex = null) {
       fileName,
       isRoot,
       isStart,
+      isHome,
+      canDelete: !deleteBlocked,
+      deleteReason: deleteBlocked
+        ? isStart
+          ? "Current start"
+          : isHome
+            ? "Home"
+            : "Contains current start"
+        : "",
       canonical: canonicalPath,
       aliases,
       locations: [canonicalPath, ...aliases],
@@ -235,6 +258,7 @@ export function buildFilesIndex(workspace, previousIndex = null) {
     canonicalChildren,
     aliasesByParent,
     roots,
+    protectedObjectIds,
     edgeByLink,
     revision: workspace?.updatedAt || "",
     topologyRevision,

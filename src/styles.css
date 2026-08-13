@@ -6515,6 +6515,31 @@ kbd {
   color: var(--faint);
 }
 
+.files-context-menu-item.is-danger {
+  color: var(--negative);
+}
+
+.files-context-menu-item.is-danger > svg {
+  color: var(--negative);
+}
+
+.files-context-menu-item.is-danger:hover,
+.files-context-menu-item.is-danger:focus-visible {
+  border-color: color-mix(in srgb, var(--negative) 42%, var(--line));
+  color: var(--negative);
+  background: color-mix(in srgb, var(--negative) 8%, var(--paper));
+}
+
+.files-context-menu-item.is-danger:hover > svg,
+.files-context-menu-item.is-danger:focus-visible > svg {
+  color: var(--negative);
+}
+
+.files-context-menu-item.is-danger:disabled,
+.files-context-menu-item.is-danger:disabled > svg {
+  color: var(--faint);
+}
+
 .files-context-menu-divider {
   height: 1px;
   margin: 4px 3px;

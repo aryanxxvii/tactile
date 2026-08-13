@@ -7,8 +7,10 @@ import {
   createCellRecord,
   createMarkdownObject,
   createSheetObject,
+  deleteObjectFromWorkspace,
   normalizeWorkspace,
 } from "../src/model.js";
+import { validateNavigationRoute } from "../src/core/topology.js";
 
 function filesWorkspace() {
   const home = createSheetObject({ id: "home", title: "Home" });
@@ -77,6 +79,69 @@ test("ordinary metadata edits reuse the cached topology graph", () => {
   const next = buildFilesIndex(changed, index);
   assert.strictEqual(next.topology, index.topology);
   assert.equal(next.entryByObjectId.get("child").title, "Renamed notes");
+});
+
+test("Files deletion removes canonical descendants and aliases while protecting Home and Start", () => {
+  const workspace = createBlankWorkspace({ id: "delete-files-test" });
+  const home = workspace.objects.home;
+  const other = createSheetObject({ id: "other", title: "Other" });
+  const branch = createSheetObject({ id: "branch", title: "Branch" });
+  const leaf = { ...createMarkdownObject({ id: "leaf", title: "Leaf" }), assetId: "leaf-asset" };
+  const homeCell = createCellRecord(0, 0, {
+    value: branch.title,
+    embed: { objectId: branch.id, type: branch.type, linkId: "home-branch", relation: "containment" },
+  });
+  const aliasCell = createCellRecord(1, 1, {
+    value: branch.title,
+    embed: { objectId: branch.id, type: branch.type, linkId: "other-branch", relation: "alias" },
+  });
+  const leafCell = createCellRecord(2, 2, {
+    value: leaf.title,
+    embed: { objectId: leaf.id, type: leaf.type, linkId: "branch-leaf", relation: "containment" },
+  });
+  branch.parent = {
+    linkId: "home-branch",
+    parentObjectId: home.id,
+    parentCellId: homeCell.id,
+    sourceAddress: homeCell.address,
+  };
+  leaf.parent = {
+    linkId: "branch-leaf",
+    parentObjectId: branch.id,
+    parentCellId: leafCell.id,
+    sourceAddress: leafCell.address,
+  };
+  home.cells = { [homeCell.id]: homeCell };
+  other.cells = { [aliasCell.id]: aliasCell };
+  branch.cells = { [leafCell.id]: leafCell };
+  workspace.objects = { home, other, branch, leaf };
+  workspace.assets = { "leaf-asset": { id: "leaf-asset", fileName: "leaf.pdf" } };
+
+  const normalized = normalizeWorkspace(workspace);
+  const index = buildFilesIndex(normalized);
+  const oldRoute = index.entryByObjectId.get("branch").canonical.segments;
+
+  assert.equal(index.entryByObjectId.get("branch").canDelete, true);
+  assert.equal(index.entryByObjectId.get("home").canDelete, false);
+
+  const deleted = deleteObjectFromWorkspace(normalized, "branch");
+  assert.deepEqual(Object.keys(deleted.objects).sort(), ["home", "other"]);
+  assert.equal(deleted.objects.home.cells.r1c1, undefined);
+  assert.equal(deleted.objects.other.cells.r2c2, undefined);
+  assert.equal(deleted.assets["leaf-asset"], undefined);
+  assert.equal(buildFilesIndex(deleted).entryByObjectId.has("branch"), false);
+  assert.equal(validateNavigationRoute(deleted.objects, oldRoute).valid, false);
+
+  const startedInBranch = normalizeWorkspace({ ...normalized, homeObjectId: "branch", homePath: [] });
+  assert.equal(buildFilesIndex(startedInBranch).entryByObjectId.get("branch").canDelete, false);
+  assert.equal(buildFilesIndex(startedInBranch).entryByObjectId.get("home").canDelete, false);
+  assert.strictEqual(deleteObjectFromWorkspace(startedInBranch, "branch"), startedInBranch);
+
+  const startedInLeaf = normalizeWorkspace({ ...normalized, homeObjectId: "leaf", homePath: [] });
+  assert.equal(buildFilesIndex(startedInLeaf).entryByObjectId.get("branch").canDelete, false);
+  assert.equal(buildFilesIndex(startedInLeaf).entryByObjectId.get("branch").deleteReason, "Contains current start");
+  assert.equal(buildFilesIndex(startedInLeaf).entryByObjectId.get("leaf").canDelete, false);
+  assert.strictEqual(deleteObjectFromWorkspace(startedInLeaf, "branch"), startedInLeaf);
 });
 
 test("Files distinguishes ordinary Tiles, the root Home Tiles, and the selected Start object", () => {

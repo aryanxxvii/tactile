@@ -35,6 +35,7 @@ export function App() {
     createEmbeddedFile,
     replaceObjectFile,
     reparentObject,
+    deleteObject,
     insertSheetAxis,
     deleteSheetAxis,
     moveSheetAxis,
@@ -335,6 +336,11 @@ export function App() {
           onOpenRoute={(route) => inOut.navigateToRoute(route, { mode: "full", immediate: true })}
           onUpdateObject={updateObject}
           onReparentObject={handleReparentObject}
+          onDeleteObject={(objectId) => {
+            const title = workspace.objects[objectId]?.title || "Object";
+            deleteObject(objectId);
+            shell.showNotice(`${title} deleted`);
+          }}
           onSetHome={(objectId, route) => {
             setHomeObject(objectId, route?.segments || inOut.homePathForObject(objectId));
             shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now the start object`);
