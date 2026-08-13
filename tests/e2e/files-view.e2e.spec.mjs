@@ -156,6 +156,8 @@ test("Files drawer searches and directly opens a nested object", async ({ page }
   await expect(page.locator(".spatial-layer").getByRole("textbox", { name: "Object title" })).toHaveValue(
     "Child sheet",
   );
+  await expect(page.locator(".app-dock-path")).toContainText("Home");
+  await expect(page.locator(".app-dock-path")).toContainText("Child sheet");
   await expect(page).toHaveURL(/root=home/);
   await expect(page).toHaveURL(/route=home-child/);
 });
@@ -206,7 +208,7 @@ test("Files opens deep routes directly without replaying every ancestor transiti
       { objectId: "deep-4", linkId: "deep-3-deep-4", sourceObjectId: "deep-3", sourceAddress: "A1", mode: "full" },
       { objectId: "deep-5", linkId: "deep-4-deep-5", sourceObjectId: "deep-4", sourceAddress: "A1", mode: "full" },
     ],
-    dockPath: ["deep-1", "deep-2", "ellipsis", "deep-4", "deep-5"],
+    dockPath: ["home", "deep-1", "ellipsis", "deep-4", "deep-5"],
     route: "home-deep-1,deep-1-deep-2,deep-2-deep-3,deep-3-deep-4,deep-4-deep-5",
   });
 
@@ -241,7 +243,7 @@ test("Files opens deep routes directly without replaying every ancestor transiti
       { objectId: "deep-1", linkId: "home-deep-1", sourceObjectId: "home", sourceAddress: "A1", mode: "full" },
       { objectId: "deep-2", linkId: "deep-1-deep-2", sourceObjectId: "deep-1", sourceAddress: "A1", mode: "full" },
     ],
-    dockPath: ["deep-1", "deep-2"],
+    dockPath: ["home", "deep-1", "deep-2"],
     route: "home-deep-1,deep-1-deep-2",
   });
 

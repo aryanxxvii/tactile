@@ -36,6 +36,14 @@ test("lists and applies every requested built-in theme", async ({ page }) => {
     await expect(dialog.locator(".theme-card", { hasText: name })).toHaveCount(1);
   }
 
+  const themeFilters = dialog.getByRole("group", { name: "Filter themes" });
+  await expect(themeFilters.getByRole("button", { name: "All themes" })).toHaveAttribute("aria-pressed", "true");
+  await themeFilters.getByRole("button", { name: "Dark themes" }).click();
+  await expect(dialog.locator(".theme-card")).toHaveCount(8);
+  await expect(dialog.locator(".theme-card", { hasText: "Flexoki Light" })).toHaveCount(0);
+  await expect(dialog.locator(".theme-card", { hasText: "GitHub Dark" })).toHaveCount(1);
+  await themeFilters.getByRole("button", { name: "All themes" }).click();
+
   const github = dialog.locator(".theme-card", { hasText: "GitHub Dark" });
   await github.click();
   await expect(github).toHaveClass(/is-selected/);

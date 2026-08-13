@@ -2112,7 +2112,6 @@ kbd {
   width: 100%;
   height: 100%;
   background: color-mix(in srgb, var(--ink) 24%, transparent);
-  backdrop-filter: blur(5px);
   cursor: default;
 }
 
@@ -2254,14 +2253,52 @@ kbd {
   background: var(--paper);
 }
 
+.theme-filter-row {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px;
+  border-bottom: 1px solid var(--line);
+}
+
+.theme-filter-row button {
+  width: 25px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.theme-filter-row button:hover,
+.theme-filter-row button:focus-visible,
+.theme-filter-row button.is-active {
+  outline: 0;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--line));
+  background: var(--accent-soft);
+}
+
 .theme-list {
-  height: calc(100% - 27px);
+  height: calc(100% - 53px);
   display: flex;
   flex-direction: column;
   gap: 3px;
   padding-right: 2px;
   overflow: auto;
   scrollbar-width: thin;
+}
+
+.theme-filter-empty {
+  margin: 14px 7px;
+  color: var(--faint);
+  font-size: 8px;
+  line-height: 1.4;
 }
 
 .theme-list,

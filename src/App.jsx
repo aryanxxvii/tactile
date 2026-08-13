@@ -127,7 +127,11 @@ export function App() {
 
   const objectPaths = useMemo(() => inOut.layers.map((_, index) => {
     const rootLayer = inOut.layers[0];
-    const includeRoot = rootLayer?.objectId && rootLayer.objectId !== workspaceRootId;
+    // Keep the actual navigation root in the dock path even when it is the
+    // workspace's ordinary Home object. The dock intentionally removes the
+    // workspace shell entry, so omitting this layer made Home disappear from
+    // routes such as Home / Text C18.
+    const includeRoot = Boolean(rootLayer?.objectId);
     const rootObjectId = rootLayer?.objectId || workspaceRootId;
     const routeForIndex = (targetIndex) => ({
       rootObjectId,

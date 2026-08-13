@@ -5,8 +5,11 @@ import {
   IconDownload,
   IconFileTypeCsv,
   IconKeyboard,
+  IconLayoutList,
+  IconMoon,
   IconPalette,
   IconPlus,
+  IconSun,
   IconTrash,
   IconUpload,
   IconX,
@@ -42,6 +45,12 @@ const dimensionTokens = [
   ["cellGap", "Tile seam", 0, 5, "px"],
   ["titleSize", "Title size", 17, 22, "px"],
   ["titleWeight", "Title weight", 400, 780, ""],
+];
+
+const themeFilters = [
+  { id: "all", label: "All themes", icon: IconLayoutList },
+  { id: "light", label: "Light themes", icon: IconSun },
+  { id: "dark", label: "Dark themes", icon: IconMoon },
 ];
 
 function boundedTokenValue(value, min, max) {
@@ -99,11 +108,18 @@ export function SettingsPanel({
   onClose,
 }) {
   const [tab, setTab] = useState("appearance");
+  const [themeFilter, setThemeFilter] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const themeInputRef = useRef(null);
   const panelRef = useRef(null);
   const closeRef = useRef(null);
   const themes = useMemo(() => allThemes(customThemes), [customThemes]);
+  const visibleThemes = useMemo(
+    () => themeFilter === "all"
+      ? themes
+      : themes.filter((theme) => theme.tokens.colorScheme === themeFilter),
+    [themeFilter, themes],
+  );
   const editable = !activeTheme.builtIn;
 
   const updateToken = (token, value) => {
@@ -185,10 +201,26 @@ export function SettingsPanel({
                   <span>Themes</span>
                   <button type="button" onClick={() => themeInputRef.current?.click()} data-tooltip="Import theme"><IconUpload size={14} /></button>
                 </div>
+                <div className="theme-filter-row" role="group" aria-label="Filter themes">
+                  {themeFilters.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      className={themeFilter === id ? "is-active" : ""}
+                      type="button"
+                      aria-label={label}
+                      aria-pressed={themeFilter === id}
+                      data-tooltip={label}
+                      onClick={() => setThemeFilter(id)}
+                    >
+                      <Icon size={13} stroke={1.7} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
                 <div className="theme-list">
-                  {themes.map((theme) => (
+                  {visibleThemes.map((theme) => (
                     <ThemeCard key={theme.id} theme={theme} selected={activeTheme.id === theme.id} onSelect={() => onSelectTheme(theme.id)} />
                   ))}
+                  {!visibleThemes.length ? <p className="theme-filter-empty">No themes in this group.</p> : null}
                 </div>
                 <input
                   ref={themeInputRef}

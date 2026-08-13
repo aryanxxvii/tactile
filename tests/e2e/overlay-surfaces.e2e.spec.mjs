@@ -144,3 +144,10 @@ test("cell menus stay close to lower cells and keep submenus inside the viewport
   expect(submenuBox.top).toBeGreaterThanOrEqual(0);
   expect(submenuBox.bottom).toBeLessThanOrEqual(await page.evaluate(() => innerHeight));
 });
+
+test("Settings keeps the workspace sharp behind its panel", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible();
+  await expect(page.locator(".settings-scrim")).toHaveCSS("backdrop-filter", "none");
+});
