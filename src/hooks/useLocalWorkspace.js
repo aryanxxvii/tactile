@@ -13,6 +13,7 @@ import {
 } from "../model.js";
 import { normalizeIconEmoji } from "../iconEmoji.js";
 import { repairWorkspaceTopology } from "../core/topology.js";
+import { reparentWorkspace } from "../core/reparenting.js";
 import { cellAddress, cellId, coordinatesFromCellId } from "../sheet/coordinates.js";
 import {
   adjustAxisGroups,
@@ -428,6 +429,17 @@ export function useLocalWorkspace() {
     }, `replace-file:${objectId}`);
   }, [commitWorkspace]);
 
+  const reparentObject = useCallback((input = {}) => {
+    const preview = reparentWorkspace(workspace, input);
+    if (!preview.ok) return preview;
+    const historyKey = `reparent:${preview.objectId}:${preview.linkId}:${preview.targetObjectId}:${preview.targetCellId}`;
+    commitWorkspace((current) => {
+      const result = reparentWorkspace(current, input);
+      return result.ok ? result.workspace : current;
+    }, historyKey);
+    return preview;
+  }, [commitWorkspace, workspace]);
+
   const insertSheetAxis = useCallback((objectId, axis, index) => {
     commitWorkspace((current) => {
       const object = current.objects[objectId];
@@ -592,6 +604,7 @@ export function useLocalWorkspace() {
     createEmbeddedObject,
     createEmbeddedFile,
     replaceObjectFile,
+    reparentObject,
     insertSheetAxis,
     deleteSheetAxis,
     moveSheetAxis,

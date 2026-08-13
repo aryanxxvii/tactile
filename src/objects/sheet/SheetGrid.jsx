@@ -4,6 +4,10 @@ import { SheetGridContextMenu } from "./grid/SheetGridContextMenu.jsx";
 import { useSheetGridContextMenu } from "./grid/useSheetGridContextMenu.js";
 import { useSheetGridGestures } from "./grid/useSheetGridGestures.js";
 import { useSheetGridProjection } from "./grid/useSheetGridProjection.js";
+import {
+  isObjectDragEvent,
+  readObjectDragData,
+} from "../../shell/objectDrag.js";
 
 export function SheetGrid({
   object,
@@ -16,6 +20,7 @@ export function SheetGrid({
   onCellsChange,
   onUpdateObject,
   onOpenObject,
+  onReparentObject,
   onCreateEmbedded,
   onInsertAxis,
   onDeleteAxis,
@@ -24,6 +29,25 @@ export function SheetGrid({
   onCreateFile,
 }) {
   const [fillTarget, setFillTarget] = useState(null);
+  const [dropTargetAddress, setDropTargetAddress] = useState("");
+  const handleObjectDragOver = (event, address) => {
+    if (!isObjectDragEvent(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetAddress(address);
+  };
+  const handleObjectDragLeave = (event) => {
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+    setDropTargetAddress("");
+  };
+  const handleObjectDrop = (event, address) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const payload = readObjectDragData(event);
+    setDropTargetAddress("");
+    if (payload) onReparentObject?.(payload, { parentObjectId: object.id, address });
+  };
   const projection = useSheetGridProjection({
     object,
     selectedAddress,
@@ -119,6 +143,10 @@ export function SheetGrid({
             : { value, formula: "", embed: null },
         )}
         onOpenObject={onOpenObject}
+        dropTargetAddress={dropTargetAddress}
+        onObjectDragOver={handleObjectDragOver}
+        onObjectDragLeave={handleObjectDragLeave}
+        onObjectDrop={handleObjectDrop}
         onContextMenu={contextMenu.openContextMenu}
         onStartAxisDrag={gestures.startAxisDrag}
         onStartCornerSelection={gestures.startCornerSelection}

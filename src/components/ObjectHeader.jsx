@@ -2,6 +2,12 @@ import { IconChevronLeft } from "@tabler/icons-react";
 import { generatedObjectTitle } from "../model.js";
 import { ObjectGlyph } from "./ObjectGlyph.jsx";
 import { WorkspaceMenu } from "./WorkspaceMenu.jsx";
+import {
+  dragPayloadForObject,
+  isObjectDragEvent,
+  readObjectDragData,
+  writeObjectDragData,
+} from "../shell/objectDrag.js";
 
 export function ObjectHeader({
   object,
@@ -11,9 +17,35 @@ export function ObjectHeader({
   onBack,
   canGoBack,
   workspaceActions,
+  onReparentObject,
 }) {
+  const canReceiveObject = object.type === "sheet";
+
   return (
-    <header className="object-header">
+    <header
+      className="object-header"
+      draggable
+      onDragStart={(event) => {
+        if (event.target.closest("input, button")) {
+          event.preventDefault();
+          return;
+        }
+        writeObjectDragData(event, dragPayloadForObject(object.id, path, object));
+      }}
+      onDragOver={(event) => {
+        if (!canReceiveObject || !isObjectDragEvent(event)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(event) => {
+        if (!canReceiveObject) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const payload = readObjectDragData(event);
+        if (payload) onReparentObject?.(payload, { parentObjectId: object.id });
+      }}
+    >
       <div className="object-header-main">
         <div className="object-title-row">
           {canGoBack ? (

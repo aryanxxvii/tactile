@@ -46,6 +46,10 @@ export function SheetGridCanvas({
   onCommit,
   onValueChange,
   onOpenObject,
+  dropTargetAddress,
+  onObjectDragOver,
+  onObjectDragLeave,
+  onObjectDrop,
   onContextMenu,
   onStartAxisDrag,
   onStartCornerSelection,
@@ -282,6 +286,10 @@ export function SheetGridCanvas({
               editing={editingCellId === id}
               formulaEditingCellId={editingCellId}
               onOpenObject={onOpenObject}
+              dropTarget={dropTargetAddress === address}
+              onObjectDragOver={onObjectDragOver}
+              onObjectDragLeave={onObjectDragLeave}
+              onObjectDrop={onObjectDrop}
               onSelect={onSelect}
               onSelectionStart={onSelectionStart}
               onSelectionMove={onSelectionMove}

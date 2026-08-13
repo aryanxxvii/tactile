@@ -1348,7 +1348,18 @@ input:focus-visible,
 }
 
 .sheet-cell.is-embedded {
-  cursor: pointer;
+  cursor: grab;
+}
+
+.sheet-cell.is-embedded:active {
+  cursor: grabbing;
+}
+
+.sheet-cell.is-object-drop-target {
+  z-index: 8;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--paper-elevated));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent), var(--cell-hover-shadow);
 }
 
 .sheet-cell.is-embedded:hover {
@@ -5893,6 +5904,13 @@ kbd {
 .files-tree-row:focus-within,
 .files-tree-row.is-active {
   background: color-mix(in srgb, var(--accent) 9%, var(--paper));
+}
+
+.files-tree-row.is-object-drop-target,
+.files-result-row.is-object-drop-target {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 15%, var(--paper));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 62%, var(--line));
 }
 
 .files-tree-row:hover,

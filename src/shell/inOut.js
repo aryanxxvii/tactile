@@ -6,6 +6,7 @@ import {
   findEmbeddedEdge,
   pathEntryForEdge,
   routeFromLinkIds,
+  TOPOLOGY_REVISION,
   validateNavigationRoute,
 } from "../core/topology.js";
 
@@ -92,6 +93,35 @@ function historyEntryForPath(objects, entry, mode = "full") {
   };
 }
 
+function stableHistoryStackFromLinkIds(objects, stack) {
+  if (!Array.isArray(stack) || !stack.length || !stack.every((entry) => entry?.linkId)) return null;
+  const routed = routeFromLinkIds(
+    objects,
+    stack.map((entry) => entry.linkId),
+    stack.at(-1)?.mode === "full" ? "full" : "floating",
+  );
+  if (!routed.valid || routed.stack.length !== stack.length) return null;
+  return routed.stack.map((entry, index) => historyEntryForPath(
+    objects,
+    entry,
+    stack[index]?.mode === "full" ? "full" : "floating",
+  ));
+}
+
+function rebaseHistoryStack(objects, stack) {
+  const stableStack = stableHistoryStackFromLinkIds(objects, stack);
+  if (!stableStack?.length) return stableStack;
+  const prefix = canonicalPathForObject(objects, stableStack[0].sourceObjectId) || [];
+  const combined = validateNavigationRoute(objects, [...prefix, ...stableStack]);
+  if (!combined.valid || combined.stack.length !== prefix.length + stableStack.length) return null;
+  const modes = new Map(stableStack.map((entry) => [entry.linkId, entry.mode]));
+  return combined.stack.map((entry) => historyEntryForPath(
+    objects,
+    entry,
+    modes.get(entry.linkId) || "full",
+  ));
+}
+
 export function homeStackFromWorkspace(workspace) {
   return resolveHomePath(
     workspace?.objects,
@@ -104,6 +134,8 @@ export function historyStackFromState(state, objects = null, workspaceId = "") {
   if (state?.tactile !== HISTORY_KIND || !Array.isArray(state.tactileStack)) return [];
   if (workspaceId && state.tactileWorkspaceId && state.tactileWorkspaceId !== workspaceId) return [];
   if (!objects) return state.tactileStack;
+  const stable = stableHistoryStackFromLinkIds(objects, state.tactileStack);
+  if (stable) return stable;
   const result = validateNavigationRoute(objects, state.tactileStack);
   return result.stack.map((entry) => historyEntryForPath(objects, entry, entry.mode));
 }
@@ -212,6 +244,8 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
   const historySyncRef = useRef(0);
   const historyReadyRef = useRef(false);
   const pendingOpenRef = useRef(0);
+  const topologyRevision = workspace?.[TOPOLOGY_REVISION] || 0;
+  const topologyRevisionRef = useRef(topologyRevision);
 
   useEffect(() => {
     layersRef.current = layers;
@@ -754,6 +788,49 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
     historyReadyRef.current = true;
     syncHistoryStack(stack, rootObjectId, { immediate: true });
   }, [syncHistoryStack, workspace, workspaceRootId, workspaceHydrated]);
+
+  useEffect(() => {
+    if (!workspaceHydrated || !historyReadyRef.current) {
+      topologyRevisionRef.current = topologyRevision;
+      return;
+    }
+    if (topologyRevisionRef.current === topologyRevision) return;
+    topologyRevisionRef.current = topologyRevision;
+    const current = layersRef.current;
+    const currentStack = current.slice(1).map(layerHistoryEntry);
+    if (!currentStack.length) return;
+    const nextStack = rebaseHistoryStack(workspace.objects, currentStack);
+    if (!nextStack?.length) return;
+    const rootObjectId = nextStack[0]?.sourceObjectId || current[0]?.objectId || workspaceRootId;
+    writeHistoryStack(nextStack, true, rootObjectId);
+    setLayers((items) => {
+      const existingByLink = new Map(items.slice(1).map((layer) => [layer.linkId, layer]));
+      const nextLayers = nextStack.map((entry, index) => {
+        const existing = existingByLink.get(entry.linkId);
+        if (existing) {
+          const sourceElement = sourceElementForEntry(entry);
+          return {
+            ...existing,
+            ...entry,
+            sourceRect: sourceElement ? rectSnapshot(sourceElement) : existing.sourceRect,
+          };
+        }
+        const key = `history-${entry.objectId}-${Date.now()}-${index}`;
+        const layer = makeLayerFromEntry(entry, key, sourceElementForEntry(entry));
+        return {
+          ...layer,
+          phase: "full",
+          requestedMode: "full",
+          fullHistoryStep: false,
+          closing: false,
+        };
+      });
+      return [
+        { ...items[0], objectId: rootObjectId, phase: "base", closing: false },
+        ...nextLayers,
+      ];
+    });
+  }, [makeLayerFromEntry, sourceElementForEntry, topologyRevision, writeHistoryStack, workspace.objects, workspaceHydrated, workspaceRootId]);
 
   useEffect(() => {
     const handlePopState = (event) => {
