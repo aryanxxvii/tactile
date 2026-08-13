@@ -373,7 +373,7 @@ export function useLocalWorkspace() {
             cells: { ...parent.cells, [parentCellId]: cell },
           },
           [created.id]: created,
-        });
+        }, true);
       return type === "markdown"
         ? next
         : { ...next, assets: { ...current.assets, [assetId]: asset } };
