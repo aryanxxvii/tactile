@@ -61,7 +61,10 @@
 - [x] D03 — In & Out lifecycle and compositing
   - Reviewed against the Wave 3 acceptance criteria: staged origin/floating/full phases, transform-first motion, reverse child-content fade, circular contraction radius, retained source handoff, nested route validation, and browser-history Back/Forward behavior are already present in the verified baseline.
   - No additional safe production diff was identified by the bounded D03 review; no motion semantics were invented or changed.
-- [ ] D04 — CSS consolidation and code splitting
+- [ ] D04 — CSS consolidation and code splitting (partial)
+  - Portable workspace commands and JSZip are now deferred; the production build emits a separate `jszip` chunk and the initial JavaScript raw size fell from approximately 567 KB to 468 KB.
+  - Remaining: CSS consolidation/paint reduction and the strict initial-JS ≤110 KB gzip budget are not complete; the current initial JavaScript remains approximately 140.5 KB gzip.
+  - Implemented in `33266c1` and `16d61db`; 71/71 tests, typecheck, and production build pass.
 - [ ] G3 — Wave 3 gate
 
 ## Wave 4 — Native Tauri platform
