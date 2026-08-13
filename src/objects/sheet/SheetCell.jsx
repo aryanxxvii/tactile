@@ -1,5 +1,9 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
+import {
+  dispatchCellEditSeed,
+  useLocalCellDraft,
+} from "../../components/localEditSession.js";
 import {
   isObjectDragEvent,
   writeObjectDragData,
@@ -73,10 +77,14 @@ export const SheetCell = memo(function SheetCell({
   onObjectDragLeave,
   onObjectDrop,
 }) {
-  const shownValue = displayValue ?? value;
+  const cellRef = useRef(null);
+  const localDraft = useLocalCellDraft(cellRef, cellId);
+  const localValue = localDraft?.formula ? localDraft.displayValue || localDraft.formula : localDraft?.value;
+  const shownValue = localDraft ? localValue : displayValue ?? value;
   const hasEmbed = Boolean(embedObjectId);
   const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
-  const formulaError = Boolean(formula && String(shownValue).startsWith("#"));
+  const shownFormula = localDraft?.formula || formula;
+  const formulaError = Boolean(shownFormula && String(shownValue).startsWith("#"));
   const cellStyle = Number.isFinite(styleFontSize)
     ? { "--cell-font-size": `${styleFontSize}px` }
     : undefined;
@@ -95,6 +103,7 @@ export const SheetCell = memo(function SheetCell({
 
   return (
     <div
+      ref={cellRef}
       className={`sheet-cell ${selected ? "is-selected" : ""} ${dropTarget ? "is-object-drop-target" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${hasEmbed ? "is-embedded" : ""} ${role === "heading" ? "is-table-heading" : ""} ${role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${styleBold ? "is-bold" : ""} ${styleHighlight ? `highlight-${styleHighlight}` : ""} ${styleTextColor ? `text-${styleTextColor}` : ""} ${styleAlign ? `align-${styleAlign}` : ""} ${styleVerticalAlign ? `align-${styleVerticalAlign}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
       role="gridcell"
       aria-selected={selected}
@@ -179,7 +188,8 @@ export const SheetCell = memo(function SheetCell({
         const isEmpty = !hasEmbed && !value && !formula;
         if (isPrintable && isEmpty && !formulaEditingCellId) {
           event.preventDefault();
-          onFocusFormulaBar?.(event.key);
+          onFocusFormulaBar?.();
+          if (!dispatchCellEditSeed(event.currentTarget, event.key)) onFocusFormulaBar?.(event.key);
         }
       }}
     >

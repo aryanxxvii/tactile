@@ -108,6 +108,7 @@ export function SheetObject({
           address={selectedCell?.address || "A1"}
           rangeLabel={selectedRangeLabel}
           cell={selectedCell}
+          formulaSheet={object}
           inputRef={formulaEditorRef}
           onChange={handleFormulaChange}
           onFormulaModeChange={setFormulaMode}

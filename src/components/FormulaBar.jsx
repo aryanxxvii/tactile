@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IconArrowRight, IconChevronDown, IconFilterOff } from "@tabler/icons-react";
 import { coordinatesFromAddress } from "../sheet/coordinates.js";
-import { FORMULA_CATALOG } from "../sheet/formulas.js";
+import { FORMULA_CATALOG, formatFormulaResult } from "../sheet/formulas.js";
+import { createFormulaWorker } from "../workers/formula/index.js";
 import { CellFormatMenu } from "./CellFormatMenu.jsx";
+import {
+  CELL_EDIT_SEED_EVENT,
+  setLocalCellDraft,
+  useLocalDraft,
+} from "./localEditSession.js";
 
 function AddressPicker({ address, rangeLabel, onChange }) {
   const [open, setOpen] = useState(false);
@@ -74,17 +80,156 @@ function formulaQuery(value, caret) {
   return { prefix, start: caret - match[1].length, end: caret };
 }
 
-function FormulaEditor({ value, address, inputRef, onChange, onFormulaModeChange }) {
+function previewSheetForCell(sheet, cell, address) {
+  if (sheet?.cells) return sheet;
+  const row = Number.isInteger(cell?.row) ? cell.row : 0;
+  const column = Number.isInteger(cell?.column) ? cell.column : 0;
+  const id = cell?.id || `r${row + 1}c${column + 1}`;
+  const normalizedAddress = address || cell?.address || "A1";
+  return {
+    id: `formula-preview-${id}`,
+    type: "sheet",
+    rows: Math.max(1, row + 1),
+    columns: Math.max(1, column + 1),
+    cells: {
+      [id]: {
+        ...cell,
+        id,
+        address: normalizedAddress,
+        row,
+        column,
+        value: cell?.value || "",
+        formula: cell?.formula || "",
+        embed: cell?.embed || null,
+      },
+    },
+  };
+}
+
+function useFormulaWorkerPreview({ value, address, cell, formulaSheet }) {
+  const [preview, setPreview] = useState("");
+  const workerRef = useRef(null);
+  const initializeRef = useRef(null);
+  const revisionRef = useRef(0);
+  const requestRef = useRef(0);
+
+  useEffect(() => {
+    workerRef.current?.dispose?.();
+    workerRef.current = null;
+    initializeRef.current = null;
+    revisionRef.current = 0;
+    setPreview("");
+  }, [formulaSheet]);
+
+  useEffect(() => () => workerRef.current?.dispose?.(), []);
+
+  useEffect(() => {
+    if (!value.startsWith("=")) {
+      setPreview("");
+      return undefined;
+    }
+    if (typeof Worker === "undefined") return undefined;
+
+    let cancelled = false;
+    const requestSerial = ++requestRef.current;
+    const sheet = previewSheetForCell(formulaSheet, cell, address);
+    const run = async () => {
+      try {
+        if (!workerRef.current) {
+          workerRef.current = createFormulaWorker();
+          initializeRef.current = workerRef.current.initialize(sheet, { revision: 0 });
+          await initializeRef.current;
+        } else if (initializeRef.current) {
+          await initializeRef.current;
+        }
+        if (cancelled || requestSerial !== requestRef.current || !workerRef.current) return;
+        const revision = revisionRef.current + 1;
+        revisionRef.current = revision;
+        const result = await workerRef.current.update([{
+          address: address || cell?.address || "A1",
+          patch: { value: "", formula: value },
+        }], { revision });
+        if (cancelled || requestSerial !== requestRef.current) return;
+        const resultAddress = address || cell?.address || "A1";
+        const values = result.values || {};
+        setPreview(Object.prototype.hasOwnProperty.call(values, resultAddress)
+          ? formatFormulaResult(values[resultAddress])
+          : "");
+      } catch {
+        if (!cancelled && requestSerial === requestRef.current) setPreview("");
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [address, cell, formulaSheet, value]);
+
+  return preview;
+}
+
+function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, onChange, onFormulaModeChange }) {
   const localInputRef = useRef(null);
   const editorRef = inputRef || localInputRef;
+  const session = useLocalDraft(value, onChange);
   const [query, setQuery] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const formulaPreview = useFormulaWorkerPreview({
+    value: session.draft,
+    address,
+    cell,
+    formulaSheet,
+  });
   const suggestions = useMemo(() => {
     if (!query?.prefix) return [];
     const starts = FORMULA_CATALOG.filter((item) => item.name.startsWith(query.prefix));
     const contains = FORMULA_CATALOG.filter((item) => !item.name.startsWith(query.prefix) && item.name.includes(query.prefix));
     return [...starts, ...contains].slice(0, 7);
   }, [query]);
+
+  const publishDraft = useCallback((next, preview = "") => {
+    const input = editorRef.current;
+    const surface = input?.closest?.(".object-surface");
+    if (!surface || !cellId) return;
+    const formula = next.startsWith("=") ? next : "";
+    setLocalCellDraft(surface, cellId, {
+      value: formula ? "" : next,
+      formula,
+      displayValue: formula ? preview || next : next,
+    });
+  }, [cellId, editorRef]);
+
+  const commitDraft = useCallback(() => {
+    const next = session.draftRef.current;
+    const changed = session.commitDraft(next);
+    const input = editorRef.current;
+    const surface = input?.closest?.(".object-surface");
+    setLocalCellDraft(surface, cellId, null);
+    return changed;
+  }, [cellId, editorRef, session]);
+
+  useEffect(() => {
+    if (session.activeRef.current) publishDraft(session.draftRef.current, formulaPreview);
+  }, [formulaPreview, publishDraft, session]);
+
+  useEffect(() => {
+    const input = editorRef.current;
+    if (!input) return undefined;
+    const seed = (event) => {
+      const next = String(event.detail?.value || "");
+      if (!next) return;
+      session.beginDraft(next);
+      setQuery(null);
+      setActiveIndex(0);
+      publishDraft(next);
+      onFormulaModeChange?.(next.startsWith("="));
+      window.requestAnimationFrame(() => {
+        input.focus();
+        const caret = input.value.length;
+        input.setSelectionRange(caret, caret);
+      });
+    };
+    input.addEventListener(CELL_EDIT_SEED_EVENT, seed);
+    return () => input.removeEventListener(CELL_EDIT_SEED_EVENT, seed);
+  }, [editorRef, onFormulaModeChange, publishDraft, session]);
 
   useEffect(() => {
     setQuery(null);
@@ -99,9 +244,11 @@ function FormulaEditor({ value, address, inputRef, onChange, onFormulaModeChange
 
   const choose = (item) => {
     if (!query) return;
-    const nextValue = `${value.slice(0, query.start)}${item.name}(${value.slice(query.end)}`;
+    const currentValue = session.draftRef.current;
+    const nextValue = `${currentValue.slice(0, query.start)}${item.name}(${currentValue.slice(query.end)}`;
     const nextCaret = query.start + item.name.length + 1;
-    onChange(nextValue);
+    session.updateDraft(nextValue);
+    publishDraft(nextValue);
     setQuery(null);
     window.requestAnimationFrame(() => {
       editorRef.current?.focus();
@@ -116,10 +263,12 @@ function FormulaEditor({ value, address, inputRef, onChange, onFormulaModeChange
       <input
         ref={editorRef}
         className="formula-editor"
-        value={value}
+        value={session.draft}
+        data-formula-preview={formulaPreview || undefined}
         onChange={(event) => {
           const nextValue = event.target.value;
-          onChange(nextValue);
+          session.updateDraft(nextValue);
+          publishDraft(nextValue);
           onFormulaModeChange?.(nextValue.startsWith("="));
           inspectCaret(event.target);
         }}
@@ -152,16 +301,19 @@ function FormulaEditor({ value, address, inputRef, onChange, onFormulaModeChange
             event.preventDefault();
             setQuery(null);
             onFormulaModeChange?.(false);
+            commitDraft();
             editorRef.current?.blur();
             return;
           }
           if (!listOpen && (event.key === "Enter" || event.key === "Escape")) {
             event.preventDefault();
+            commitDraft();
             onFormulaModeChange?.(false);
             editorRef.current?.blur();
           }
         }}
         onBlur={() => {
+          commitDraft();
           onFormulaModeChange?.(false);
           window.setTimeout(() => setQuery(null), 100);
         }}
@@ -173,6 +325,9 @@ function FormulaEditor({ value, address, inputRef, onChange, onFormulaModeChange
         aria-label={`Formula or value for ${address || "selected cell"}`}
         spellCheck="false"
       />
+      <span className="visually-hidden" aria-live="polite">
+        {formulaPreview ? `Formula preview: ${formulaPreview}` : ""}
+      </span>
       {listOpen ? (
         <div className="formula-suggestions" id="formula-suggestions" role="listbox" aria-label="Formula suggestions">
           <div className="formula-suggestions-label">Functions</div>
@@ -202,7 +357,7 @@ function FormulaEditor({ value, address, inputRef, onChange, onFormulaModeChange
   );
 }
 
-export function FormulaBar({ address, rangeLabel, cell, inputRef, onChange, onFormulaModeChange, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
+export function FormulaBar({ address, rangeLabel, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
   const formulaValue = cell?.formula || cell?.value || "";
 
   return (
@@ -227,6 +382,9 @@ export function FormulaBar({ address, rangeLabel, cell, inputRef, onChange, onFo
         <FormulaEditor
           value={formulaValue}
           address={address}
+          cellId={cell?.id}
+          cell={cell}
+          formulaSheet={formulaSheet}
           inputRef={inputRef}
           onChange={(value) => onChange(value)}
           onFormulaModeChange={onFormulaModeChange}

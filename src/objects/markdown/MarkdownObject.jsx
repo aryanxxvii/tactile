@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   IconBlockquote,
   IconBold,
@@ -22,6 +22,7 @@ import {
 } from "@tabler/icons-react";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { PaperPortal } from "../../components/PaperPortal.jsx";
+import { useLocalDraft } from "../../components/localEditSession.js";
 import { renderMarkdownBlocks } from "./markdownRender.jsx";
 
 const TEXT_COLORS = [
@@ -198,19 +199,37 @@ function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
 export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
   const [mode, setMode] = useState("write");
   const editorRef = useRef(null);
-  const content = object.content || "";
+  const surfaceRef = useRef(null);
+  const canonicalContent = object.content || "";
+  const contentSession = useLocalDraft(canonicalContent, (next) => onUpdateObject({ content: next }));
+  const content = contentSession.draft;
+  const deferredContent = useDeferredValue(content);
   const editorPlaceholder = useMemo(() => markdownPlaceholderFor(object.id), [object.id]);
-  const words = useMemo(() => content.trim().split(/\s+/).filter(Boolean).length, [content]);
-  const lines = useMemo(() => content ? content.split(/\r?\n/).length : 0, [content]);
+  const words = useMemo(() => deferredContent.trim().split(/\s+/).filter(Boolean).length, [deferredContent]);
+  const lines = useMemo(() => deferredContent ? deferredContent.split(/\r?\n/).length : 0, [deferredContent]);
+
+  const commitContent = () => contentSession.commitDraft(contentSession.draftRef.current);
+  const handleEditorBlur = (event) => {
+    if (event.relatedTarget && surfaceRef.current?.contains(event.relatedTarget)) return;
+    commitContent();
+  };
+  const handleBack = () => {
+    commitContent();
+    onBack?.();
+  };
+
+  const currentContent = () => contentSession.draftRef.current;
+  const updateContent = (next) => contentSession.updateDraft(next);
 
   const replaceSelection = (before, after = before, placeholder = "text") => {
     const editor = editorRef.current;
     if (!editor) return;
+    const current = currentContent();
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const selected = content.slice(start, end) || placeholder;
-    const next = `${content.slice(0, start)}${before}${selected}${after}${content.slice(end)}`;
-    onUpdateObject({ content: next });
+    const selected = current.slice(start, end) || placeholder;
+    const next = `${current.slice(0, start)}${before}${selected}${after}${current.slice(end)}`;
+    updateContent(next);
     window.requestAnimationFrame(() => {
       editor.focus();
       editor.setSelectionRange(start + before.length, start + before.length + selected.length);
@@ -220,10 +239,11 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   const insertAtSelection = (value) => {
     const editor = editorRef.current;
     if (!editor) return;
+    const current = currentContent();
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const next = `${content.slice(0, start)}${value}${content.slice(end)}`;
-    onUpdateObject({ content: next });
+    const next = `${current.slice(0, start)}${value}${current.slice(end)}`;
+    updateContent(next);
     window.requestAnimationFrame(() => {
       editor.focus();
       editor.setSelectionRange(start + value.length, start + value.length);
@@ -233,10 +253,11 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   const insertBlock = (prefix, placeholder = "") => {
     const editor = editorRef.current;
     if (!editor) return;
+    const current = currentContent();
     const start = editor.selectionStart;
-    const lineStart = content.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
-    const next = `${content.slice(0, lineStart)}${prefix}${content.slice(lineStart)}`;
-    onUpdateObject({ content: next || `${prefix}${placeholder}` });
+    const lineStart = current.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+    const next = `${current.slice(0, lineStart)}${prefix}${current.slice(lineStart)}`;
+    updateContent(next || `${prefix}${placeholder}`);
     window.requestAnimationFrame(() => {
       editor.focus();
       editor.setSelectionRange(lineStart + prefix.length, lineStart + prefix.length);
@@ -246,11 +267,12 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   const handleKeyDown = (event) => {
     const command = event.ctrlKey || event.metaKey;
     if (event.key === "Enter" && !event.shiftKey && !event.altKey && !command && !event.isComposing) {
-      const continuation = markdownLineContinuation(content, event.currentTarget.selectionStart, event.currentTarget.selectionEnd);
+      const current = currentContent();
+      const continuation = markdownLineContinuation(current, event.currentTarget.selectionStart, event.currentTarget.selectionEnd);
       if (continuation) {
         event.preventDefault();
-        const next = `${content.slice(0, continuation.start)}${continuation.text}${content.slice(continuation.end)}`;
-        onUpdateObject({ content: next });
+        const next = `${current.slice(0, continuation.start)}${continuation.text}${current.slice(continuation.end)}`;
+        updateContent(next);
         window.requestAnimationFrame(() => {
           editorRef.current?.focus();
           editorRef.current?.setSelectionRange(continuation.caret, continuation.caret);
@@ -305,8 +327,9 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       ref={editorRef}
       className="markdown-editor"
       value={content}
-      onChange={(event) => onUpdateObject({ content: event.target.value })}
+      onChange={(event) => updateContent(event.target.value)}
       onKeyDown={handleKeyDown}
+      onBlur={handleEditorBlur}
       onPaste={handlePaste}
       placeholder={editorPlaceholder}
       spellCheck="true"
@@ -316,20 +339,20 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
 
   const preview = (suffix = "") => (
     <div className="markdown-preview" aria-label={`${object.title} preview${suffix}`}>
-      {content ? renderMarkdownBlocks(content) : (
+      {deferredContent ? renderMarkdownBlocks(deferredContent) : (
         <p className="markdown-preview-empty">Nothing to preview yet.</p>
       )}
     </div>
   );
 
   return (
-    <article className="object-surface markdown-object" data-object-type="markdown">
+    <article ref={surfaceRef} className="object-surface markdown-object" data-object-type="markdown">
       <ObjectHeader
         object={object}
         path={path}
         saveState={saveState}
         onChange={onUpdateObject}
-        onBack={onBack}
+        onBack={handleBack}
         canGoBack={canGoBack}
         workspaceActions={workspaceActions}
         onReparentObject={onReparentObject}

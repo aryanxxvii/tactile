@@ -1,7 +1,9 @@
+import { useRef } from "react";
 import { IconChevronLeft } from "@tabler/icons-react";
 import { generatedObjectTitle } from "../model.js";
 import { ObjectGlyph } from "./ObjectGlyph.jsx";
 import { WorkspaceMenu } from "./WorkspaceMenu.jsx";
+import { useLocalDraft } from "./localEditSession.js";
 import {
   dragPayloadForObject,
   isObjectDragEvent,
@@ -20,6 +22,14 @@ export function ObjectHeader({
   onReparentObject,
 }) {
   const canReceiveObject = object.type === "sheet";
+  const titleDraft = useLocalDraft(object.title, (title) => onChange({ title }));
+  const titleInputRef = useRef(null);
+  const commitTitle = () => {
+    const next = titleDraft.draftRef.current.trim()
+      ? titleDraft.draftRef.current
+      : generatedObjectTitle(object.type);
+    titleDraft.commitDraft(next);
+  };
 
   return (
     <header
@@ -60,13 +70,19 @@ export function ObjectHeader({
           <label className="object-title-field">
             <span className="visually-hidden">Object title</span>
             <input
-              value={object.title}
+              ref={titleInputRef}
+              value={titleDraft.draft}
               onChange={(event) => {
-                onChange({ title: event.target.value });
+                titleDraft.updateDraft(event.target.value);
               }}
-              onBlur={(event) => {
-                if (!event.target.value.trim()) onChange({ title: generatedObjectTitle(object.type) });
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  commitTitle();
+                  titleInputRef.current?.blur();
+                }
               }}
+              onBlur={commitTitle}
               spellCheck="false"
             />
           </label>
