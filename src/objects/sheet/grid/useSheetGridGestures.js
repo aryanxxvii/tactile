@@ -106,6 +106,7 @@ export function useSheetGridGestures({
   const selectionPointerRef = useRef(null);
   const selectionScrollFrameRef = useRef(null);
   const selectionViewportLockRef = useRef(false);
+  const focusFrameRef = useRef(null);
 
   const releaseSelectionViewportLock = useCallback(() => {
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
@@ -147,7 +148,7 @@ export function useSheetGridGestures({
     const restoreGridFocus = !formulaEditingCellId
       && !selectionDragRef.current
       && activeElement instanceof Element
-      && Boolean(activeElement.closest(".sheet-grid-shell"));
+      && scroller.contains(activeElement);
     // A drag owns its viewport while it is live. Letting the active-cell
     // effect scroll the surface here makes the endpoint jump to whichever
     // virtual cell happened to render first. Edge scrolling below is the
@@ -172,14 +173,24 @@ export function useSheetGridGestures({
       scroller.scrollTo({ left: nextLeft, top: nextTop, behavior: "auto" });
     }
     if (restoreGridFocus) {
-      window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-        if (document.activeElement?.matches(".formula-editor")) return;
-        const nextCell = document.querySelector(
-          `[data-object-id="${object.id}"][data-cell-address="${selectedAddress}"]`,
-        );
-        nextCell?.focus({ preventScroll: true });
-      }));
+      if (focusFrameRef.current != null) window.cancelAnimationFrame(focusFrameRef.current);
+      focusFrameRef.current = window.requestAnimationFrame(() => {
+        focusFrameRef.current = window.requestAnimationFrame(() => {
+          focusFrameRef.current = null;
+          if (document.activeElement?.matches(".formula-editor")) return;
+          const nextCell = scroller.querySelector(
+            `.sheet-cell[data-cell-address="${selectedAddress}"]`,
+          );
+          nextCell?.focus({ preventScroll: true });
+        });
+      });
     }
+    return () => {
+      if (focusFrameRef.current != null) {
+        window.cancelAnimationFrame(focusFrameRef.current);
+        focusFrameRef.current = null;
+      }
+    };
   }, [columnOffsetForPosition, columnPositionForIndex, columnSizeForPosition, formulaEditingCellId, metrics, object.id, rowOffsetForPosition, rowPositionForIndex, rowSizeForPosition, scrollRef, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
 
   const cellAddressAtPoint = useCallback((event) => {
