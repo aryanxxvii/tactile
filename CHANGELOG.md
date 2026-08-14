@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4 — 2026-08-15
+
+macOS CI correction: pass the ad-hoc signing identity through the environment so clean hosted runners can produce the non-notarized DMG without a keychain identity.
+
 ## 0.1.3 — 2026-08-15
 
 macOS packaging correction: clean runners use ad-hoc signing when Developer ID credentials are absent, so the DMG can be built and clearly labeled without pretending to be notarized.

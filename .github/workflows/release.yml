@@ -144,7 +144,7 @@ jobs:
             # Tauri otherwise attempts to sign with the empty identity on a
             # clean hosted runner. Ad-hoc signing avoids the keychain while
             # the release owner supplies Developer ID credentials.
-            npx --yes @tauri-apps/cli@2.11.4 build \
+            APPLE_SIGNING_IDENTITY=- npx --yes @tauri-apps/cli@2.11.4 build \
               --target '${{ matrix.rust-target }}' \
               --bundles '${{ matrix.bundles }}' \
               --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}'
