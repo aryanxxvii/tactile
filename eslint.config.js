@@ -8,7 +8,17 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "tmp/**", "benchmarks/.generated/**", "tests/visual/baselines/**"],
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "tmp/**",
+      "coverage/**",
+      "src-tauri/target/**",
+      "benchmarks/.generated/**",
+      "tests/visual/baselines/**",
+      "test-results/**",
+      "test-results-sol-max*/**",
+    ],
   },
   eslint.configs.recommended,
   {
