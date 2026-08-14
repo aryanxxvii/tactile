@@ -4,7 +4,7 @@ import { FormulaBar } from "../../components/FormulaBar.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { dispatchCellEditSeed } from "../../components/localEditSession.js";
 import { createId, materializeCell } from "../../model.js";
-import { cellAddress, moveAddress } from "../../sheet/coordinates.js";
+import { cellAddress, cellId, coordinatesFromAddress, moveAddress } from "../../sheet/coordinates.js";
 import { cellIdsInRange, rangeLabel, rangeSize } from "../../sheet/ranges.js";
 import { SheetGrid } from "./SheetGrid.jsx";
 import { canonicalSheetSelection } from "./grid/selectionGeometry.js";
@@ -15,9 +15,11 @@ export function SheetObject({
   saveState,
   selectedAddress,
   selectionRange,
+  multiSelectedAddresses = [],
   workspaceObjects,
   onSelectAddress,
   onSelectRange,
+  onToggleMultiSelect,
   onUpdateObject,
   onUpdateCell,
   onUpdateCells,
@@ -50,6 +52,21 @@ export function SheetObject({
   const selectedRangeLabel = rangeLabel(canonicalRange);
   const selectedRangeSize = rangeSize(canonicalRange);
   const hasConditionalFormat = (object.conditionalFormats || []).some((rule) => rule.range === selectedRangeLabel);
+  const additiveSelectionAddresses = [...new Set(
+    multiSelectedAddresses
+      .map((address) => {
+        const coordinates = coordinatesFromAddress(address);
+        if (!coordinates || coordinates.row >= object.rows || coordinates.column >= object.columns) return null;
+        return cellAddress(coordinates.row, coordinates.column);
+      })
+      .filter(Boolean),
+  )];
+  const formattingCellIds = additiveSelectionAddresses.length
+    ? additiveSelectionAddresses.map((address) => {
+      const coordinates = coordinatesFromAddress(address);
+      return cellId(coordinates.row, coordinates.column);
+    })
+    : cellIdsInRange(canonicalRange);
 
   const handleFormulaCommit = (value) => {
     if (!selectedCell) return;
@@ -83,7 +100,7 @@ export function SheetObject({
   };
 
   const handleFormat = (patch) => {
-    const changes = cellIdsInRange(canonicalRange).map((targetCellId) => {
+    const changes = formattingCellIds.map((targetCellId) => {
       const currentStyle = object.cells?.[targetCellId]?.style || {};
       return {
         cellId: targetCellId,
@@ -94,10 +111,15 @@ export function SheetObject({
   };
 
   const handleConditionalFormat = (kind) => {
-    const withoutCurrent = (object.conditionalFormats || []).filter((rule) => rule.range !== selectedRangeLabel);
+    const targetRanges = additiveSelectionAddresses.length ? additiveSelectionAddresses : [selectedRangeLabel];
+    const targetRangeSet = new Set(targetRanges);
+    const withoutCurrent = (object.conditionalFormats || []).filter((rule) => !targetRangeSet.has(rule.range));
     onUpdateObject({
       conditionalFormats: kind
-        ? [...withoutCurrent, { id: createId("rule"), range: selectedRangeLabel, kind }]
+        ? [
+          ...withoutCurrent,
+          ...targetRanges.map((range) => ({ id: createId("rule"), range, kind })),
+        ]
         : withoutCurrent,
     });
   };
@@ -137,9 +159,11 @@ export function SheetObject({
           workspaceObjects={workspaceObjects}
           selectedAddress={canonicalSelectedAddress}
           selectionRange={canonicalRange}
+          multiSelectedAddresses={multiSelectedAddresses}
           formulaEditingCellId={formulaMode ? selectedCell?.id : null}
           onSelect={onSelectAddress}
           onSelectRange={onSelectRange}
+          onToggleMultiSelect={onToggleMultiSelect}
           onFocusFormulaBar={focusFormulaBar}
           onCellChange={onUpdateCell}
           onCellsChange={onUpdateCells}

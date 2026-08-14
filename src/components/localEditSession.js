@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const CELL_EDIT_SEED_EVENT = "tactile:cell-edit-seed";
+export const CELL_EDIT_COMMIT_EVENT = "tactile:cell-edit-commit";
 
 const surfaceDraftState = new WeakMap();
 
@@ -32,6 +33,13 @@ export function dispatchCellEditSeed(sourceElement, value) {
   editor.dispatchEvent(new CustomEvent(CELL_EDIT_SEED_EVENT, {
     detail: { value },
   }));
+  return true;
+}
+
+export function dispatchCellEditCommit(sourceElement) {
+  const editor = sourceElement?.closest?.(".object-surface")?.querySelector?.(".formula-editor");
+  if (!editor || document.activeElement !== editor) return false;
+  editor.dispatchEvent(new CustomEvent(CELL_EDIT_COMMIT_EVENT));
   return true;
 }
 

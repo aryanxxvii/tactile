@@ -58,11 +58,11 @@ test("Files index exposes canonical and alias locations without changing Home or
   assert.equal(buildFilesIndex(changedHome).roots[0], "other");
 });
 
-test("Files search ranks identity metadata and ignores case and accents", () => {
+test("Files search matches titles and ignores case and accents", () => {
   const index = buildFilesIndex(filesWorkspace());
   assert.equal(normalizeSearchText("Résumé"), "resume");
   assert.equal(index.search("resume")[0].objectId, "child");
-  assert.equal(index.search("tiles")[0].type, "sheet");
+  assert.equal(index.search("tiles").length, 0);
   assert.deepEqual(index.search("does-not-exist"), []);
 });
 

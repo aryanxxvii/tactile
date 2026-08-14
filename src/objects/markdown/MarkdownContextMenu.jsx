@@ -83,15 +83,38 @@ export function MarkdownContextMenu({ menu, onClose, onAction, textColors, highl
       }
       frame = window.requestAnimationFrame(focusMenu);
     };
+    const handleUnfocusedMenuKeyDown = (event) => {
+      const root = menuRef.current;
+      if (!root || document.activeElement?.closest?.('[role="menu"]') === root) return;
+
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        const items = Array.from(root.querySelectorAll('[role="menuitem"]:not(:disabled)'));
+        const item = event.key === "ArrowUp" ? items.at(-1) : items[0];
+        if (item) {
+          event.preventDefault();
+          event.stopPropagation();
+          item.focus();
+        }
+        return;
+      }
+
+      handleMenuKeyDown(event, {
+        root,
+        onClose,
+        restoreFocus: menu.sourceElement,
+      });
+    };
     const closeOutside = (event) => {
       if (!menuRef.current?.contains(event.target)) onClose();
     };
     window.addEventListener("pointerdown", closeOutside);
-    frame = window.requestAnimationFrame(focusMenu);
+    if (menu.focusMenu) frame = window.requestAnimationFrame(focusMenu);
+    window.addEventListener("keydown", handleUnfocusedMenuKeyDown, true);
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(frame);
       window.removeEventListener("pointerdown", closeOutside);
+      window.removeEventListener("keydown", handleUnfocusedMenuKeyDown, true);
     };
   }, [menu, onClose]);
 
@@ -161,7 +184,6 @@ export function MarkdownContextMenu({ menu, onClose, onAction, textColors, highl
       >
         <div className="files-context-menu-heading">
           <span>Markdown</span>
-          <small>{menu.hasSelection ? "Selected text" : "Place cursor"}</small>
         </div>
 
         <MenuItem icon={IconTrash} label="Clear content" shortcut="Del" disabled={!menu.hasSelection} onSelect={invoke("clear")} />

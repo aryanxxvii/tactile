@@ -310,15 +310,18 @@ export function App() {
     const isVisibleParentLayer = parentContextVisible && index === inOut.layers.length - 2;
     const selectedAddress = selection.selectedByObject[object.id] || "A1";
     const selectionRange = selection.rangeByObject[object.id] || { anchor: selectedAddress, focus: selectedAddress };
+    const multiSelectedAddresses = selection.multiSelectedByObject[object.id] || [];
     const sharedProps = {
       object,
       path: objectPaths[index],
       saveState,
       selectedAddress,
       selectionRange,
+      multiSelectedAddresses,
       workspaceObjects: workspace.objects,
       onSelectAddress: (address) => selection.selectAddress(object.id, address),
       onSelectRange: (anchor, focus, active) => selection.selectRange(object.id, anchor, focus, active),
+      onToggleMultiSelect: (address) => selection.toggleMultiSelect(object.id, address),
       onUpdateObject: (patch) => updateObject(object.id, patch),
       onReparentObject: handleReparentObject,
       onUpdateCell: (cellId, patch) => updateCell(object.id, cellId, patch),

@@ -78,14 +78,18 @@ export function useSelectionCommands({
 }) {
   const [selectedByObject, setSelectedByObject] = useState({});
   const [rangeByObject, setRangeByObject] = useState({});
+  const [multiSelectedByObject, setMultiSelectedByObject] = useState({});
   const selectedByObjectRef = useRef({});
   const rangeByObjectRef = useRef({});
+  const multiSelectedByObjectRef = useRef({});
 
   const resetSelection = useCallback(() => {
     selectedByObjectRef.current = {};
     rangeByObjectRef.current = {};
+    multiSelectedByObjectRef.current = {};
     setSelectedByObject({});
     setRangeByObject({});
+    setMultiSelectedByObject({});
   }, []);
 
   const selectedCellFor = useCallback((object) => {
@@ -100,10 +104,13 @@ export function useSelectionCommands({
       ...rangeByObjectRef.current,
       [objectId]: { anchor: address, focus: address },
     };
+    const nextMultiSelected = { ...multiSelectedByObjectRef.current, [objectId]: [] };
     selectedByObjectRef.current = nextSelected;
     rangeByObjectRef.current = nextRanges;
+    multiSelectedByObjectRef.current = nextMultiSelected;
     setSelectedByObject(nextSelected);
     setRangeByObject(nextRanges);
+    setMultiSelectedByObject(nextMultiSelected);
   }, []);
 
   const selectRange = useCallback((objectId, anchor, focus, activeAddress = focus) => {
@@ -112,10 +119,43 @@ export function useSelectionCommands({
       ...rangeByObjectRef.current,
       [objectId]: { anchor, focus },
     };
+    const nextMultiSelected = { ...multiSelectedByObjectRef.current, [objectId]: [] };
     selectedByObjectRef.current = nextSelected;
     rangeByObjectRef.current = nextRanges;
+    multiSelectedByObjectRef.current = nextMultiSelected;
     setSelectedByObject(nextSelected);
     setRangeByObject(nextRanges);
+    setMultiSelectedByObject(nextMultiSelected);
+  }, []);
+
+  const toggleMultiSelect = useCallback((objectId, address) => {
+    const currentActive = selectedByObjectRef.current[objectId] || address;
+    const currentMultiSelected = multiSelectedByObjectRef.current[objectId] || [];
+    const selectedAddresses = new Set(currentMultiSelected.length ? currentMultiSelected : [currentActive]);
+    let nextActive = address;
+    if (selectedAddresses.has(address)) {
+      selectedAddresses.delete(address);
+      if (!selectedAddresses.size) selectedAddresses.add(address);
+      else if (address === currentActive) nextActive = [...selectedAddresses].at(-1);
+    } else {
+      selectedAddresses.add(address);
+    }
+
+    const nextSelected = { ...selectedByObjectRef.current, [objectId]: nextActive };
+    const nextRanges = {
+      ...rangeByObjectRef.current,
+      [objectId]: { anchor: nextActive, focus: nextActive },
+    };
+    const nextMultiSelected = {
+      ...multiSelectedByObjectRef.current,
+      [objectId]: [...selectedAddresses],
+    };
+    selectedByObjectRef.current = nextSelected;
+    rangeByObjectRef.current = nextRanges;
+    multiSelectedByObjectRef.current = nextMultiSelected;
+    setSelectedByObject(nextSelected);
+    setRangeByObject(nextRanges);
+    setMultiSelectedByObject(nextMultiSelected);
   }, []);
 
   const openSelectedEmbeddedObject = useCallback(() => {
@@ -274,6 +314,15 @@ export function useSelectionCommands({
     const object = workspace.objects[activeLayer.objectId];
     if (object?.type !== "sheet") return;
     const cell = selectedCellFor(object);
+    const multiSelectedAddresses = multiSelectedByObjectRef.current[object.id] || [];
+    if (multiSelectedAddresses.length > 1) {
+      const cellIds = multiSelectedAddresses
+        .map((address) => coordinatesFromAddress(address))
+        .filter(Boolean)
+        .map(({ row, column }) => materializeCell(object, row, column).id);
+      clearCells(object.id, cellIds);
+      return;
+    }
     const selection = rangeByObjectRef.current[object.id] || { anchor: cell.address, focus: cell.address };
     clearCells(object.id, cellIdsInRange(selection));
   }, [clearCells, layers, selectedCellFor, workspace.objects]);
@@ -371,10 +420,12 @@ export function useSelectionCommands({
   return {
     selectedByObject,
     rangeByObject,
+    multiSelectedByObject,
     resetSelection,
     selectedCellFor,
     selectAddress,
     selectRange,
+    toggleMultiSelect,
     openSelectedEmbeddedObject,
     moveSelection,
     clipboardSelectedCell,

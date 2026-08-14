@@ -76,20 +76,11 @@ function matchScore(entry, query) {
   const normalized = normalizeSearchText(query);
   const tokens = normalized.split(" ").filter(Boolean);
   const title = entry.searchTitle;
-  const fileName = entry.searchFileName;
-  const path = entry.searchPath;
-  const type = entry.searchType;
-  const id = entry.searchId;
-  const fields = [title, fileName, path, type, id];
-  if (!tokens.every((token) => fields.some((field) => field.includes(token)))) return -1;
+  if (!tokens.every((token) => title.includes(token))) return -1;
 
   if (title === normalized) return 1000;
   if (title.startsWith(normalized)) return 900;
   if (tokens.some((token) => title.split(" ").some((part) => part.startsWith(token)))) return 800;
-  if (fileName && fileName.includes(normalized)) return 700;
-  if (path.includes(normalized)) return 600;
-  if (type.includes(normalized)) return 500;
-  if (id === normalized) return 300;
   return 200;
 }
 

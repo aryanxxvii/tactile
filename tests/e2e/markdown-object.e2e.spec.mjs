@@ -204,6 +204,15 @@ test("opens a Paper command menu for selected Markdown text", async ({ page }) =
   await expect(menu.getByRole("menuitem", { name: "Clear content" })).toBeEnabled();
   await expect(menu.getByRole("menuitem", { name: "Insert table" })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Background color: Straw" })).toBeVisible();
+  await expect
+    .poll(() =>
+      editor.evaluate((element) => ({
+        focused: document.activeElement === element,
+        start: element.selectionStart,
+        end: element.selectionEnd,
+      })),
+    )
+    .toEqual({ focused: true, start: 0, end: 5 });
 
   await menu.getByRole("menuitem", { name: "Bold" }).click();
   await expect(editor).toHaveValue("**Draft** text");

@@ -1215,7 +1215,8 @@ input:focus-visible,
   transform: translateY(-1px);
 }
 
-.sheet-cell.is-in-range {
+.sheet-cell.is-in-range,
+.sheet-cell.is-multi-selected {
   z-index: 2;
 }
 
@@ -1269,10 +1270,23 @@ input:focus-visible,
 }
 
 .sheet-cell.is-embedded {
-  cursor: grab;
+  cursor: pointer;
 }
 
 .sheet-cell.is-embedded:active {
+  cursor: grabbing;
+}
+
+.sheet-cell.is-embedded .cell-content,
+.sheet-cell.is-embedded .cell-value,
+.sheet-cell.is-embedded .embed-icon {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sheet-cell.is-embedded:active .cell-content,
+.sheet-cell.is-embedded:active .cell-value,
+.sheet-cell.is-embedded:active .embed-icon {
   cursor: grabbing;
 }
 
@@ -3012,6 +3026,11 @@ kbd {
   margin: 0;
 }
 
+.keyboard-settings .keyboard-key-separator {
+  color: var(--muted);
+  font-size: 9px;
+}
+
 .tactile-app[data-reduce-motion="true"] *,
 .tactile-app[data-reduce-motion="true"] *::before,
 .tactile-app[data-reduce-motion="true"] *::after {
@@ -3588,7 +3607,8 @@ kbd {
 }
 
 /* Selected ranges should read at a glance without competing with the active cell. */
-.sheet-cell.is-in-range {
+.sheet-cell.is-in-range,
+.sheet-cell.is-multi-selected:not(.is-selected) {
   border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
   background:
     linear-gradient(
@@ -3703,7 +3723,17 @@ kbd {
 }
 
 .phase-floating .object-statusbar {
-  display: none;
+  /* Keep the child status lane visible while it floats so active-cell and
+     object metadata do not disappear into the blank lower edge. */
+  display: flex;
+}
+
+.phase-full .object-statusbar {
+  display: flex;
+}
+
+.phase-floating .object-statusbar .status-spacer {
+  display: block;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3808,6 +3838,19 @@ kbd {
      placeholder slightly inside the real tile so it never peeks around a
      loaded Paper surface in the normal view. */
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Crect x='1' y='4' width='98' height='80' rx='4' ry='14'/%3E%3C/svg%3E") var(--sheet-fallback-x, 0) var(--sheet-fallback-y, 0) / var(--sheet-fallback-column-width) var(--sheet-fallback-row-height) repeat;
+}
+
+.sheet-scroll-fallback-layer {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease-out, visibility 0s linear 120ms;
+}
+
+.sheet-scroll-fallback-layer.is-scroll-visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 70ms ease-out, visibility 0s linear 0s;
 }
 
 .virtual-sheet-header {
@@ -4792,7 +4835,10 @@ kbd {
   align-items: center;
   transform: translate3d(0, 0, 0);
   pointer-events: none;
-  background: var(--paper);
+  /* Let the object status lane remain visible behind the global controls.
+     Both surfaces use the same theme paper, so the dock still reads as one
+     continuous bar without hiding active-cell metadata in full view. */
+  background: transparent;
 }
 
 .tactile-app.has-floating-layer .app-bottom-bar {
@@ -4810,6 +4856,7 @@ kbd {
   z-index: 240;
   opacity: 1;
   filter: none;
+  background: var(--paper);
 }
 
 .app-bottom-bar[data-interaction-blocked="true"] .app-dock {
@@ -5600,6 +5647,7 @@ kbd {
 }
 
 .files-result-row {
+  width: 100%;
   min-height: 42px;
   padding: 5px 8px;
   border-radius: 5px;

@@ -14,6 +14,7 @@ export function SheetGridCanvas({
   workspaceObjects,
   selectedAddress,
   normalizedSelection,
+  multiSelectedAddresses,
   fillPreviewRange,
   formulaValues,
   rowGroups,
@@ -368,6 +369,7 @@ export function SheetGridCanvas({
               styleVerticalAlign={cell?.style?.verticalAlign || ""}
               styleFontSize={Number.isFinite(fontSize) ? fontSize : undefined}
               selected={selectedAddress === address}
+              multiSelected={multiSelectedAddresses?.has(address)}
               inRange={numericRangeContains(normalizedSelection, row, column)}
               inFormulaRange={numericRangeContains(normalizedFormulaReferenceRange, row, column)}
               fillPreview={numericRangeContains(fillPreviewRange, row, column)}

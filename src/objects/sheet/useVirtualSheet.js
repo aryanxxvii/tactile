@@ -288,6 +288,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   const pendingViewportRef = useRef(null);
   const syncViewportRef = useRef(null);
   const scrollFallbackRef = useRef(null);
+  const fallbackHideTimerRef = useRef(null);
   const initialViewport = useMemo(() => initialViewportFor(viewStateKey), [viewStateKey]);
   const scrollPositionRef = useRef({
     scrollLeft: initialViewport.scrollLeft,
@@ -364,6 +365,18 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     // cannot invalidate styles across every mounted cell.
     fallback.style.setProperty("--sheet-fallback-x", `${-position.scrollLeft}px`);
     fallback.style.setProperty("--sheet-fallback-y", `${-position.scrollTop}px`);
+  }, []);
+
+  const showScrollFallback = useCallback(() => {
+    const fallback = scrollFallbackRef.current;
+    const layer = fallback?.parentElement;
+    if (!layer) return;
+    layer.classList.add("is-scroll-visible");
+    if (fallbackHideTimerRef.current != null) window.clearTimeout(fallbackHideTimerRef.current);
+    fallbackHideTimerRef.current = window.setTimeout(() => {
+      fallbackHideTimerRef.current = null;
+      layer.classList.remove("is-scroll-visible");
+    }, 180);
   }, []);
 
   const scheduleViewportMemory = useCallback((viewport) => {
@@ -467,7 +480,14 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       element.scrollTop = Math.max(0, finiteCoordinate(saved.scrollTop));
     }
 
-    const handleNativeScroll = () => syncViewportRef.current?.(element, { immediate: true });
+    const handleNativeScroll = () => {
+      // The fallback is a scroll handoff surface only. Keep it out of the
+      // normal paint path so pointer hover can never reveal it beneath a
+      // real tile; native wheel and scrollbar movement make it visible for
+      // the short period in which the virtual window is catching up.
+      showScrollFallback();
+      syncViewportRef.current?.(element, { immediate: true });
+    };
     // The initial layout pass is already inside a lifecycle method. Let its
     // normal layout reconciliation schedule work without nesting flushSync;
     // only subsequent native scroll events need the immediate handoff.
@@ -490,7 +510,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       observer?.disconnect();
       element.removeEventListener("scroll", handleNativeScroll);
     };
-  }, [viewStateKey]);
+  }, [showScrollFallback, viewStateKey]);
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
@@ -509,6 +529,10 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     if (rangeFrameRef.current != null) {
       window.cancelAnimationFrame(rangeFrameRef.current);
       rangeFrameRef.current = null;
+    }
+    if (fallbackHideTimerRef.current != null) {
+      window.clearTimeout(fallbackHideTimerRef.current);
+      fallbackHideTimerRef.current = null;
     }
     // StrictMode replays effect cleanup during development. Discard any
     // requested-but-uncommitted slice so later scroll events compare against

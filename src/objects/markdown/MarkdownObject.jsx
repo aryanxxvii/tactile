@@ -364,6 +364,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         : { left: event.clientX, top: event.clientY, bottom: event.clientY },
       sourceElement: editor,
       hasSelection: start !== end,
+      focusMenu: fromKeyboard,
     });
   };
 

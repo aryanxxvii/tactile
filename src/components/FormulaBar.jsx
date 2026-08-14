@@ -6,6 +6,7 @@ import { createFormulaWorker } from "../workers/formula/index.js";
 import { CellFormatMenu } from "./CellFormatMenu.jsx";
 import {
   CELL_EDIT_SEED_EVENT,
+  CELL_EDIT_COMMIT_EVENT,
   setLocalCellDraft,
   useLocalDraft,
 } from "./localEditSession.js";
@@ -234,6 +235,17 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
     }
     return changed;
   }, [cellId, editorRef, session]);
+
+  useEffect(() => {
+    const input = editorRef.current;
+    if (!input) return undefined;
+    const commitFromCellSelection = () => {
+      commitDraft({ immediate: true });
+      onFormulaModeChange?.(false);
+    };
+    input.addEventListener(CELL_EDIT_COMMIT_EVENT, commitFromCellSelection);
+    return () => input.removeEventListener(CELL_EDIT_COMMIT_EVENT, commitFromCellSelection);
+  }, [commitDraft, editorRef, onFormulaModeChange]);
 
   useEffect(() => {
     if (session.activeRef.current) publishDraft(session.draftRef.current, formulaPreview);

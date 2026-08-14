@@ -359,9 +359,10 @@ export function SettingsPanel({
                 <div><dt>Expand floating object</dt><dd><kbd>]</kbd></dd></div>
                 <div><dt>Return to parent</dt><dd><kbd>[</kbd></dd></div>
                 <div><dt>Move selection</dt><dd><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></dd></div>
-                <div><dt>Edit a tile</dt><dd><kbd>Enter</kbd> or <kbd>F2</kbd></dd></div>
+                <div><dt>Edit a tile</dt><dd><kbd>Enter</kbd> <span className="keyboard-key-separator">or</span> <kbd>F2</kbd></dd></div>
                 <div><dt>Clear a tile</dt><dd><kbd>Delete</kbd></dd></div>
                 <div><dt>Text: bold / italic / link</dt><dd><kbd>Ctrl B</kbd> <kbd>Ctrl I</kbd> <kbd>Ctrl K</kbd></dd></div>
+                <div><dt>Edit menu</dt><dd><kbd>Ctrl ]</kbd></dd></div>
               </dl>
             </div>
           ) : null}

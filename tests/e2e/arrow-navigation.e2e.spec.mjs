@@ -96,7 +96,22 @@ test("walks one cell at a time and extends the range only with Shift", async ({ 
       status: "D2",
       inRangeCount: 0,
       windowScrollTop: 0,
-    });
+  });
+});
+
+test("Ctrl-click adds and removes individual tiles from the selection", async ({ page }) => {
+  await page.goto("/");
+
+  await baseCell(page, "A1").click();
+  await baseCell(page, "C3").click({ modifiers: ["Control"] });
+
+  await expect(baseCell(page, "A1")).toHaveClass(/is-multi-selected/);
+  await expect(baseCell(page, "C3")).toHaveClass(/is-selected/);
+  await expect(baseCell(page, "C3")).toHaveClass(/is-multi-selected/);
+
+  await baseCell(page, "C3").click({ modifiers: ["Control"] });
+  await expect(baseCell(page, "A1")).toHaveClass(/is-selected/);
+  await expect(baseCell(page, "C3")).not.toHaveClass(/is-multi-selected/);
 });
 
 test("keeps rapid arrow walking lossless and scrolls only to the active cell", async ({ page }) => {

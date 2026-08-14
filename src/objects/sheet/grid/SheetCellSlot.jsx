@@ -27,6 +27,7 @@ const CellSlot = memo(function CellSlot({
   styleVerticalAlign,
   styleFontSize,
   selected,
+  multiSelected,
   inRange,
   inFormulaRange,
   fillPreview,
@@ -77,6 +78,7 @@ const CellSlot = memo(function CellSlot({
         styleVerticalAlign={styleVerticalAlign}
         styleFontSize={styleFontSize}
         selected={selected}
+        multiSelected={multiSelected}
         inRange={inRange}
         inFormulaRange={inFormulaRange}
         fillPreview={fillPreview}

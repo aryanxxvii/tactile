@@ -262,7 +262,6 @@ export function CellContextMenu({
     await callback?.();
     onClose();
   };
-  const embeddedType = menu.cell.embed ? objectTypeFor(menu.cell.embed.type) : null;
   const fallbackLeft = clamp(menu.anchorRect?.left ?? menu.x, 8, Math.max(8, window.innerWidth - 224 - 8));
   const fallbackTop = clamp(menu.anchorRect?.bottom ?? menu.y, 8, Math.max(8, window.innerHeight - 8));
 
@@ -287,7 +286,6 @@ export function CellContextMenu({
       >
         <div className="cell-menu-heading">
           <span>{menu.cell.address}</span>
-          <small>{embeddedType ? embeddedType.label : "Put something inside"}</small>
         </div>
         {menu.cell.embed ? (
           <>

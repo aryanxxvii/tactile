@@ -3,7 +3,10 @@ import { cellAddress } from "../../../sheet/coordinates.js";
 import { fillChanges, fillRange } from "../../../sheet/ranges.js";
 import { rangeLabel } from "../../../sheet/ranges.js";
 import { rangeValues } from "./useSheetGridProjection.js";
-import { CELL_EDIT_SEED_EVENT } from "../../../components/localEditSession.js";
+import {
+  CELL_EDIT_SEED_EVENT,
+  dispatchCellEditCommit,
+} from "../../../components/localEditSession.js";
 
 function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, coordinate) {
   if (!Number.isFinite(coordinate) || coordinate < 0 || !indexMap.length) return null;
@@ -86,6 +89,7 @@ export function useSheetGridGestures({
   rowSizeForIndex,
   onSelect,
   onSelectRange,
+  onToggleMultiSelect,
   onCellChange,
   onCellsChange,
   onUpdateObject,
@@ -236,6 +240,7 @@ export function useSheetGridGestures({
   gestureCallbacksRef.current = {
     object,
     onSelect,
+    onToggleMultiSelect,
     onCellChange,
     onCellsChange,
     onSelectRange,
@@ -487,6 +492,10 @@ export function useSheetGridGestures({
 
   const startSelection = useCallback((event, cell) => {
     if (event.button !== 0 || formulaEditingCellId) return;
+    // Mouse selection should commit a value already being edited before the
+    // active-cell props change. Otherwise the formula bar can reset its local
+    // draft to the old canonical value before the blur commit is published.
+    dispatchCellEditCommit(event.currentTarget);
     cancelSelectionRangeUpdate();
     // Let the browser own drags that begin on a cell's value text. A grid
     // selection gesture would otherwise capture the pointer before a partial
@@ -497,6 +506,12 @@ export function useSheetGridGestures({
     const selectionBelongsToCell = nativeSelection?.anchorNode
       && event.currentTarget.contains(nativeSelection.anchorNode);
     if (!selectingText || !selectionBelongsToCell) nativeSelection?.removeAllRanges();
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey) {
+      event.preventDefault();
+      gestureCallbacksRef.current?.onToggleMultiSelect?.(cell.address);
+      focusSelectedGestureCell(object.id, cell.address);
+      return;
+    }
     event.currentTarget.focus({ preventScroll: true });
     const currentSelection = selectionContextRef.current;
     const anchor = event.shiftKey
@@ -525,14 +540,14 @@ export function useSheetGridGestures({
     }
   }, [cancelSelectionRangeUpdate, formulaEditingCellId, object.id, scrollRef]);
 
-  const moveSelectionGesture = useCallback((cell) => {
+  const moveSelectionGesture = useCallback((cell, event) => {
     if (fillDragRef.current) {
       fillTargetRef.current = cell.address;
       setFillTarget(cell.address);
       return;
     }
     const drag = selectionDragRef.current;
-    if (!drag || drag.focus === cell.address) return;
+    if (!drag || event?.buttons === 0 || drag.focus === cell.address) return;
     drag.focus = cell.address;
     queueSelectionRangeUpdate(drag.anchor, cell.address);
   }, [queueSelectionRangeUpdate]);
@@ -545,6 +560,15 @@ export function useSheetGridGestures({
       if (!activeGesture) return;
       if (activeGesture.pointerId != null && event.pointerId != null && event.pointerId !== activeGesture.pointerId) return;
       captureGesturePointer(activeGesture, event);
+      if (selectionDragRef.current && event.buttons === 0) {
+        // A stale drag ref must never turn ordinary hover movement into a
+        // range update. That extra render can briefly expose the virtual
+        // fallback beneath the cell under the pointer.
+        selectionDragRef.current = null;
+        selectionPointerRef.current = null;
+        stopSelectionAutoScroll();
+        return;
+      }
       if (selectionDragRef.current) {
         selectionPointerRef.current = {
           clientX: event.clientX,

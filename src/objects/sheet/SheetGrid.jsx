@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { SheetGridCanvas } from "./grid/SheetGridCanvas.jsx";
 import { SheetGridContextMenu } from "./grid/SheetGridContextMenu.jsx";
 import { useSheetGridContextMenu } from "./grid/useSheetGridContextMenu.js";
@@ -20,9 +20,11 @@ export function SheetGrid({
   workspaceObjects,
   selectedAddress,
   selectionRange,
+  multiSelectedAddresses = [],
   formulaEditingCellId,
   onSelect,
   onSelectRange,
+  onToggleMultiSelect,
   onFocusFormulaBar,
   onCellChange,
   onCellsChange,
@@ -39,8 +41,10 @@ export function SheetGrid({
   const [fillTarget, setFillTarget] = useState(null);
   const [dropTargetAddress, setDropTargetAddress] = useState("");
   const [resizePreview, setResizePreview] = useState(null);
+  const multiSelectedAddressSet = useMemo(() => new Set(multiSelectedAddresses), [multiSelectedAddresses]);
   const stableOnSelect = useLatestCallback(onSelect);
   const stableOnSelectRange = useLatestCallback(onSelectRange);
+  const stableOnToggleMultiSelect = useLatestCallback(onToggleMultiSelect);
   const stableOnFocusFormulaBar = useLatestCallback(onFocusFormulaBar);
   const stableOnCellChange = useLatestCallback(onCellChange);
   const stableOnCellsChange = useLatestCallback(onCellsChange);
@@ -97,6 +101,7 @@ export function SheetGrid({
     rowSizeForIndex: projection.rowSizeForIndex,
     onSelect: stableOnSelect,
     onSelectRange: stableOnSelectRange,
+    onToggleMultiSelect: stableOnToggleMultiSelect,
     onCellChange: stableOnCellChange,
     onCellsChange: stableOnCellsChange,
     onUpdateObject: stableOnUpdateObject,
@@ -129,6 +134,7 @@ export function SheetGrid({
         workspaceObjects={workspaceObjects}
         selectedAddress={projection.selectedAddress}
         normalizedSelection={projection.normalizedSelection}
+        multiSelectedAddresses={multiSelectedAddressSet}
         fillPreviewRange={projection.fillPreviewRange}
         formulaValues={projection.formulaValues}
         rowGroups={projection.rowGroups}
