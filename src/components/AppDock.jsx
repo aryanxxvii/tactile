@@ -6,6 +6,7 @@ import {
   IconSettings,
 } from "@tabler/icons-react";
 import { PaperPortal } from "./PaperPortal.jsx";
+import { TACTILE_COMMIT_DIRTY, TACTILE_COMMIT_SHORT } from "../buildRevision.js";
 
 const PATH_CLOSE_DELAY = 360;
 
@@ -246,6 +247,14 @@ export function AppDock({
         <IconSettings size={14} stroke={1.65} />
         <span>Settings</span>
       </button>
+      <span
+        className="app-revision"
+        aria-label={`Source revision ${TACTILE_COMMIT_SHORT}${TACTILE_COMMIT_DIRTY ? ", uncommitted changes" : ""}`}
+        title={`Source revision ${TACTILE_COMMIT_SHORT}${TACTILE_COMMIT_DIRTY ? " · uncommitted changes" : ""}`}
+      >
+        <span>rev</span>
+        <code>{TACTILE_COMMIT_SHORT}{TACTILE_COMMIT_DIRTY ? "*" : ""}</code>
+      </span>
     </div>
   );
 }

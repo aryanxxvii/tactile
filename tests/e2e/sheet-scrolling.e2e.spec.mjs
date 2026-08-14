@@ -147,7 +147,7 @@ test("keeps active, hovered, and selected cells below the sticky column identifi
   expect(deepHoverPaint.maxDataSlotZ).toBeLessThan(deepHoverPaint.railZ);
 });
 
-test("keeps the bounded window and both sticky rails aligned on the first frame of a fast wheel jump", async ({
+test("keeps the full default tile matrix and both sticky rails aligned on the first frame of a fast wheel jump", async ({
   page,
 }) => {
   await page.goto("/");
@@ -210,7 +210,7 @@ test("keeps the bounded window and both sticky rails aligned on the first frame 
   });
   expect(state.scrollTop).toBeGreaterThan(0);
   expect(state.scrollLeft).toBeGreaterThan(0);
-  expect(state.mountedCells).toBeLessThan(1000);
+  expect(state.mountedCells).toBeGreaterThanOrEqual(256 * 64);
 });
 
 test("keeps the painted range current through a synchronous rapid-scroll burst", async ({ page }) => {
@@ -427,7 +427,7 @@ test("refreshes the virtual slice before the first frame after a direct large of
   expect(state.scrollTop).toBeGreaterThan(0);
 });
 
-test("keeps a horizontally rebased virtual window bounded at the sheet edge", async ({ page }) => {
+test("keeps the full default tile matrix aligned at the horizontal sheet edge", async ({ page }) => {
   await page.goto("/");
 
   const state = await page
@@ -472,8 +472,8 @@ test("keeps a horizontally rebased virtual window bounded at the sheet edge", as
     inCanvasBounds: true,
   });
   expect(state.scrollLeft).toBeGreaterThanOrEqual(state.maxScrollLeft - 20);
-  expect(state.maxRow).toBeLessThan(256);
-  expect(state.mountedCells).toBeLessThan(1000);
+  expect(state.maxRow).toBe(255);
+  expect(state.mountedCells).toBeGreaterThanOrEqual(256 * 64);
 });
 
 test("keeps the active cell and formula bar coherent through a coalesced native jump", async ({ page }) => {
@@ -571,7 +571,7 @@ test("keeps the active cell and formula bar coherent through a coalesced native 
     statusAddress: "B2",
   });
   expect(state.visibleCells).toBeGreaterThan(0);
-  expect(state.mountedCells).toBeLessThan(1_000);
+  expect(state.mountedCells).toBeGreaterThanOrEqual(256 * 64);
   expect(state.scrollTop).toBeGreaterThanOrEqual(target.top - 20);
   expect(state.scrollLeft).toBeGreaterThanOrEqual(target.left - 20);
   expect(state.scrollX).toBeCloseTo(state.scrollLeft, 1);

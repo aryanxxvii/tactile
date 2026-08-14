@@ -3479,7 +3479,25 @@ kbd {
   overflow-anchor: none;
   scroll-behavior: auto;
   scrollbar-gutter: stable;
-  contain: layout paint size;
+  /* Keep the scrolling surface out of paint containment. During a native
+     scrollbar drag Chromium can advance the scroll compositor before a
+     newly-mounted virtual slice has been rasterized, leaving a blank tray
+     until scrolling stops. The canvas and cell slots retain their cheaper
+     layout containment. */
+  contain: layout size;
+  will-change: scroll-position;
+}
+
+/* While the native scroller is moving, prioritize a continuously painted
+   worksheet over the molded depth effects. The full tile matrix remains in
+   the DOM; this short-lived mode only removes the expensive per-tile gradient,
+   shadow, and transition work that can cause Chromium to checkerboard the
+   scrolling surface. */
+.sheet-scroll[data-sheet-scrolling="true"] .sheet-cell {
+  background: var(--cell);
+  box-shadow: none;
+  transform: none;
+  transition: none;
 }
 
 .virtual-sheet-header {
@@ -4786,6 +4804,28 @@ kbd {
   border-radius: 0;
   background: var(--line);
   pointer-events: none;
+}
+
+.app-revision {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 0 3px 0 10px;
+  border-left: 1px solid var(--line);
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.app-revision code {
+  color: var(--muted);
+  font: inherit;
+  letter-spacing: 0.04em;
 }
 
 .app-dock button:hover,
