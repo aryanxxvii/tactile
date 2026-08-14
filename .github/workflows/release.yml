@@ -137,7 +137,7 @@ jobs:
       - name: Build Tauri bundle
         env:
           APPLE_SIGNING_IDENTITY: ${{ steps.apple-prereqs.outputs.signing_ready == 'true' && secrets.APPLE_SIGNING_IDENTITY || '' }}
-        run: npx --yes @tauri-apps/cli@2.11.5 build --target ${{ matrix.rust-target }} --bundles ${{ matrix.bundles }}
+        run: npx --yes @tauri-apps/cli@2.11.4 build --target ${{ matrix.rust-target }} --bundles ${{ matrix.bundles }}
 
       - name: Sign macOS DMG
         if: matrix.platform == 'macos-universal' && steps.apple-prereqs.outputs.signing_ready == 'true'
