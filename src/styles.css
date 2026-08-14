@@ -2213,11 +2213,11 @@ kbd {
 }
 
 .theme-filter-row {
-  height: 26px;
+  height: 31px;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 5px;
+  padding: 0 5px 5px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -2244,11 +2244,11 @@ kbd {
 }
 
 .theme-list {
-  height: calc(100% - 53px);
+  height: calc(100% - 58px);
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-right: 2px;
+  padding: 5px 2px 0 0;
   overflow: auto;
   scrollbar-width: thin;
 }
