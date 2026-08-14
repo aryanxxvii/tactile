@@ -93,8 +93,24 @@ export function SheetGridCanvas({
         aria-label={`${object.title} Tiles`}
         aria-rowcount={object.rows}
         aria-colcount={object.columns}
-        style={{ width: canvasSize.width, height: canvasSize.height }}
+        style={{
+          width: canvasSize.width,
+          height: canvasSize.height,
+        }}
       >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            zIndex: 0,
+            left: rowHeaderWidth + bodyLeftInset,
+            top: columnHeaderHeight + bodyTopInset,
+            right: 0,
+            bottom: 0,
+            pointerEvents: "none",
+            background: "repeating-linear-gradient(to right, transparent 0 125px, var(--tray) 125px 126px), repeating-linear-gradient(to bottom, var(--cell) 0 30px, var(--tray) 30px 31px)",
+          }}
+        />
         <div
           className="sheet-corner virtual-sheet-header"
           role="button"
