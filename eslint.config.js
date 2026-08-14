@@ -29,7 +29,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ["*.js", "*.mjs", "benchmarks/**/*.mjs", "docs/**/*.mjs", "scripts/**/*.mjs", "tests/**/*.mjs", "src/compat/**/*.js"],
+    files: [
+      "*.js",
+      "*.mjs",
+      "benchmarks/**/*.mjs",
+      "docs/**/*.mjs",
+      "scripts/**/*.mjs",
+      "tests/**/*.mjs",
+      "src/compat/**/*.js",
+    ],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

@@ -1,10 +1,6 @@
 import { performance } from "node:perf_hooks";
 
-import {
-  buildAxisGeometry,
-  buildVirtualRange,
-  rangeContains,
-} from "../src/objects/sheet/useVirtualSheet.js";
+import { buildAxisGeometry, buildVirtualRange, rangeContains } from "../src/objects/sheet/useVirtualSheet.js";
 
 const rowCount = 10_000;
 const columnCount = 256;
@@ -34,15 +30,7 @@ for (let frame = 1; frame <= 72; frame += 1) {
     scrollTop: frame * (1_000 / 72),
     scrollLeft: frame * (1_000 / 72),
   };
-  const visibleRange = buildVirtualRange(
-    rowGeometry,
-    columnGeometry,
-    rowCount,
-    columnCount,
-    metrics,
-    nextViewport,
-    0,
-  );
+  const visibleRange = buildVirtualRange(rowGeometry, columnGeometry, rowCount, columnCount, metrics, nextViewport, 0);
   if (!rangeContains(renderRange, visibleRange)) {
     renderRange = buildVirtualRange(
       rowGeometry,
@@ -57,8 +45,7 @@ for (let frame = 1; frame <= 72; frame += 1) {
   }
   maxMountedCells = Math.max(
     maxMountedCells,
-    (renderRange.rowEnd - renderRange.rowStart + 1)
-      * (renderRange.columnEnd - renderRange.columnStart + 1),
+    (renderRange.rowEnd - renderRange.rowStart + 1) * (renderRange.columnEnd - renderRange.columnStart + 1),
   );
 }
 

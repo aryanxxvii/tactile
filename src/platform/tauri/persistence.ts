@@ -159,11 +159,11 @@ function workspaceFromResponse(value: unknown, command: string): WorkspaceSnapsh
   const candidate = source?.workspace ?? source?.snapshot ?? value;
   const workspace = recordOf(candidate);
   if (
-    !workspace
-    || typeof workspace.id !== "string"
-    || !workspace.objects
-    || typeof workspace.objects !== "object"
-    || Array.isArray(workspace.objects)
+    !workspace ||
+    typeof workspace.id !== "string" ||
+    !workspace.objects ||
+    typeof workspace.objects !== "object" ||
+    Array.isArray(workspace.objects)
   ) {
     throw new TauriProtocolError(`The ${command} command did not return a workspace snapshot.`, command);
   }
@@ -225,9 +225,8 @@ function normalizeExport(value: unknown, requestedFormat: ExportRequest["format"
   if (format === "json" && typeof source.data !== "string") {
     throw new TauriProtocolError(`The ${command} command returned non-text JSON data.`, command);
   }
-  const data: string | Uint8Array = format === "zip"
-    ? toUint8Array(source.data, "portable export bytes")
-    : source.data as string;
+  const data: string | Uint8Array =
+    format === "zip" ? toUint8Array(source.data, "portable export bytes") : (source.data as string);
   return { format, fileName, mime, data };
 }
 

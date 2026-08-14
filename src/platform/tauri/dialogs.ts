@@ -23,9 +23,7 @@ export class TauriDialogProtocolError extends Error {
 }
 
 function recordOf(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 function filters(filters: readonly TauriFileFilter[] | undefined): readonly TauriFileFilter[] | undefined {
@@ -34,11 +32,11 @@ function filters(filters: readonly TauriFileFilter[] | undefined): readonly Taur
   return filters.map((filter, index) => {
     const source = recordOf(filter);
     if (
-      !source
-      || typeof source.name !== "string"
-      || source.name.length === 0
-      || !Array.isArray(source.extensions)
-      || source.extensions.some((extension) => typeof extension !== "string" || extension.length === 0)
+      !source ||
+      typeof source.name !== "string" ||
+      source.name.length === 0 ||
+      !Array.isArray(source.extensions) ||
+      source.extensions.some((extension) => typeof extension !== "string" || extension.length === 0)
     ) {
       throw new TauriDialogProtocolError(`File dialog filter ${index} is malformed.`);
     }

@@ -218,10 +218,7 @@ test("opens an embedded tile with Enter just like the In & Out shortcut", async 
   await source.click();
   await source.press("Enter");
 
-  await expect(page.locator('[data-layer-object="layer-two"]')).toHaveAttribute(
-    "data-spatial-phase",
-    "floating",
-  );
+  await expect(page.locator('[data-layer-object="layer-two"]')).toHaveAttribute("data-spatial-phase", "floating");
   await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
 });
 

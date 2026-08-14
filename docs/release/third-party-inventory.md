@@ -7,10 +7,10 @@ This inventory is a reproducible snapshot of the committed JavaScript and Rust d
 ## Snapshot
 
 | Ecosystem | Components | Direct | License evidence | Missing license evidence |
-| --- | ---: | ---: | ---: | ---: |
-| npm | 390 | 23 | 388 | 2 |
-| Cargo | 438 | 4 | 438 | 0 |
-| Total | 828 | 27 | 826 | 2 |
+| --------- | ---------: | -----: | ---------------: | -----------------------: |
+| npm       |        390 |     23 |              388 |                        2 |
+| Cargo     |        438 |      4 |              438 |                        0 |
+| Total     |        828 |     27 |              826 |                        2 |
 
 Source hashes are recorded in third-party-inventory.json, sbom-npm.cdx.json, and sbom-cargo.cdx.json. The generator deliberately omits wall-clock timestamps and derives SBOM serial numbers from the lockfile hashes.
 

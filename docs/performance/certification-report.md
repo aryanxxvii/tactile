@@ -10,12 +10,12 @@ Fixture validation passed with fingerprint `8131f38127645b677ad39c84e2296bcafdb2
 
 ## Scenario measurements
 
-| Scenario | p95 frame time | Frame budget | p95 input-to-paint | Input budget | Long tasks over 50 ms | Commits | Max mounted cells | Result |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Scroll | 83.3 ms | 16.7 ms | n/a | n/a | 19 | 10 | 1,025 | Fail |
-| Typing | 266.6 ms | 16.7 ms | 3,736 ms | 50 ms | 4 | 9 | 476 | Fail |
-| In & Out | 333.3 ms | 16.7 ms | 384 ms | 50 ms | 8 | 15 | 918 | Fail |
-| Nested navigation | 250.0 ms | 16.7 ms | 602.1 ms | 50 ms | 43 | 69 | 1,008 | Fail |
+| Scenario          | p95 frame time | Frame budget | p95 input-to-paint | Input budget | Long tasks over 50 ms | Commits | Max mounted cells | Result |
+| ----------------- | -------------: | -----------: | -----------------: | -----------: | --------------------: | ------: | ----------------: | ------ |
+| Scroll            |        83.3 ms |      16.7 ms |                n/a |          n/a |                    19 |      10 |             1,025 | Fail   |
+| Typing            |       266.6 ms |      16.7 ms |           3,736 ms |        50 ms |                     4 |       9 |               476 | Fail   |
+| In & Out          |       333.3 ms |      16.7 ms |             384 ms |        50 ms |                     8 |      15 |               918 | Fail   |
+| Nested navigation |       250.0 ms |      16.7 ms |           602.1 ms |        50 ms |                    43 |      69 |             1,008 | Fail   |
 
 Scroll and typing returned clean runtime deltas. In & Out retained `+146` listeners. Nested navigation retained `+871` listeners, `+1` resize observer, and `+4` animation frames against the post-fixture reference. After the final return-to-base cleanup, teardown still retained `+866` listeners. The strict runtime-resource budget is zero positive delta.
 

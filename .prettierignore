@@ -1,9 +1,12 @@
 node_modules
 dist
 tmp
+coverage
+src-tauri/target
 benchmarks/.generated
 tests/visual/baselines
 test-results
+test-results-sol-max*
 src/**/*.js
 src/**/*.jsx
 *.png

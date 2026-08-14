@@ -14,16 +14,9 @@ function gitValue(args, fallback) {
 const tactileCommit = gitValue(["rev-parse", "--short=7", "HEAD"], "unknown");
 // Ignore unrelated workspace files (for example local package experiments)
 // so the badge only marks source/test changes that can affect the preview.
-const tactileDirty = Boolean(gitValue([
-  "status",
-  "--porcelain",
-  "--untracked-files=no",
-  "--",
-  "src",
-  "tests",
-  "public",
-  "vite.config.mjs",
-], ""));
+const tactileDirty = Boolean(
+  gitValue(["status", "--porcelain", "--untracked-files=no", "--", "src", "tests", "public", "vite.config.mjs"], ""),
+);
 
 export default defineConfig({
   define: {

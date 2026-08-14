@@ -3,10 +3,10 @@
 The production build now enforces the Wave 3 entry-asset budgets through
 `scripts/check-bundle-budget.mjs`.
 
-| Entry asset | Gzip result | Budget | Result |
-| --- | ---: | ---: | --- |
-| Vite entry JavaScript | 61,523 bytes | 112,640 bytes | Pass |
-| Vite entry CSS | 18,298 bytes | 18,432 bytes | Pass |
+| Entry asset           |  Gzip result |        Budget | Result |
+| --------------------- | -----------: | ------------: | ------ |
+| Vite entry JavaScript | 61,523 bytes | 112,640 bytes | Pass   |
+| Vite entry CSS        | 18,298 bytes |  18,432 bytes | Pass   |
 
 The split build also emits independent chunks for Settings, Files, hover tips,
 inactive object renderers, and JSZip. SpatialLayer remains eager because it is

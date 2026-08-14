@@ -168,7 +168,8 @@ test("an in-flight acknowledgement from a replaced workspace session is ignored"
   const secondWorkspace = createBlankWorkspace({ id: "e04-session-second" });
   let opened = 0;
   const invoke = async (command) => {
-    if (command === TAURI_COMMANDS.openWorkspace) return { workspace: opened++ === 0 ? firstWorkspace : secondWorkspace };
+    if (command === TAURI_COMMANDS.openWorkspace)
+      return { workspace: opened++ === 0 ? firstWorkspace : secondWorkspace };
     if (command === TAURI_COMMANDS.applyDelta) return pending.promise;
     if (command === TAURI_COMMANDS.closeWorkspace) return null;
     throw new Error(`Unexpected command ${command}`);

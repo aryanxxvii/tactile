@@ -4,12 +4,12 @@ Date: 2026-08-14
 
 ## Packet evidence
 
-| Packet | Result | Evidence |
-| --- | --- | --- |
-| E01 | Implemented | Tauri 2 shell, strict production/loopback development CSP, zero-permission main capability, native title synchronization, and scaffold security tests. |
-| E02 | Implemented | Record-oriented recovery scaffold plus a private `rusqlite` WAL service with durable metadata, transactional records, acknowledged commits, checkpoints, and typed path-safe errors. |
-| E03 | Implemented | Streaming v4 JSON/CSV/ZIP import/export, ZIP safety limits, unknown-field preservation, direct metadata lookup, staged extraction, cancellation/progress, and native asset streaming. |
-| E04 | Implemented | Typed Tauri IPC contracts, compact deltas, stale-ack rejection, runtime detection/factory, native asset handles, and dialog boundary tests. |
+| Packet | Result      | Evidence                                                                                                                                                                              |
+| ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E01    | Implemented | Tauri 2 shell, strict production/loopback development CSP, zero-permission main capability, native title synchronization, and scaffold security tests.                                |
+| E02    | Implemented | Record-oriented recovery scaffold plus a private `rusqlite` WAL service with durable metadata, transactional records, acknowledged commits, checkpoints, and typed path-safe errors.  |
+| E03    | Implemented | Streaming v4 JSON/CSV/ZIP import/export, ZIP safety limits, unknown-field preservation, direct metadata lookup, staged extraction, cancellation/progress, and native asset streaming. |
+| E04    | Implemented | Typed Tauri IPC contracts, compact deltas, stale-ack rejection, runtime detection/factory, native asset handles, and dialog boundary tests.                                           |
 
 ## Checks run
 

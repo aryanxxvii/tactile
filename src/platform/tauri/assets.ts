@@ -43,9 +43,7 @@ export function stripAssetBinary(record: Record<string, unknown> = {}): TauriAss
 }
 
 function recordOf(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 function stringValue(value: unknown): string | undefined {

@@ -52,7 +52,9 @@ async function cellValue(page, address) {
   return (await cellLocator(page, address).locator(".cell-value").textContent()).trim();
 }
 
-test("Delete clears a selected range, including an embedded source cell, without deleting its object", async ({ page }) => {
+test("Delete clears a selected range, including an embedded source cell, without deleting its object", async ({
+  page,
+}) => {
   await page.goto("/");
   await importWorkspace(page);
 
