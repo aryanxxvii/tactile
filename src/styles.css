@@ -4803,6 +4803,13 @@ kbd {
 .tactile-app.settings-open .app-bottom-bar {
   pointer-events: none;
   cursor: default;
+  /* Keep the dock's paper surface opaque while the settings scrim is above
+     the workspace; otherwise transparent separator gaps reveal the scrim and
+     make the rules appear to change color. */
+  z-index: 240;
+  opacity: 1;
+  filter: none;
+  background: var(--paper);
 }
 
 .app-bottom-bar[data-interaction-blocked="true"] .app-dock {
