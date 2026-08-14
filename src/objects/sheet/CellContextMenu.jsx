@@ -195,12 +195,24 @@ export function CellContextMenu({
 
   useEffect(() => {
     if (!menu) return undefined;
+    let cancelled = false;
+    let focusFrame = 0;
+    const focusMenu = () => {
+      if (cancelled) return;
+      if (menuRef.current) {
+        focusFirstMenuItem(menuRef.current);
+        return;
+      }
+      focusFrame = window.requestAnimationFrame(focusMenu);
+    };
     const handlePointerDown = (event) => {
       if (!menuRef.current?.contains(event.target)) onClose();
     };
     window.addEventListener("pointerdown", handlePointerDown);
-    window.requestAnimationFrame(() => focusFirstMenuItem(menuRef.current));
+    focusFrame = window.requestAnimationFrame(focusMenu);
     return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(focusFrame);
       window.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [menu, onClose]);
