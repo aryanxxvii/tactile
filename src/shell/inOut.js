@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { materializeCell } from "../model.js";
 import { coordinatesFromAddress } from "../sheet/coordinates.js";
 import {
@@ -250,7 +250,7 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
 
   workspaceRef.current = workspace;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     layersRef.current = layers;
   }, [layers]);
 
