@@ -2,13 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconAdjustments,
   IconBrackets,
+  IconCheck,
+  IconCopy,
   IconDownload,
   IconFileTypeCsv,
+  IconFolderOpen,
   IconKeyboard,
   IconLayoutList,
   IconMoon,
   IconPalette,
   IconPlus,
+  IconSparkles,
   IconSun,
   IconTrash,
   IconUpload,
@@ -18,6 +22,10 @@ import { allThemes } from "../themes.js";
 import { ColorControl } from "./controls/ColorControl.jsx";
 import { SelectMenu } from "./controls/SelectMenu.jsx";
 import { Switch } from "./controls/Switch.jsx";
+import {
+  WORKSPACE_AUTHORING_PROMPT,
+  WORKSPACE_AUTHORING_PROMPT_VERSION,
+} from "../workspaceAuthoringPrompt.js";
 
 const colorTokens = [
   ["appBackground", "App background"],
@@ -104,12 +112,15 @@ export function SettingsPanel({
   onExportTheme,
   onUpdateSettings,
   onExportWorkspace,
-  onImportWorkspace,
+  onChangeWorkspaceFolder,
+  onOpenWorkspaceFolder,
+  onOpenGuide,
   onClose,
 }) {
   const [tab, setTab] = useState("appearance");
   const [themeFilter, setThemeFilter] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [authoringPromptCopied, setAuthoringPromptCopied] = useState(false);
   const themeInputRef = useRef(null);
   const panelRef = useRef(null);
   const closeRef = useRef(null);
@@ -125,6 +136,24 @@ export function SettingsPanel({
   const updateToken = (token, value) => {
     if (!editable) return;
     onUpdateTheme(activeTheme.id, { tokens: { [token]: value } });
+  };
+
+  const copyAuthoringPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(WORKSPACE_AUTHORING_PROMPT);
+    } catch {
+      const fallback = document.createElement("textarea");
+      fallback.value = WORKSPACE_AUTHORING_PROMPT;
+      fallback.setAttribute("readonly", "true");
+      fallback.style.position = "fixed";
+      fallback.style.opacity = "0";
+      document.body.appendChild(fallback);
+      fallback.select();
+      document.execCommand("copy");
+      fallback.remove();
+    }
+    setAuthoringPromptCopied(true);
+    window.setTimeout(() => setAuthoringPromptCopied(false), 1800);
   };
 
   useEffect(() => {
@@ -337,9 +366,44 @@ export function SettingsPanel({
               <p>A Tactile workspace is a portable bundle. Tiles are sparse CSV files; Markdown, PDFs, images, video, HTML and SVG stay separate and readable.</p>
               <pre><code>workspace.json{"\n"}objects/home/sheet.csv{"\n"}objects/text-…/content.md{"\n"}themes/your-theme.json</code></pre>
               <div className="files-actions">
-                <button type="button" onClick={onExportWorkspace}><IconDownload size={15} /> Export .tactile</button>
-                <button type="button" onClick={onImportWorkspace}><IconUpload size={15} /> Import local file</button>
+                <button type="button" onClick={onExportWorkspace}><IconDownload size={15} /> Export .zip</button>
+                {onOpenGuide ? <button type="button" onClick={onOpenGuide}><IconSparkles size={15} /> Open getting started guide</button> : null}
               </div>
+              <section className="workspace-authoring-prompt" aria-labelledby="workspace-authoring-prompt-title">
+                <div className="workspace-authoring-prompt-heading">
+                  <div>
+                    <span>For AI-assisted setup</span>
+                    <h4 id="workspace-authoring-prompt-title">Workspace authoring prompt</h4>
+                    <p>Give this to an LLM to plan a Tactile workspace and return a validated v4 payload.</p>
+                  </div>
+                  <code>{WORKSPACE_AUTHORING_PROMPT_VERSION}</code>
+                </div>
+                <textarea
+                  className="workspace-authoring-prompt-field"
+                  aria-label="Workspace authoring prompt"
+                  value={WORKSPACE_AUTHORING_PROMPT}
+                  readOnly
+                  rows={12}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <button className="workspace-authoring-prompt-copy" type="button" onClick={copyAuthoringPrompt}>
+                  {authoringPromptCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                  {authoringPromptCopied ? "Copied" : "Copy prompt"}
+                </button>
+              </section>
+              {onChangeWorkspaceFolder ? (
+                <div className="native-workspace-settings">
+                  <div className="native-workspace-heading">
+                    <IconFolderOpen size={18} stroke={1.5} />
+                    <span><strong>Home directory</strong><small>Every change is saved here as readable local files.</small></span>
+                  </div>
+                  <p className="native-workspace-location"><span>{settings.nativeWorkspacePath || "No home directory selected"}</span></p>
+                  <div className="native-workspace-actions">
+                    <button type="button" onClick={onChangeWorkspaceFolder}><IconFolderOpen size={14} /> Change folder</button>
+                    {settings.nativeWorkspacePath ? <button type="button" onClick={onOpenWorkspaceFolder}><IconFolderOpen size={14} /> Open in file explorer</button> : null}
+                  </div>
+                </div>
+              ) : null}
               <label className="settings-toggle">
                 <span><strong>Reduced motion</strong><small>Keep navigation spatial, shorten all movement.</small></span>
                 <Switch

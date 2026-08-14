@@ -539,7 +539,7 @@ export class BrowserPersistenceAdapter {
       const packageData = buildPortableV4Package(withAssets);
       return {
         format: "zip",
-        fileName: `${workspace.name || "tactile"}.tactile`,
+        fileName: `${workspace.name || "tactile"}.zip`,
         mime: "application/zip",
         data: await portablePackageToZip(packageData),
       };

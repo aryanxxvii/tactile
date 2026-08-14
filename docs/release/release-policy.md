@@ -1,6 +1,6 @@
 # Release policy
 
-Tactile is currently a `0.0.0` pre-release in the repository. This policy defines the handoff gates; it does not declare a release owner, a supported platform promise, a project license, a signing identity, or a publication channel that the repository does not evidence.
+Tactile `v0.1.0` is the first public source release. The repository also contains a tag-triggered packaging workflow for Windows MSI, macOS DMG, and Linux AppImage/DEB artifacts. This policy does not declare a project license, signing identity, notarization status, or a supported-platform promise beyond the artifacts and evidence attached to a specific release.
 
 ## Required release inputs
 
@@ -31,7 +31,7 @@ npm audit --audit-level=high
 node docs/release/generate-inventory.mjs
 ```
 
-The native Windows/macOS/Ubuntu smoke matrix must run before claiming native release readiness. The current Wave 4 evidence records the SQLite/WAL service as implemented, while cross-platform smoke and full Tauri persistence integration remain open.
+The native Windows/macOS/Ubuntu smoke matrix must run before claiming native release readiness. The current Wave 4 evidence records the SQLite/WAL service as implemented, while cross-platform smoke and full Tauri persistence integration remain open. The `v0.1.0` release workflow packages all three target families, but packaging is not the same as signed, notarized, or fully smoke-tested native support.
 
 ## Supply-chain and license posture
 

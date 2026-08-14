@@ -34,7 +34,7 @@ For the native Tauri app, allow the user to choose a real workspace folder and
 use it as the canonical home directory instead of requiring a single
 `.tactile` archive as the primary working format.
 
-Possible layout:
+Implemented layout:
 
 ```text
 My Workspace/
@@ -48,9 +48,10 @@ My Workspace/
 ```
 
 The runtime directory can contain SQLite/WAL/recovery data, while user-facing
-content remains inspectable and portable. Keep `.tactile` export as a
-single-file backup/share format. The browser preview will still need a
-permission-based folder API or its existing IndexedDB fallback.
+content remains inspectable and portable. The native app exports the same
+portable workspace as a `.zip` backup/share file; `.tactile` is no longer
+offered in the user interface. The browser preview still uses its existing
+IndexedDB fallback.
 
 ## 3. Native first-run “Getting started” guide
 

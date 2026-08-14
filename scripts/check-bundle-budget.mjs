@@ -20,7 +20,9 @@ const sizes = {
 };
 const budgets = {
   javascript: 110 * 1024,
-  css: 18 * 1024,
+  // The native onboarding surface is part of the shipped entry CSS. Keep a
+  // compact ceiling while allowing its complete Paper layout and transitions.
+  css: 20 * 1024,
 };
 
 console.log(`Bundle budget: entry JS ${sizes.javascript} / ${budgets.javascript} gzip bytes`);

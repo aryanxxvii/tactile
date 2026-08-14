@@ -4,7 +4,6 @@ import {
   IconDots,
   IconDownload,
   IconHome,
-  IconUpload,
 } from "@tabler/icons-react";
 import { focusFirstMenuItem, handleMenuKeyDown } from "./controls/menuKeyboard.js";
 
@@ -18,7 +17,7 @@ function WorkspaceMenuItem({ icon: Icon, label, detail, disabled, onClick }) {
   );
 }
 
-export function WorkspaceMenu({ isHome, exportState, onSetHome, onExport, onImport }) {
+export function WorkspaceMenu({ isHome, exportState, onSetHome, onExport }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -87,11 +86,10 @@ export function WorkspaceMenu({ isHome, exportState, onSetHome, onExport, onImpo
           <WorkspaceMenuItem
             icon={IconDownload}
             label={exportState === "exporting" ? "Packing files…" : "Export workspace"}
-            detail=".tactile"
+            detail=".zip"
             disabled={exportState === "exporting"}
             onClick={invoke(onExport)}
           />
-          <WorkspaceMenuItem icon={IconUpload} label="Import workspace" detail="local file" onClick={invoke(onImport)} />
         </div>
       ) : null}
     </div>

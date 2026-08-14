@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 import { preloadObjectRenderer } from "../../objectRegistry.jsx";
 import { formatFormulaResult } from "../../../sheet/formulas.js";
 import { formatCellValue } from "../../../sheet/formatting.js";
-import { cellAddress, cellId, columnLabel } from "../../../sheet/coordinates.js";
+import { cellAddress, cellId, columnLabel, coordinatesFromAddress } from "../../../sheet/coordinates.js";
 import { normalizeRange } from "../../../sheet/ranges.js";
 import { conditionalToneForCoordinates, compileConditionalRules } from "./conditionalRuleProjection.js";
 import { EmbeddedCellSlot, SheetCellSlot } from "./SheetCellSlot.jsx";
@@ -36,9 +36,12 @@ export function SheetGridCanvas({
   showActiveColumnContext,
   selectedCoordinates,
   formulaEditingCellId,
+  inlineEditingCellId,
   formulaReferenceRange,
   onSelect,
   onSelectRange,
+  onToggleAxisSelection,
+  onDeleteSelectedText,
   onSelectionStart,
   onSelectionMove,
   onFormulaReferenceStart,
@@ -69,6 +72,30 @@ export function SheetGridCanvas({
     () => normalizeRange(formulaReferenceRange?.anchor, formulaReferenceRange?.focus),
     [formulaReferenceRange?.anchor, formulaReferenceRange?.focus],
   );
+
+  const selectAxis = useCallback((event, axis, index) => {
+    const anchorCoordinates = coordinatesFromAddress(normalizedSelection?.anchor) || selectedCoordinates;
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey) {
+      event.preventDefault();
+      onToggleAxisSelection?.(axis, index);
+      onRestoreSelectionScroll?.();
+      return;
+    }
+
+    const anchorIndex = axis === "row" ? anchorCoordinates.row : anchorCoordinates.column;
+    const startIndex = event.shiftKey ? anchorIndex : index;
+    const startAddress = axis === "row"
+      ? cellAddress(startIndex, 0)
+      : cellAddress(0, startIndex);
+    const endAddress = axis === "row"
+      ? cellAddress(index, object.columns - 1)
+      : cellAddress(object.rows - 1, index);
+    const activeAddress = axis === "row"
+      ? cellAddress(index, selectedCoordinates.column)
+      : cellAddress(selectedCoordinates.row, index);
+    onSelectRange?.(startAddress, endAddress, activeAddress);
+    onRestoreSelectionScroll?.();
+  }, [normalizedSelection?.anchor, object.columns, object.rows, onRestoreSelectionScroll, onSelectRange, onToggleAxisSelection, selectedCoordinates]);
 
   const embeddedTypes = useMemo(
     () => [...new Set(
@@ -190,14 +217,11 @@ export function SheetGridCanvas({
                 onContextMenu(event, cellContextFor(object, 0, column));
               }}
               key={`column-${column}`}
-              onClick={() => {
-                onSelectRange?.(cellAddress(0, column), cellAddress(object.rows - 1, column), cellAddress(selectedCoordinates.row, column));
-                onRestoreSelectionScroll();
-              }}
+              onClick={(event) => selectAxis(event, "column", column)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  onSelectRange?.(cellAddress(0, column), cellAddress(object.rows - 1, column), cellAddress(selectedCoordinates.row, column));
+                  selectAxis(event, "column", column);
                 }
               }}
               style={{
@@ -275,14 +299,11 @@ export function SheetGridCanvas({
                 onContextMenu(event, cellContextFor(object, row, 0));
               }}
               key={`row-${row}`}
-              onClick={() => {
-                onSelectRange?.(cellAddress(row, 0), cellAddress(row, object.columns - 1), cellAddress(row, selectedCoordinates.column));
-                onRestoreSelectionScroll();
-              }}
+              onClick={(event) => selectAxis(event, "row", row)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  onSelectRange?.(cellAddress(row, 0), cellAddress(row, object.columns - 1), cellAddress(row, selectedCoordinates.column));
+                  selectAxis(event, "row", row);
                 }
               }}
               style={{
@@ -377,12 +398,14 @@ export function SheetGridCanvas({
               inSelectedRow={showActiveRowContext && selectedCoordinates.row === row}
               inSelectedColumn={showActiveColumnContext && selectedCoordinates.column === column}
               formulaEditingCellId={formulaEditingCellId}
+              inlineEditingCellId={inlineEditingCellId}
               onOpenObject={onOpenObject}
               dropTarget={dropTargetAddress === address}
               onObjectDragOver={onObjectDragOver}
               onObjectDragLeave={onObjectDragLeave}
               onObjectDrop={onObjectDrop}
               onSelect={onSelect}
+              onDeleteSelectedText={onDeleteSelectedText}
               onSelectionStart={onSelectionStart}
               onSelectionMove={onSelectionMove}
               onFormulaReferenceStart={onFormulaReferenceStart}

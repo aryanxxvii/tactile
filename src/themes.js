@@ -68,7 +68,7 @@ function builtInTheme(id, name, description, tokens = {}) {
 export const BUILT_IN_THEMES = [
   builtInTheme(
     "paper-public",
-    "Public Paper",
+    "Tactile Day",
     "Warm ivory, rust focus, Public Sans and Lilex.",
   ),
   builtInTheme(
@@ -245,7 +245,7 @@ export const BUILT_IN_THEMES = [
   ),
   builtInTheme(
     "one-dark",
-    "One Dark",
+    "Tactile Night",
     "Atom's graphite workspace with the familiar One Dark blue.",
     {
       ...darkDepthTokens,

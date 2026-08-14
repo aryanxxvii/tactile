@@ -96,7 +96,6 @@ export function ObjectHeader({
             exportState={workspaceActions.exportState}
             onSetHome={() => workspaceActions.onSetHome(object.id)}
             onExport={workspaceActions.onExport}
-            onImport={workspaceActions.onImport}
           />
         ) : null}
       </div>

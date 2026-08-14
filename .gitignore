@@ -4,5 +4,7 @@ dist/
 *.xlsx
 audits/
 .cache/
+coverage/
+test-results-*/
 *.tsbuildinfo
 test-results/

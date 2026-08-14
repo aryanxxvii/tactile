@@ -239,6 +239,65 @@ test("does not tint the perpendicular axis for whole-row or whole-column selecti
     .toEqual({ activeColumn: false, activeRow: true, selectedRowCell: true, perpendicularCell: false });
 });
 
+test("supports Shift ranges and Ctrl multi-selection for whole rows and columns", async ({ page }) => {
+  await page.goto("/");
+  await cellLocator(page, "B2").click();
+
+  await page.getByRole("columnheader", { name: "Select column D" }).click({ modifiers: ["Shift"] });
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        active: document.querySelector('.sheet-cell[aria-selected="true"]')?.dataset.cellAddress || null,
+        selectedColumns: ["B1", "C1", "D1"].every((address) =>
+          document.querySelector(`[data-cell-address="${address}"]`)?.classList.contains("is-in-range"),
+        ),
+        outsideColumn: document.querySelector('[data-cell-address="A1"]')?.classList.contains("is-in-range"),
+      })),
+    )
+    .toEqual({ active: "D2", selectedColumns: true, outsideColumn: false });
+
+  await page.getByRole("rowheader", { name: "Select row 5", exact: true }).click({ modifiers: ["Control"] });
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        preservedColumn: ["B1", "C4", "D8"].every((address) =>
+          document.querySelector(`[data-cell-address="${address}"]`)?.classList.contains("is-multi-selected"),
+        ),
+        selectedRow: ["A5", "B5", "E5"].every((address) =>
+          document.querySelector(`[data-cell-address="${address}"]`)?.classList.contains("is-multi-selected"),
+        ),
+        outsideSelection: document.querySelector('[data-cell-address="A4"]')?.classList.contains("is-multi-selected"),
+      })),
+    )
+    .toEqual({ preservedColumn: true, selectedRow: true, outsideSelection: false });
+
+  await page.getByRole("columnheader", { name: "Select column F" }).click({ modifiers: ["Control"] });
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        selectedColumn: ["F1", "F4", "F8"].every((address) =>
+          document.querySelector(`[data-cell-address="${address}"]`)?.classList.contains("is-multi-selected"),
+        ),
+        priorSelections: ["B4", "C4", "D4", "A5"].every((address) =>
+          document.querySelector(`[data-cell-address="${address}"]`)?.classList.contains("is-multi-selected"),
+        ),
+      })),
+    )
+    .toEqual({ selectedColumn: true, priorSelections: true });
+
+  await page.getByRole("columnheader", { name: "Select column F" }).click({ modifiers: ["Control"] });
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        toggledOff: document.querySelector('[data-cell-address="F4"]')?.classList.contains("is-multi-selected"),
+        priorSelections: ["B4", "C4", "D4", "A5"].every((address) =>
+          document.querySelector(`[data-cell-address="${address}"]`)?.classList.contains("is-multi-selected"),
+        ),
+      })),
+    )
+    .toEqual({ toggledOff: false, priorSelections: true });
+});
+
 test("uses Paper selection colors in the go-to-tile address field", async ({ page }) => {
   await page.goto("/");
 
@@ -261,14 +320,14 @@ test("uses Paper selection colors in the go-to-tile address field", async ({ pag
     .not.toBe("rgba(0, 0, 0, 0)");
 });
 
-test("double-clicking a value cell focuses the formula bar without an inline editor", async ({ page }) => {
+test("double-clicking a value cell focuses an inline editor", async ({ page }) => {
   await page.goto("/");
 
   const cell = cellLocator(page, "B2");
   await cell.dblclick();
   const editor = page.locator(".formula-editor");
-  await expect(editor).toBeFocused();
-  await expect(page.locator(".cell-editor")).toHaveCount(0);
+  await expect(cell.locator(".cell-inline-editor")).toBeFocused();
+  await expect(editor).not.toBeFocused();
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -284,9 +343,9 @@ test("double-clicking a value cell focuses the formula bar without an inline edi
     )
     .toEqual({ outlineStyle: "none", afterDisplay: "block", beforeDisplay: "none" });
 
-  await editor.press("Enter");
+  await cell.locator(".cell-inline-editor").press("Enter");
   await expect(editor).toBeVisible();
-  await expect(page.locator(".cell-editor")).toHaveCount(0);
+  await expect(page.locator(".cell-inline-editor")).toHaveCount(0);
   await expect
     .poll(() =>
       page.evaluate(() => {

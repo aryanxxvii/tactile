@@ -9,16 +9,21 @@ import { useShellState } from "./shell/useShellState.js";
 import { buildFilesIndex } from "./shell/filesIndex.js";
 import { useWorkspaceCommands } from "./shell/workspaceCommands.js";
 import { reparentReasonMessage } from "./core/reparenting.js";
+import { buildPortablePackage } from "./export.js";
+import { createBlankWorkspace, normalizeWorkspace } from "./model.js";
+import { saveNativeWorkspacePath } from "./storage.js";
 import {
   cloneTheme,
   resolveTheme,
   themeSheetMetrics,
   themeStyle,
 } from "./themes.js";
+import { isTauriRuntime, resolveTauriInvoke } from "./platform/tauri/runtime.ts";
 
 const FilesPanel = lazy(() => import("./components/FilesPanel.jsx").then(({ FilesPanel: Component }) => ({ default: Component })));
 const SettingsPanel = lazy(() => import("./components/SettingsPanel.jsx").then(({ SettingsPanel: Component }) => ({ default: Component })));
 const TooltipLayer = lazy(() => import("./components/TooltipLayer.jsx").then(({ TooltipLayer: Component }) => ({ default: Component })));
+const NativeOnboarding = lazy(() => import("./components/NativeOnboarding.jsx").then(({ NativeOnboarding: Component }) => ({ default: Component })));
 
 function FilesPanelFallback({ pinned = false }) {
   return (
@@ -62,6 +67,11 @@ export function App() {
   } = workspaceState;
   const workspaceRootId = workspace.homeObjectId;
   const inOut = useInOut({ workspace, workspaceRootId, workspaceHydrated: hydrated });
+  const nativeRuntime = useMemo(() => isTauriRuntime(), []);
+  const nativeInvoke = useMemo(() => resolveTauriInvoke(), []);
+  const nativeSnapshotRef = useRef({ version: 0, pending: null, writing: false });
+  const [nativeGuideOpen, setNativeGuideOpen] = useState(false);
+  const nativeGuideShownRef = useRef(false);
   const shell = useShellState({
     schedule: inOut.schedule,
     settings: workspace.settings,
@@ -285,6 +295,143 @@ export function App() {
     document.title = `Tactile — ${currentObjectTitle}`;
   }, [currentObjectTitle]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+    window.dispatchEvent(new Event("tactile:startup-ready"));
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!nativeRuntime || !hydrated || nativeGuideShownRef.current) return;
+    nativeGuideShownRef.current = true;
+    if (!workspace.settings.onboardingComplete) {
+      if (!workspace.settings.onboardingThemeId) {
+        setActiveTheme("one-dark");
+        updateSettings({ onboardingThemeId: "one-dark" });
+      }
+      setNativeGuideOpen(true);
+    }
+  }, [hydrated, nativeRuntime, setActiveTheme, updateSettings, workspace.settings]);
+
+  useEffect(() => {
+    if (!nativeRuntime || !hydrated || !nativeInvoke || !workspace.settings.nativeWorkspacePath) return undefined;
+    const packageData = buildPortablePackage(workspace);
+    const files = Object.entries(packageData.files)
+      .filter(([filePath, contents]) => filePath !== "workspace.json" && typeof contents === "string")
+      .map(([filePath, contents]) => ({ path: filePath, contents }));
+    const pending = nativeSnapshotRef.current;
+    pending.version += 1;
+    pending.pending = {
+      version: pending.version,
+      path: workspace.settings.nativeWorkspacePath,
+      workspaceJson: JSON.stringify(workspace),
+      files,
+    };
+    const flush = async () => {
+      if (pending.writing || !pending.pending) return;
+      pending.writing = true;
+      const next = pending.pending;
+      pending.pending = null;
+      try {
+        // A single native command writes the portable text files first and
+        // replaces workspace.json last, so the selected folder is the commit
+        // point for every edit, formatting change, and keypress update.
+        await nativeInvoke("workspace_write_snapshot", next);
+      } catch {
+        // The next workspace change retries the write; the UI remains usable.
+      } finally {
+        pending.writing = false;
+        if (pending.pending) void flush();
+      }
+    };
+    void flush();
+    return undefined;
+  }, [hydrated, nativeInvoke, nativeRuntime, workspace, workspace.settings.nativeWorkspacePath]);
+
+  const finishNativeGuide = async (selectedPath = "") => {
+    const path = selectedPath || workspace.settings.nativeWorkspacePath;
+    if (path && nativeInvoke && path !== workspace.settings.nativeWorkspacePath) {
+      await nativeInvoke("workspace_prepare_directory", { path });
+    }
+    if (path) {
+      saveNativeWorkspacePath(path);
+      try {
+        await nativeInvoke?.("workspace_set_last_path", { path });
+      } catch {
+        // Keep the browser marker as a compatibility fallback while an older
+        // native build is still running during an update.
+      }
+    }
+    updateSettings({
+      onboardingComplete: true,
+      onboardingThemeId: workspace.settings.onboardingThemeId || "one-dark",
+      ...(path ? { nativeWorkspacePath: path } : {}),
+    });
+    setNativeGuideOpen(false);
+  };
+
+  const chooseNativeFolder = async () => {
+    if (!nativeInvoke) return;
+    const result = await nativeInvoke("workspace_choose_directory", {});
+    const path = typeof result === "string" ? result : result?.path;
+    return path || "";
+  };
+
+  const changeNativeWorkspaceFolder = async () => {
+    if (!nativeInvoke) return;
+    const path = await chooseNativeFolder();
+    if (!path || path === workspace.settings.nativeWorkspacePath) return;
+    try {
+      const result = await nativeInvoke("workspace_read_snapshot", { path });
+      const raw = typeof result === "string" ? result : result?.contents;
+      let nextWorkspace;
+      if (raw) {
+        try {
+          nextWorkspace = normalizeWorkspace(JSON.parse(raw));
+        } catch {
+          shell.showNotice("That folder has an unreadable workspace file");
+          return;
+        }
+      } else {
+        // Changing the home directory switches workspaces. An empty folder
+        // starts clean and must never inherit the current folder's objects.
+        const blank = createBlankWorkspace({ name: "Tactile" });
+        nextWorkspace = normalizeWorkspace({
+          ...blank,
+          activeThemeId: workspace.activeThemeId,
+          themes: workspace.themes,
+          settings: {
+            ...blank.settings,
+            ...workspace.settings,
+            onboardingComplete: true,
+            onboardingThemeId: workspace.settings.onboardingThemeId || "one-dark",
+            nativeWorkspacePath: path,
+          },
+        });
+      }
+      nextWorkspace = normalizeWorkspace({
+        ...nextWorkspace,
+        settings: { ...nextWorkspace.settings, nativeWorkspacePath: path },
+      });
+      await nativeInvoke("workspace_prepare_directory", { path });
+      await nativeInvoke("workspace_set_last_path", { path });
+      saveNativeWorkspacePath(path);
+      replaceWorkspace(nextWorkspace);
+      shell.showNotice("Home directory changed");
+    } catch (error) {
+      shell.showNotice(error?.message || "That folder could not be selected");
+    }
+  };
+
+  const openNativeWorkspaceFolder = async () => {
+    const path = workspace.settings.nativeWorkspacePath;
+    if (!nativeInvoke || !path) return;
+    try {
+      await nativeInvoke("workspace_open_directory", { path });
+    } catch (error) {
+      shell.showNotice(error?.message || "That folder could not be opened");
+    }
+  };
+
   const activeTheme = useMemo(
     () => resolveTheme(workspace.activeThemeId, workspace.themes),
     [workspace.activeThemeId, workspace.themes],
@@ -322,6 +469,8 @@ export function App() {
       onSelectAddress: (address) => selection.selectAddress(object.id, address),
       onSelectRange: (anchor, focus, active) => selection.selectRange(object.id, anchor, focus, active),
       onToggleMultiSelect: (address) => selection.toggleMultiSelect(object.id, address),
+      onToggleAxisSelection: (axis, index) => selection.toggleAxisSelection(object.id, axis, index),
+      onDeleteSelectedText: (event) => selection.deleteSelectedText(object.id, event),
       onUpdateObject: (patch) => updateObject(object.id, patch),
       onReparentObject: handleReparentObject,
       onUpdateCell: (cellId, patch) => updateCell(object.id, cellId, patch),
@@ -344,7 +493,6 @@ export function App() {
           shell.showNotice(`${workspace.objects[objectId]?.title || "Object"} is now the start object`);
         },
         onExport: commands.exportWorkspace,
-        onImport: commands.importWorkspace,
       },
       onBack: inOut.closeTopLayer,
       canGoBack: isTopLayer
@@ -481,8 +629,25 @@ export function App() {
             onExportTheme={commands.downloadTheme}
             onUpdateSettings={updateSettings}
             onExportWorkspace={commands.exportWorkspace}
-            onImportWorkspace={commands.importWorkspace}
+            onChangeWorkspaceFolder={nativeRuntime ? changeNativeWorkspaceFolder : undefined}
+            onOpenWorkspaceFolder={nativeRuntime ? openNativeWorkspaceFolder : undefined}
+            onOpenGuide={nativeRuntime ? () => setNativeGuideOpen(true) : undefined}
             onClose={shell.closeSettings}
+          />
+        </Suspense>
+      ) : null}
+
+      {nativeRuntime && nativeGuideOpen ? (
+        <Suspense fallback={null}>
+          <NativeOnboarding
+            activeThemeId={workspace.settings.onboardingThemeId || workspace.activeThemeId}
+            workspacePath={workspace.settings.nativeWorkspacePath}
+            onChooseTheme={(themeId) => {
+              setActiveTheme(themeId);
+              updateSettings({ onboardingThemeId: themeId });
+            }}
+            onChooseFolder={chooseNativeFolder}
+            onFinish={finishNativeGuide}
           />
         </Suspense>
       ) : null}

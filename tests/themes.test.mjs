@@ -8,7 +8,7 @@ const requestedThemeNames = new Map([
   ["catppuccin-dark", "Catppuccin Dark"],
   ["flexoki-light", "Flexoki Light"],
   ["flexoki-dark", "Flexoki Dark"],
-  ["one-dark", "One Dark"],
+  ["one-dark", "Tactile Night"],
   ["nord-dark", "Nord Dark"],
   ["vscode-dark", "VSCode Dark"],
   ["macos-light", "macOS Light"],

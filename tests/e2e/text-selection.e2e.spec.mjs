@@ -45,6 +45,7 @@ function selectionWorkspace() {
           r2c3: { id: "r2c3", address: "C2", row: 1, column: 2, value: "C2", formula: "" },
           r3c2: { id: "r3c2", address: "B3", row: 2, column: 1, value: "B3", formula: "" },
           r3c3: { id: "r3c3", address: "C3", row: 2, column: 2, value: "C3", formula: "" },
+          r4c4: { id: "r4c4", address: "D4", row: 3, column: 3, value: "fdfdfdfdfdfd", formula: "" },
         },
       },
       notes: {
@@ -177,4 +178,63 @@ test("keeps cell and range selection visuals distinct from text selection", asyn
       rangeBackgroundImage: expect.stringContaining("linear-gradient"),
       selectedTextBackground: "rgb(248, 213, 107)",
     });
+});
+
+test("deletes only the selected cell text instead of clearing the whole tile", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const cell = page.locator('[data-cell-address="D4"]').first();
+  await cell.click();
+  await cell.evaluate((element) => {
+    const value = element.querySelector(".cell-value");
+    const text = value?.firstChild;
+    if (!value || !text) throw new Error("Expected visible cell text");
+    const range = document.createRange();
+    range.setStart(text, 3);
+    range.setEnd(text, 9);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  });
+  await page.evaluate(() => document.body.focus());
+
+  await page.keyboard.press("Delete");
+
+  await expect(cell.locator(".cell-value")).toHaveText("fdfdfd");
+  await page.locator('[data-cell-address="E4"]').click();
+  await expect(cell.locator(".cell-value")).toHaveText("fdfdfd");
+  await cell.click();
+
+  await cell.evaluate((element) => {
+    const value = element.querySelector(".cell-value");
+    const text = value?.firstChild;
+    if (!value || !text) throw new Error("Expected visible cell text");
+    const range = document.createRange();
+    range.setStart(text, 2);
+    range.setEnd(text, 4);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  });
+
+  await page.keyboard.press("Backspace");
+
+  await expect(cell.locator(".cell-value")).toHaveText("fdfd");
+  await page.locator('[data-cell-address="F4"]').click();
+  await expect(cell.locator(".cell-value")).toHaveText("fdfd");
+});
+
+test("commits an emptied formula-bar draft before selecting another cell", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const cell = page.locator('[data-cell-address="D4"]').first();
+  await cell.dblclick();
+  const editor = page.locator(".formula-editor");
+  await editor.fill("draft");
+  await editor.fill("");
+  await page.locator('[data-cell-address="E4"]').click();
+
+  await expect.poll(() => cell.locator(".cell-value").textContent()).toBe(" ");
 });

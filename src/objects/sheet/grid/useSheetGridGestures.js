@@ -5,7 +5,7 @@ import { rangeLabel } from "../../../sheet/ranges.js";
 import { rangeValues } from "./useSheetGridProjection.js";
 import {
   CELL_EDIT_SEED_EVENT,
-  dispatchCellEditCommit,
+  dispatchCellEditCommitAny,
 } from "../../../components/localEditSession.js";
 
 function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, coordinate) {
@@ -304,8 +304,11 @@ export function useSheetGridGestures({
   const updateSelectionAtPoint = useCallback((event, clampToBody = false) => {
     const callbacks = gestureCallbacksRef.current;
     const point = clampToBody ? clampedPointerEvent(event) : event;
-    const address = cellAddressAtPoint(point)
-      || domCellAddressAtPoint(point, callbacks?.object?.id);
+    // Prefer the painted cell under the pointer. Geometry spans virtual slots
+    // and can otherwise advance the range while the pointer is still in the
+    // seam between two visible tile faces.
+    const address = domCellAddressAtPoint(point, callbacks?.object?.id)
+      || cellAddressAtPoint(point);
     if (address) moveSelectionGestureRef.current?.({ address });
     return address;
   }, [cellAddressAtPoint, clampedPointerEvent]);
@@ -446,8 +449,8 @@ export function useSheetGridGestures({
       }
       if (formulaReference && event?.type === "pointerup") {
         const callbacks = gestureCallbacksRef.current;
-        const address = cellAddressAtPoint(event)
-          || domCellAddressAtPoint(event, callbacks?.object?.id);
+        const address = domCellAddressAtPoint(event, callbacks?.object?.id)
+          || cellAddressAtPoint(event);
         if (address) updateFormulaReference(address);
       }
       const releaseTarget = activeGesture.captureTarget;
@@ -495,7 +498,7 @@ export function useSheetGridGestures({
     // Mouse selection should commit a value already being edited before the
     // active-cell props change. Otherwise the formula bar can reset its local
     // draft to the old canonical value before the blur commit is published.
-    dispatchCellEditCommit(event.currentTarget);
+    dispatchCellEditCommitAny(event.currentTarget);
     cancelSelectionRangeUpdate();
     // Let the browser own drags that begin on a cell's value text. A grid
     // selection gesture would otherwise capture the pointer before a partial

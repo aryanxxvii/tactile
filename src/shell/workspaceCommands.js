@@ -35,7 +35,7 @@ export function useWorkspaceCommands({
     try {
       const { downloadWorkspaceZip } = await loadPortableCommands();
       await downloadWorkspaceZip(workspace);
-      showNotice("Portable .tactile workspace exported");
+      showNotice("Portable .zip workspace exported");
     } catch (error) {
       showNotice(error?.message || "Export failed");
     } finally {

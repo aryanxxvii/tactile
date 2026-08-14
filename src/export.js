@@ -179,7 +179,7 @@ function downloadBlob(blob, fileName) {
 
 export async function downloadWorkspaceZip(workspace) {
   const blob = await workspaceToZipBlob(workspace);
-  downloadBlob(blob, `${safeFileName(workspace.name)}.tactile`);
+  downloadBlob(blob, `${safeFileName(workspace.name)}.zip`);
 }
 
 export function downloadWorkspaceJson(workspace) {

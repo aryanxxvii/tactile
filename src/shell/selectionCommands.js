@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { materializeCell, usedSheetBounds } from "../model.js";
 import { cellAddress, coordinatesFromAddress, moveAddress } from "../sheet/coordinates.js";
-import { cellIdsInRange, pasteChanges, rangeLabel, serializeRange } from "../sheet/ranges.js";
+import { cellIdsInRange, normalizeRange, pasteChanges, rangeLabel, serializeRange } from "../sheet/ranges.js";
 
 function isTypingTarget(target) {
   if (target?.dataset?.tactilePasteProxy === "true") return false;
@@ -36,6 +36,94 @@ function hasActiveSheetCell() {
 
 function isSheetNavigationTarget(target) {
   return isSheetCellTarget(target) || isGridTarget(target) || hasActiveSheetCell();
+}
+
+function textOffsetWithin(root, node, offset) {
+  if (!root || !node || (node !== root && !root.contains(node))) return null;
+  const range = document.createRange?.();
+  if (!range) return null;
+  try {
+    range.selectNodeContents(root);
+    range.setEnd(node, offset);
+    return range.toString().length;
+  } catch {
+    return null;
+  }
+}
+
+function selectedCellTextTarget(event) {
+  if (typeof window === "undefined" || typeof document === "undefined") return null;
+  const selection = window.getSelection?.();
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return null;
+  const range = selection.getRangeAt(0);
+
+  const anchorElement = selection.anchorNode?.nodeType === Node.ELEMENT_NODE
+    ? selection.anchorNode
+    : selection.anchorNode?.parentElement;
+  const focusElement = selection.focusNode?.nodeType === Node.ELEMENT_NODE
+    ? selection.focusNode
+    : selection.focusNode?.parentElement;
+  const commonAncestorElement = range.commonAncestorContainer?.nodeType === Node.ELEMENT_NODE
+    ? range.commonAncestorContainer
+    : range.commonAncestorContainer?.parentElement;
+  const cell = event.target?.closest?.(".sheet-cell")
+    || anchorElement?.closest?.(".sheet-cell")
+    || focusElement?.closest?.(".sheet-cell")
+    || commonAncestorElement?.closest?.(".sheet-cell")
+    || activeElement()?.closest?.(".sheet-cell");
+  const valueNode = cell?.querySelector?.(".cell-value");
+  if (!cell) return null;
+  if (!valueNode || !valueNode.contains(anchorElement) || !valueNode.contains(focusElement)) {
+    return { blocked: true };
+  }
+
+  const anchorOffset = textOffsetWithin(valueNode, selection.anchorNode, selection.anchorOffset);
+  const focusOffset = textOffsetWithin(valueNode, selection.focusNode, selection.focusOffset);
+  if (anchorOffset == null || focusOffset == null || anchorOffset === focusOffset) {
+    return { blocked: true };
+  }
+  return {
+    cell,
+    valueNode,
+    start: Math.min(anchorOffset, focusOffset),
+    end: Math.max(anchorOffset, focusOffset),
+    selection,
+  };
+}
+
+function deleteSelectedCellText(event, object, updateCells) {
+  const target = selectedCellTextTarget(event);
+  if (!target) return false;
+  if (target.blocked) {
+    event.preventDefault();
+    return true;
+  }
+
+  const address = target.cell.dataset.cellAddress;
+  const coordinates = coordinatesFromAddress(address);
+  const cell = coordinates ? materializeCell(object, coordinates.row, coordinates.column) : null;
+  const value = cell?.value == null ? "" : String(cell.value);
+  const renderedValue = target.valueNode.textContent || "";
+
+  // Formula results, formatted values, and embedded labels do not map
+  // cleanly back to a plain text slice. Consume the key rather than allowing
+  // a partial browser selection to fall through to whole-cell clearing.
+  if (!cell || cell.embed || cell.formula || value !== renderedValue) {
+    event.preventDefault();
+    return true;
+  }
+
+  event.preventDefault();
+  updateCells(object.id, [{
+    cellId: cell.id,
+    patch: {
+      value: `${value.slice(0, target.start)}${value.slice(target.end)}`,
+      formula: "",
+    },
+  }], "text-edit");
+  target.selection.removeAllRanges();
+  focusSheetCell(object.id, address);
+  return true;
 }
 
 function focusSheetCell(objectId, address, attempt = 0) {
@@ -157,6 +245,60 @@ export function useSelectionCommands({
     setRangeByObject(nextRanges);
     setMultiSelectedByObject(nextMultiSelected);
   }, []);
+
+  const toggleAxisSelection = useCallback((objectId, axis, index) => {
+    const object = workspace.objects[objectId];
+    if (object?.type !== "sheet") return;
+    const activeAddress = selectedByObjectRef.current[objectId] || "A1";
+    const currentAddresses = new Set(multiSelectedByObjectRef.current[objectId] || []);
+    if (!currentAddresses.size) {
+      const currentRange = rangeByObjectRef.current[objectId];
+      const normalizedCurrentRange = normalizeRange(currentRange?.anchor, currentRange?.focus);
+      if (normalizedCurrentRange) {
+        for (let row = normalizedCurrentRange.rowStart; row <= normalizedCurrentRange.rowEnd; row += 1) {
+          for (let column = normalizedCurrentRange.columnStart; column <= normalizedCurrentRange.columnEnd; column += 1) {
+            currentAddresses.add(cellAddress(row, column));
+          }
+        }
+      }
+      if (!currentAddresses.size) currentAddresses.add(activeAddress);
+    }
+    const axisAddresses = [];
+    if (axis === "row") {
+      for (let column = 0; column < object.columns; column += 1) {
+        axisAddresses.push(cellAddress(index, column));
+      }
+    } else if (axis === "column") {
+      for (let row = 0; row < object.rows; row += 1) {
+        axisAddresses.push(cellAddress(row, index));
+      }
+    } else {
+      return;
+    }
+
+    const axisIsSelected = axisAddresses.every((address) => currentAddresses.has(address));
+    axisAddresses.forEach((address) => {
+      if (axisIsSelected) currentAddresses.delete(address);
+      else currentAddresses.add(address);
+    });
+    if (!currentAddresses.size) currentAddresses.add(activeAddress);
+
+    const nextSelected = { ...selectedByObjectRef.current, [objectId]: activeAddress };
+    const nextRanges = {
+      ...rangeByObjectRef.current,
+      [objectId]: { anchor: activeAddress, focus: activeAddress },
+    };
+    const nextMultiSelected = {
+      ...multiSelectedByObjectRef.current,
+      [objectId]: [...currentAddresses],
+    };
+    selectedByObjectRef.current = nextSelected;
+    rangeByObjectRef.current = nextRanges;
+    multiSelectedByObjectRef.current = nextMultiSelected;
+    setSelectedByObject(nextSelected);
+    setRangeByObject(nextRanges);
+    setMultiSelectedByObject(nextMultiSelected);
+  }, [workspace.objects]);
 
   const openSelectedEmbeddedObject = useCallback(() => {
     const activeLayer = layers[layers.length - 1];
@@ -327,6 +469,12 @@ export function useSelectionCommands({
     clearCells(object.id, cellIdsInRange(selection));
   }, [clearCells, layers, selectedCellFor, workspace.objects]);
 
+  const deleteSelectedText = useCallback((objectId, event) => {
+    const object = workspace.objects[objectId];
+    if (object?.type !== "sheet") return false;
+    return deleteSelectedCellText(event, object, updateCells);
+  }, [updateCells, workspace.objects]);
+
   const selectUsedSheet = useCallback(() => {
     const activeLayer = layers[layers.length - 1];
     const object = workspace.objects[activeLayer.objectId];
@@ -396,6 +544,11 @@ export function useSelectionCommands({
       closeTopLayer();
       return;
     }
+    const activeLayer = layers[layers.length - 1];
+    const activeObject = workspace.objects[activeLayer?.objectId];
+    if ((event.key === "Delete" || event.key === "Backspace")
+      && activeObject?.type === "sheet"
+      && deleteSelectedCellText(event, activeObject, updateCells)) return;
     if ((event.key === "Delete" || event.key === "Backspace") && isGridSurface(event.target)) {
       event.preventDefault();
       clearSelectedCell();
@@ -415,7 +568,7 @@ export function useSelectionCommands({
       event.preventDefault();
       moveSelection(0, 1, event.shiftKey);
     }
-  }, [clearSelectedCell, clipboardSelectedCell, moveSelection, openSelectedEmbeddedObject, redo, selectUsedSheet, undo]);
+  }, [clearSelectedCell, clipboardSelectedCell, layers, moveSelection, openSelectedEmbeddedObject, redo, selectUsedSheet, undo, updateCells, workspace.objects]);
 
   return {
     selectedByObject,
@@ -426,10 +579,12 @@ export function useSelectionCommands({
     selectAddress,
     selectRange,
     toggleMultiSelect,
+    toggleAxisSelection,
     openSelectedEmbeddedObject,
     moveSelection,
     clipboardSelectedCell,
     clearSelectedCell,
+    deleteSelectedText,
     handlePaste,
     selectUsedSheet,
     handleKeyboard,

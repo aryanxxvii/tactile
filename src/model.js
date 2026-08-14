@@ -343,6 +343,9 @@ export function normalizeWorkspace(input) {
       reduceMotion: false,
       openSingleClick: "floating",
       openDoubleClick: "full",
+      onboardingComplete: false,
+      onboardingThemeId: "",
+      nativeWorkspacePath: "",
       ...(input.settings || {}),
     },
   };

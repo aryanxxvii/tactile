@@ -37,7 +37,7 @@ test("centers the compact formatting controls without a visible section label", 
   await expect(page.getByRole("button", { name: "Remove bold", exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("keeps cells selection-only and routes deliberate edits through the formula bar", async ({ page }) => {
+test("edits deliberate worksheet input inside the active cell", async ({ page }) => {
   await page.goto("/");
 
   const cell = page.locator('.sheet-cell[data-cell-address="B2"]');
@@ -45,19 +45,21 @@ test("keeps cells selection-only and routes deliberate edits through the formula
   await cell.click();
   await cell.dblclick();
 
-  await expect(page.locator(".cell-editor")).toHaveCount(0);
-  await expect(editor).toBeFocused();
+  const inlineEditor = cell.locator(".cell-inline-editor");
+  await expect(inlineEditor).toBeFocused();
+  await expect(editor).not.toBeFocused();
   await expect(cell).toHaveAttribute("aria-selected", "true");
 
-  await editor.fill("Edited from the formula bar");
-  await expect(cell.locator(".cell-value")).toHaveText("Edited from the formula bar");
+  await inlineEditor.fill("Edited in the active cell");
+  await expect(inlineEditor).toHaveValue("Edited in the active cell");
+  await inlineEditor.press("Enter");
 
   const emptyCell = page.locator('.sheet-cell[data-cell-address="C20"]');
   await emptyCell.click();
   await emptyCell.press("x");
-  await expect(page.locator(".cell-editor")).toHaveCount(0);
-  await expect(editor).toBeFocused();
-  await expect(editor).toHaveValue("x");
+  await expect(emptyCell.locator(".cell-inline-editor")).toBeFocused();
+  await expect(editor).not.toBeFocused();
+  await expect(emptyCell.locator(".cell-inline-editor")).toHaveValue("x");
 });
 
 test("shows formula hints in the formula bar and inserts a clicked cell reference", async ({ page }) => {

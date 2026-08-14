@@ -22,9 +22,12 @@ export function SheetGrid({
   selectionRange,
   multiSelectedAddresses = [],
   formulaEditingCellId,
+  inlineEditingCellId,
   onSelect,
   onSelectRange,
   onToggleMultiSelect,
+  onToggleAxisSelection,
+  onDeleteSelectedText,
   onFocusFormulaBar,
   onCellChange,
   onCellsChange,
@@ -45,6 +48,8 @@ export function SheetGrid({
   const stableOnSelect = useLatestCallback(onSelect);
   const stableOnSelectRange = useLatestCallback(onSelectRange);
   const stableOnToggleMultiSelect = useLatestCallback(onToggleMultiSelect);
+  const stableOnToggleAxisSelection = useLatestCallback(onToggleAxisSelection);
+  const stableOnDeleteSelectedText = useLatestCallback(onDeleteSelectedText);
   const stableOnFocusFormulaBar = useLatestCallback(onFocusFormulaBar);
   const stableOnCellChange = useLatestCallback(onCellChange);
   const stableOnCellsChange = useLatestCallback(onCellsChange);
@@ -156,9 +161,12 @@ export function SheetGrid({
         showActiveColumnContext={projection.showActiveColumnContext}
         selectedCoordinates={projection.selectedCoordinates}
         formulaEditingCellId={formulaEditingCellId}
+        inlineEditingCellId={inlineEditingCellId}
         formulaReferenceRange={gestures.formulaReferenceRange}
         onSelect={stableOnSelect}
         onSelectRange={stableOnSelectRange}
+        onToggleAxisSelection={stableOnToggleAxisSelection}
+        onDeleteSelectedText={stableOnDeleteSelectedText}
         onSelectionStart={gestures.startSelection}
         onSelectionMove={gestures.moveSelectionGesture}
         onFormulaReferenceStart={gestures.startFormulaReference}

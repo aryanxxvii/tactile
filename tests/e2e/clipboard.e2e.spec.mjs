@@ -318,14 +318,14 @@ test("pasting a copied whole column preserves all 256 rows", async ({ page }) =>
     });
 });
 
-test("double-click keeps editing in the formula bar instead of creating an inline editor", async ({ page }) => {
+test("double-click edits in the active cell instead of the formula bar", async ({ page }) => {
   await page.goto("/");
   await importClipboardWorkspace(page);
 
   const cell = cellLocator(page, "B2");
   await cell.dblclick();
-  await expect(cell.locator(".cell-editor")).toHaveCount(0);
-  await expect(page.locator(".formula-editor")).toBeFocused();
+  await expect(cell.locator(".cell-inline-editor")).toBeFocused();
+  await expect(page.locator(".formula-editor")).not.toBeFocused();
 });
 
 test("square brackets can be entered in a tile and Ctrl+] opens its active-cell menu", async ({ page }) => {

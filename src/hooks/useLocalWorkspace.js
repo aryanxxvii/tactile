@@ -26,9 +26,19 @@ import {
 import { loadWorkspace, loadWorkspaceCache, saveWorkspace } from "../storage.js";
 import { createWave2Shadow } from "../core/engine/shadow.js";
 import { recordCellChanges } from "../objects/sheet/grid/cellChangeJournal.js";
+import { isTauriRuntime } from "../platform/tauri/runtime.ts";
 
 function initialWorkspace() {
-  return normalizeWorkspace(loadWorkspaceCache() || createBlankWorkspace());
+  const cached = loadWorkspaceCache();
+  const workspace = normalizeWorkspace(cached || createBlankWorkspace());
+  if (isTauriRuntime() && !cached) {
+    return normalizeWorkspace({
+      ...workspace,
+      activeThemeId: "one-dark",
+      settings: { ...workspace.settings, onboardingThemeId: "one-dark" },
+    });
+  }
+  return workspace;
 }
 
 function touch(workspace, objects, repairTopology = false) {

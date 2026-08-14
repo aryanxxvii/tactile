@@ -1,0 +1,368 @@
+.native-guide-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--ink);
+  background-color: var(--app-background);
+  transition:
+    background-color 360ms ease,
+    color 360ms ease;
+  animation: native-guide-layer-in 180ms ease-out both;
+}
+
+.native-guide-scrim {
+  display: none;
+}
+
+.native-guide {
+  position: relative;
+  width: min(720px, 100%);
+  min-height: 0;
+  overflow: hidden;
+  padding: 24px 28px 26px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: color 360ms ease;
+  animation: native-guide-panel-in 260ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.native-guide-steps {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 44px;
+  transition: color 360ms ease;
+}
+.native-guide-steps > i {
+  width: 38px;
+  height: 1px;
+  background: var(--line);
+}
+.native-guide-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--faint);
+}
+.native-guide-step span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font: 600 11px var(--mono-font);
+}
+.native-guide-step small {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.native-guide-step.is-active {
+  color: var(--ink);
+}
+.native-guide-step.is-active span,
+.native-guide-step.is-complete span {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.native-guide-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+.native-guide-content.is-forward {
+  animation: native-guide-page-in-forward 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+.native-guide-content.is-back {
+  animation: native-guide-page-in-back 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+.native-guide-content > h1,
+.native-guide-content > .native-guide-lede,
+.native-guide-content > .native-guide-theme-choices,
+.native-guide-content > .native-guide-folder,
+.native-guide-content > .native-guide-actions {
+  animation: native-guide-text-in 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+.native-guide-content > .native-guide-lede {
+  animation-delay: 45ms;
+}
+.native-guide-content > .native-guide-theme-choices,
+.native-guide-content > .native-guide-folder {
+  animation-delay: 90ms;
+}
+.native-guide-content > .native-guide-actions {
+  animation-delay: 145ms;
+}
+.native-guide-theme-transition {
+  position: absolute;
+  z-index: 0;
+  inset: -28% -18%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 52% 42%,
+    color-mix(in srgb, var(--accent-soft) 72%, transparent),
+    transparent 58%
+  );
+  animation: native-theme-wash 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.native-guide h1 {
+  max-width: 540px;
+  margin: 9px 0;
+  font-size: clamp(27px, 4vw, 35px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+.native-guide-lede {
+  max-width: 510px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.native-guide-theme-choices {
+  display: grid;
+  gap: 8px;
+  max-width: 510px;
+  margin-top: 24px;
+}
+.native-guide-theme-choice,
+.native-guide-folder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--paper-elevated);
+  transition:
+    color 320ms ease,
+    background-color 320ms ease,
+    border-color 320ms ease,
+    box-shadow 320ms ease;
+}
+.native-guide-theme-choice:hover,
+.native-guide-theme-choice:focus-visible,
+.native-guide-folder:hover,
+.native-guide-folder:focus-visible {
+  border-color: var(--accent);
+}
+.native-guide-theme-choice.is-selected,
+.native-guide-folder.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.native-guide-theme-preview {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent);
+  transition:
+    color 320ms ease,
+    background 320ms ease,
+    border-color 320ms ease;
+}
+.native-guide-theme-choice.dark .native-guide-theme-preview {
+  color: #a9d3f3;
+  border-color: color-mix(in srgb, #a9d3f3 22%, var(--line));
+  background: linear-gradient(145deg, #242a33, #303743);
+}
+.native-guide-theme-choice.light .native-guide-theme-preview {
+  color: #b34732;
+  border-color: color-mix(in srgb, #b34732 18%, var(--line));
+  background: linear-gradient(145deg, #fffdf7, #f1ece2);
+}
+.native-guide-theme-choice > span:nth-child(2),
+.native-guide-folder > span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+}
+.native-guide-folder small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.native-guide-theme-check {
+  margin-left: auto;
+  color: var(--accent);
+}
+.native-guide-folder {
+  max-width: 510px;
+  margin-top: 24px;
+}
+.native-guide-folder-icon {
+  display: grid;
+  width: 43px;
+  height: 43px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.native-guide-folder > svg {
+  margin-left: auto;
+  color: var(--muted);
+}
+.native-guide-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-start;
+  margin-top: 38px;
+}
+.native-guide-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.native-guide-actions .button-primary {
+  margin-left: auto;
+  padding: 10px 15px;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  color: var(--paper);
+  background: var(--accent);
+}
+.native-guide-actions .button-primary:hover {
+  filter: brightness(1.08);
+}
+.native-guide-actions .button-quiet {
+  padding: 10px 2px;
+  color: var(--muted);
+  background: transparent;
+}
+.native-guide-actions .button-quiet:hover {
+  color: var(--accent);
+}
+.native-workspace-location {
+  display: grid;
+  gap: 4px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.native-workspace-location span {
+  overflow: hidden;
+  color: var(--faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes native-guide-layer-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes native-guide-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes native-guide-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes native-guide-page-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes native-guide-page-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes native-guide-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes native-theme-wash {
+  from {
+    opacity: 0.5;
+    transform: scale(0.82);
+  }
+  55% {
+    opacity: 0.14;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-guide-layer,
+  .native-guide,
+  .native-guide-content,
+  .native-guide-theme-transition,
+  .native-guide-content > h1,
+  .native-guide-content > .native-guide-lede,
+  .native-guide-content > .native-guide-theme-choices,
+  .native-guide-content > .native-guide-folder,
+  .native-guide-content > .native-guide-actions {
+    animation: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .native-guide {
+    min-height: auto;
+    padding: 24px;
+  }
+  .native-guide-steps {
+    margin-bottom: 28px;
+  }
+  .native-guide-step small {
+    display: none;
+  }
+  .native-guide-steps > i {
+    flex: 1;
+  }
+}

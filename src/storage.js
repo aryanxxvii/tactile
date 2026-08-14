@@ -1,8 +1,57 @@
+import { isTauriRuntime, resolveTauriInvoke } from "./platform/tauri/runtime.ts";
+
 const DATABASE_NAME = "tactile-local-workspace";
 const DATABASE_VERSION = 3;
 const STORE_NAME = "workspaces";
 const CURRENT_WORKSPACE_KEY = "current-v3";
 const CACHE_KEY = "tactile.workspace.v3";
+const NATIVE_WORKSPACE_PATH_KEY = "tactile.native.workspace.path";
+
+export function loadNativeWorkspacePath() {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(NATIVE_WORKSPACE_PATH_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+export function saveNativeWorkspacePath(path) {
+  if (typeof window === "undefined") return;
+  try {
+    if (path) window.localStorage.setItem(NATIVE_WORKSPACE_PATH_KEY, String(path));
+    else window.localStorage.removeItem(NATIVE_WORKSPACE_PATH_KEY);
+  } catch {
+    // The workspace folder itself remains the durable source of truth.
+  }
+}
+
+async function loadNativeWorkspaceSnapshot(browserWorkspace) {
+  if (!isTauriRuntime()) return null;
+  const invoke = resolveTauriInvoke();
+  if (!invoke) return null;
+  let path = loadNativeWorkspacePath() || browserWorkspace?.settings?.nativeWorkspacePath || "";
+  if (!path) {
+    try {
+      const remembered = await invoke("workspace_get_last_path", {});
+      path = typeof remembered === "string" ? remembered : remembered?.path || "";
+      if (path) saveNativeWorkspacePath(path);
+    } catch {
+      // Older native builds do not have the native marker command. The
+      // browser marker and workspace snapshot remain valid fallbacks.
+    }
+  }
+  if (!path) return null;
+  try {
+    const result = await invoke("workspace_read_snapshot", { path });
+    const raw = typeof result === "string" ? result : result?.contents;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 function openDatabase() {
   if (typeof window === "undefined" || !window.indexedDB) {
@@ -33,6 +82,7 @@ export function loadWorkspaceCache() {
 }
 
 export async function loadWorkspace() {
+  let browserWorkspace = null;
   try {
     const database = await openDatabase();
     const result = await new Promise((resolve, reject) => {
@@ -42,10 +92,13 @@ export async function loadWorkspace() {
       request.onerror = () => reject(request.error || new Error("Unable to read local workspace."));
     });
     database.close();
-    return result || loadWorkspaceCache();
+    browserWorkspace = result || loadWorkspaceCache();
   } catch {
-    return loadWorkspaceCache();
+    browserWorkspace = loadWorkspaceCache();
   }
+  // A selected native folder is canonical. The browser cache is only a
+  // fallback for a first launch or when the folder is temporarily unavailable.
+  return (await loadNativeWorkspaceSnapshot(browserWorkspace)) || browserWorkspace;
 }
 
 export async function saveWorkspace(workspace) {

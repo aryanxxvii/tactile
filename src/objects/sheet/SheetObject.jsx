@@ -20,6 +20,8 @@ export function SheetObject({
   onSelectAddress,
   onSelectRange,
   onToggleMultiSelect,
+  onToggleAxisSelection,
+  onDeleteSelectedText,
   onUpdateObject,
   onUpdateCell,
   onUpdateCells,
@@ -36,6 +38,7 @@ export function SheetObject({
   onCreateFile,
 }) {
   const [formulaMode, setFormulaMode] = useState(false);
+  const [editingCellId, setEditingCellId] = useState(null);
   const formulaEditorRef = useRef(null);
   const canonicalSelection = canonicalSheetSelection({
     selectedAddress,
@@ -77,10 +80,18 @@ export function SheetObject({
     }
   };
 
-  const focusFormulaBar = (initialValue) => {
-    if (initialValue != null) dispatchCellEditSeed(formulaEditorRef.current, initialValue);
+  const focusFormulaBar = (initialValue, targetAddress = selectedCell?.address || "A1") => {
+    const targetCoordinates = coordinatesFromAddress(targetAddress);
+    const targetCellId = targetCoordinates
+      ? cellId(targetCoordinates.row, targetCoordinates.column)
+      : selectedCell?.id || null;
+    if (targetAddress !== selectedCell?.address) onSelectAddress(targetAddress);
+    setEditingCellId(targetCellId);
     window.requestAnimationFrame(() => {
-      const input = formulaEditorRef.current;
+      if (initialValue != null) dispatchCellEditSeed(formulaEditorRef.current, initialValue);
+      const input = document.querySelector(
+        `[data-object-id="${object.id}"][data-cell-address="${targetAddress}"] .cell-inline-editor`,
+      );
       if (!input) return;
       input.focus();
       const caret = input.value.length;
@@ -147,6 +158,7 @@ export function SheetObject({
           onChange={handleFormulaCommit}
           onFormulaModeChange={setFormulaMode}
           onCommit={moveBelowAfterCommit}
+          onEditEnd={() => setEditingCellId(null)}
           onAddressChange={onSelectAddress}
           onFormat={handleFormat}
           onConditionalFormat={handleConditionalFormat}
@@ -161,9 +173,12 @@ export function SheetObject({
           selectionRange={canonicalRange}
           multiSelectedAddresses={multiSelectedAddresses}
           formulaEditingCellId={formulaMode ? selectedCell?.id : null}
+          inlineEditingCellId={editingCellId}
           onSelect={onSelectAddress}
           onSelectRange={onSelectRange}
           onToggleMultiSelect={onToggleMultiSelect}
+          onToggleAxisSelection={onToggleAxisSelection}
+          onDeleteSelectedText={onDeleteSelectedText}
           onFocusFormulaBar={focusFormulaBar}
           onCellChange={onUpdateCell}
           onCellsChange={onUpdateCells}

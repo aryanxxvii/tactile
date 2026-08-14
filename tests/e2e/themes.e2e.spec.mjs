@@ -5,7 +5,7 @@ const requestedThemes = [
   "Catppuccin Dark",
   "Flexoki Light",
   "Flexoki Dark",
-  "One Dark",
+  "Tactile Night",
   "Nord Dark",
   "VSCode Dark",
   "macOS Light",

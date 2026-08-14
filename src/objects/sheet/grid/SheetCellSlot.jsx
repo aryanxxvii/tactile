@@ -35,6 +35,7 @@ const CellSlot = memo(function CellSlot({
   inSelectedRow,
   inSelectedColumn,
   formulaEditingCellId,
+  inlineEditingCellId,
   onEmbeddedClick,
   onEmbeddedDoubleClick,
   dropTarget,
@@ -42,6 +43,7 @@ const CellSlot = memo(function CellSlot({
   onObjectDragLeave,
   onObjectDrop,
   onSelect,
+  onDeleteSelectedText,
   onSelectionStart,
   onSelectionMove,
   onFormulaReferenceStart,
@@ -86,6 +88,7 @@ const CellSlot = memo(function CellSlot({
         inSelectedRow={inSelectedRow}
         inSelectedColumn={inSelectedColumn}
         formulaEditingCellId={formulaEditingCellId}
+        inlineEditingCellId={inlineEditingCellId}
         onEmbeddedClick={onEmbeddedClick}
         onEmbeddedDoubleClick={onEmbeddedDoubleClick}
         dropTarget={dropTarget}
@@ -93,6 +96,7 @@ const CellSlot = memo(function CellSlot({
         onObjectDragLeave={onObjectDragLeave}
         onObjectDrop={onObjectDrop}
         onSelect={onSelect}
+        onDeleteSelectedText={onDeleteSelectedText}
         onSelectionStart={onSelectionStart}
         onSelectionMove={onSelectionMove}
         onFormulaReferenceStart={onFormulaReferenceStart}

@@ -6,6 +6,7 @@ import { createFormulaWorker } from "../workers/formula/index.js";
 import { CellFormatMenu } from "./CellFormatMenu.jsx";
 import {
   CELL_EDIT_SEED_EVENT,
+  CELL_EDIT_UPDATE_EVENT,
   CELL_EDIT_COMMIT_EVENT,
   setLocalCellDraft,
   useLocalDraft,
@@ -167,7 +168,7 @@ function useFormulaWorkerPreview({ value, address, cell, formulaSheet }) {
   return preview;
 }
 
-function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit }) {
+function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit, onEditEnd }) {
   const localInputRef = useRef(null);
   const editorRef = inputRef || localInputRef;
   const editorCellIdRef = useRef(cellId);
@@ -239,13 +240,28 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
   useEffect(() => {
     const input = editorRef.current;
     if (!input) return undefined;
-    const commitFromCellSelection = () => {
+    const commitFromCellSelection = (event) => {
       commitDraft({ immediate: true });
       onFormulaModeChange?.(false);
+      onEditEnd?.();
+      if (event.detail?.moveAfter) onCommit?.();
     };
     input.addEventListener(CELL_EDIT_COMMIT_EVENT, commitFromCellSelection);
     return () => input.removeEventListener(CELL_EDIT_COMMIT_EVENT, commitFromCellSelection);
-  }, [commitDraft, editorRef, onFormulaModeChange]);
+  }, [commitDraft, editorRef, onCommit, onEditEnd, onFormulaModeChange]);
+
+  useEffect(() => {
+    const input = editorRef.current;
+    if (!input) return undefined;
+    const updateFromCell = (event) => {
+      const next = String(event.detail?.value ?? "");
+      session.updateDraft(next);
+      publishDraft(next);
+      onFormulaModeChange?.(next.startsWith("="));
+    };
+    input.addEventListener(CELL_EDIT_UPDATE_EVENT, updateFromCell);
+    return () => input.removeEventListener(CELL_EDIT_UPDATE_EVENT, updateFromCell);
+  }, [editorRef, onFormulaModeChange, publishDraft, session]);
 
   useEffect(() => {
     if (session.activeRef.current) publishDraft(session.draftRef.current, formulaPreview);
@@ -399,7 +415,7 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
   );
 }
 
-export function FormulaBar({ address, rangeLabel, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
+export function FormulaBar({ address, rangeLabel, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit, onEditEnd, onAddressChange, onFormat, onConditionalFormat, hasConditionalFormat, filterCount, onClearFilters }) {
   const formulaValue = cell?.formula || cell?.value || "";
 
   return (
@@ -431,6 +447,7 @@ export function FormulaBar({ address, rangeLabel, cell, formulaSheet, inputRef, 
           onChange={(value) => onChange(value)}
           onFormulaModeChange={onFormulaModeChange}
           onCommit={onCommit}
+          onEditEnd={onEditEnd}
         />
       </div>
     </div>
