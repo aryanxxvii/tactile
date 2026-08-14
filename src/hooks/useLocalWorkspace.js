@@ -222,7 +222,7 @@ export function useLocalWorkspace() {
 
   useEffect(() => {
     if (!hydrated || !wave2ShadowRef.current) return;
-    wave2ShadowRef.current.reconcile(workspace);
+    wave2ShadowRef.current.reconcile(workspace, { normalized: true });
   }, [hydrated, workspace]);
 
   const commitWorkspace = useCallback((updater, historyKey = "workspace") => {

@@ -169,7 +169,25 @@ function useFormulaWorkerPreview({ value, address, cell, formulaSheet }) {
 function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit }) {
   const localInputRef = useRef(null);
   const editorRef = inputRef || localInputRef;
-  const session = useLocalDraft(value, onChange);
+  const pendingCommitRef = useRef(0);
+  const scheduleCommit = useCallback((next) => {
+    const input = editorRef.current;
+    const surface = input?.closest?.(".object-surface");
+    const commitId = pendingCommitRef.current + 1;
+    pendingCommitRef.current = commitId;
+    // Let the editor event paint its local draft before the canonical
+    // workspace update can recalculate the active sheet. The draft remains
+    // published until this queued transaction finishes, so the cell never
+    // flashes back to its old value while the commit is pending.
+    window.setTimeout(() => {
+      onChange(next);
+      window.requestAnimationFrame(() => {
+        if (pendingCommitRef.current !== commitId) return;
+        if (editorRef.current?.value === next) setLocalCellDraft(surface, cellId, null);
+      });
+    }, 0);
+  }, [cellId, editorRef, onChange]);
+  const session = useLocalDraft(value, scheduleCommit);
   const [query, setQuery] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const formulaPreview = useFormulaWorkerPreview({
@@ -200,9 +218,11 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
   const commitDraft = useCallback(() => {
     const next = session.draftRef.current;
     const changed = session.commitDraft(next);
-    const input = editorRef.current;
-    const surface = input?.closest?.(".object-surface");
-    setLocalCellDraft(surface, cellId, null);
+    if (!changed) {
+      const input = editorRef.current;
+      const surface = input?.closest?.(".object-surface");
+      setLocalCellDraft(surface, cellId, null);
+    }
     return changed;
   }, [cellId, editorRef, session]);
 

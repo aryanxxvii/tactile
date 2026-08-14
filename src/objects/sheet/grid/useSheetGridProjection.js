@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { evaluateSheetFormulas } from "../../../sheet/formulas.js";
 import { cellId } from "../../../sheet/coordinates.js";
 import { fillRange } from "../../../sheet/ranges.js";
 import { boundedAxisEntries, canonicalSheetSelection } from "./selectionGeometry.js";
+import { useFormulaProjection } from "./useFormulaProjection.js";
 import { useVirtualSheet } from "../useVirtualSheet.js";
 
 export function rangeValues(start, end) {
@@ -46,7 +46,7 @@ export function useSheetGridProjection({
       : null,
     [fillTarget, normalizedSelection],
   );
-  const formulaValues = useMemo(() => evaluateSheetFormulas(object), [object]);
+  const formulaValues = useFormulaProjection(object);
   const rowGroups = Array.isArray(object.rowGroups) ? object.rowGroups : [];
   const columnGroups = Array.isArray(object.columnGroups) ? object.columnGroups : [];
   const filters = Array.isArray(object.filters) ? object.filters : [];

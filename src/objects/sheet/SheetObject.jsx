@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { IconBrackets, IconTable } from "@tabler/icons-react";
 import { FormulaBar } from "../../components/FormulaBar.jsx";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
+import { dispatchCellEditSeed } from "../../components/localEditSession.js";
 import { createId, materializeCell } from "../../model.js";
 import { cellAddress, moveAddress } from "../../sheet/coordinates.js";
 import { cellIdsInRange, rangeLabel, rangeSize } from "../../sheet/ranges.js";
@@ -50,9 +51,8 @@ export function SheetObject({
   const selectedRangeSize = rangeSize(canonicalRange);
   const hasConditionalFormat = (object.conditionalFormats || []).some((rule) => rule.range === selectedRangeLabel);
 
-  const handleFormulaChange = (value, nextFormulaMode = value.startsWith("=")) => {
+  const handleFormulaCommit = (value) => {
     if (!selectedCell) return;
-    setFormulaMode(nextFormulaMode);
     if (value.startsWith("=")) {
       onUpdateCell(selectedCell.id, { formula: value });
     } else {
@@ -61,7 +61,7 @@ export function SheetObject({
   };
 
   const focusFormulaBar = (initialValue) => {
-    if (initialValue != null) handleFormulaChange(initialValue);
+    if (initialValue != null) dispatchCellEditSeed(formulaEditorRef.current, initialValue);
     window.requestAnimationFrame(() => {
       const input = formulaEditorRef.current;
       if (!input) return;
@@ -122,7 +122,7 @@ export function SheetObject({
           cell={selectedCell}
           formulaSheet={object}
           inputRef={formulaEditorRef}
-          onChange={handleFormulaChange}
+          onChange={handleFormulaCommit}
           onFormulaModeChange={setFormulaMode}
           onCommit={moveBelowAfterCommit}
           onAddressChange={onSelectAddress}

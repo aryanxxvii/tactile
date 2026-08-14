@@ -14,7 +14,23 @@ function commandEnvelope(sequence) {
 }
 
 function changed(left, right) {
+  if (left === right) return false;
   return JSON.stringify(left) !== JSON.stringify(right);
+}
+
+function shadowSnapshot(snapshot) {
+  const objects = Object.fromEntries(Object.entries(snapshot?.objects || {}).map(([id, object]) => (
+    object?.type === "sheet"
+      ? [id, { ...object, cells: { ...(object.cells || {}) } }]
+      : [id, object]
+  )));
+  return {
+    ...snapshot,
+    objects,
+    assets: { ...(snapshot?.assets || {}) },
+    themes: { ...(snapshot?.themes || {}) },
+    settings: { ...(snapshot?.settings || {}) },
+  };
 }
 
 function without(source, keys) {
@@ -315,8 +331,11 @@ export function createWave2Shadow(initialWorkspace, options = {}) {
     state.differential = { equal: true, mode: "reset" };
   }
 
-  function reconcile(nextWorkspace) {
-    const next = normalizeWorkspace(nextWorkspace);
+  function reconcile(nextWorkspace, options = {}) {
+    const normalized = options.normalized === true
+      ? nextWorkspace
+      : normalizeWorkspace(nextWorkspace);
+    const next = shadowSnapshot(normalized);
     const prior = previous;
     previous = next;
     queue = queue.then(async () => {

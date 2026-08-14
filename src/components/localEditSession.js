@@ -10,7 +10,7 @@ function stateForSurface(surface) {
   if (!state) {
     state = {
       drafts: new Map(),
-      listeners: new Set(),
+      listeners: new Map(),
     };
     surfaceDraftState.set(surface, state);
   }
@@ -20,9 +20,10 @@ function stateForSurface(surface) {
 export function setLocalCellDraft(surface, cellId, draft) {
   const state = stateForSurface(surface);
   if (!state || !cellId) return;
-  if (draft) state.drafts.set(String(cellId), draft);
-  else state.drafts.delete(String(cellId));
-  state.listeners.forEach((listener) => listener());
+  const key = String(cellId);
+  if (draft) state.drafts.set(key, draft);
+  else state.drafts.delete(key);
+  state.listeners.get(key)?.forEach((listener) => listener());
 }
 
 export function dispatchCellEditSeed(sourceElement, value) {
@@ -43,10 +44,14 @@ export function useLocalCellDraft(cellRef, cellId) {
     if (!state || !cellId) return undefined;
     const key = String(cellId);
     const update = () => setDraft(state.drafts.get(key) || null);
-    state.listeners.add(update);
+    const listeners = state.listeners.get(key) || new Set();
+    listeners.add(update);
+    state.listeners.set(key, listeners);
     update();
     return () => {
-      state.listeners.delete(update);
+      const listeners = state.listeners.get(key);
+      listeners?.delete(update);
+      if (!listeners?.size) state.listeners.delete(key);
       setDraft(null);
     };
   }, [cellId, cellRef]);

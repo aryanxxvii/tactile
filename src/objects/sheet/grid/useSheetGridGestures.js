@@ -256,11 +256,9 @@ export function useSheetGridGestures({
     active.lastLabel = label;
     active.callbacks?.setFormulaReferenceRange?.(range);
     const formula = `${active.prefix}${label},${active.suffix}`;
-    active.callbacks?.onCellChange?.(active.sourceCellId, {
-      formula,
-      value: "",
-      embed: null,
-    });
+    // Keep reference edits in the formula editor's local session. The
+    // session commits once on Enter, Escape, or blur, so dragging a range
+    // never mutates the workspace for every pointer position.
     const editor = document.querySelector(".formula-editor");
     editor?.dispatchEvent(new CustomEvent(CELL_EDIT_SEED_EVENT, {
       detail: { value: formula },
