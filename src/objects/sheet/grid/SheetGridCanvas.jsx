@@ -36,7 +36,6 @@ export function SheetGridCanvas({
   selectedCoordinates,
   formulaEditingCellId,
   formulaReferenceRange,
-  selectionInteractionActive,
   onSelect,
   onSelectRange,
   onSelectionStart,
@@ -376,7 +375,6 @@ export function SheetGridCanvas({
               inSelectedRow={showActiveRowContext && selectedCoordinates.row === row}
               inSelectedColumn={showActiveColumnContext && selectedCoordinates.column === column}
               formulaEditingCellId={formulaEditingCellId}
-              selectionInteractionActive={selectionInteractionActive}
               onOpenObject={onOpenObject}
               dropTarget={dropTargetAddress === address}
               onObjectDragOver={onObjectDragOver}

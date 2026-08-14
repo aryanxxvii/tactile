@@ -68,7 +68,6 @@ export const SheetCell = memo(function SheetCell({
   onSelectionStart,
   onSelectionMove,
   formulaEditingCellId,
-  selectionInteractionActive,
   onFormulaReferenceStart,
   onFormulaReferenceMove,
   onFillStart,
@@ -88,10 +87,11 @@ export const SheetCell = memo(function SheetCell({
   const shownFormula = localDraft?.formula || formula;
   const formulaError = Boolean(shownFormula && String(shownValue).startsWith("#"));
   const hasFontSize = Number.isFinite(styleFontSize);
-  const cellStyle = hasFontSize || selectionInteractionActive
+  const selectionPaintActive = selected || inRange || inSelectedRow || inSelectedColumn;
+  const cellStyle = hasFontSize || selectionPaintActive
     ? {
       ...(hasFontSize ? { "--cell-font-size": `${styleFontSize}px` } : {}),
-      ...(selectionInteractionActive ? { transition: "none" } : {}),
+      ...(selectionPaintActive ? { transition: "none" } : {}),
     }
     : undefined;
 

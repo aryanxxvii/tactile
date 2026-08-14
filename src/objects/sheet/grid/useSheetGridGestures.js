@@ -95,7 +95,6 @@ export function useSheetGridGestures({
   onResizePreview,
 }) {
   const [formulaReferenceRange, setFormulaReferenceRange] = useState(null);
-  const [selectionInteractionActive, setSelectionInteractionActive] = useState(false);
   const selectionDragRef = useRef(null);
   const formulaReferenceDragRef = useRef(null);
   const fillDragRef = useRef(null);
@@ -109,10 +108,14 @@ export function useSheetGridGestures({
   const selectionPointerRef = useRef(null);
   const selectionScrollFrameRef = useRef(null);
   const selectionViewportLockRef = useRef(false);
-  const selectionInteractionFrameRef = useRef(null);
+  const selectionRangeFrameRef = useRef(null);
+  const selectionRangePendingRef = useRef(null);
+  const selectionContextRef = useRef({ selectedAddress, selectionRange });
   const focusFrameRef = useRef(null);
   const resizeFrameRef = useRef(null);
   const axisDragFrameRef = useRef(null);
+
+  selectionContextRef.current = { selectedAddress, selectionRange };
 
   const releaseSelectionViewportLock = useCallback(() => {
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
@@ -232,6 +235,7 @@ export function useSheetGridGestures({
 
   gestureCallbacksRef.current = {
     object,
+    onSelect,
     onCellChange,
     onCellsChange,
     onSelectRange,
@@ -300,6 +304,43 @@ export function useSheetGridGestures({
     if (address) moveSelectionGestureRef.current?.({ address });
     return address;
   }, [cellAddressAtPoint, clampedPointerEvent]);
+
+  // Pointer events can arrive several times per frame while a range is being
+  // dragged. Keep the latest endpoint immediately, but paint the React range
+  // at most once per frame. This prevents a queue of stale range renders from
+  // making the pointer feel behind without sacrificing the final endpoint.
+  const flushSelectionRangeUpdate = useCallback(() => {
+    if (selectionRangeFrameRef.current != null) {
+      window.cancelAnimationFrame(selectionRangeFrameRef.current);
+      selectionRangeFrameRef.current = null;
+    }
+    const pending = selectionRangePendingRef.current;
+    selectionRangePendingRef.current = null;
+    if (pending) {
+      gestureCallbacksRef.current?.onSelectRange?.(pending.anchor, pending.focus);
+    }
+  }, []);
+
+  const cancelSelectionRangeUpdate = useCallback(() => {
+    if (selectionRangeFrameRef.current != null) {
+      window.cancelAnimationFrame(selectionRangeFrameRef.current);
+      selectionRangeFrameRef.current = null;
+    }
+    selectionRangePendingRef.current = null;
+  }, []);
+
+  const queueSelectionRangeUpdate = useCallback((anchor, focus) => {
+    selectionRangePendingRef.current = { anchor, focus };
+    if (selectionRangeFrameRef.current != null) return;
+    selectionRangeFrameRef.current = window.requestAnimationFrame(() => {
+      selectionRangeFrameRef.current = null;
+      const pending = selectionRangePendingRef.current;
+      selectionRangePendingRef.current = null;
+      if (pending) {
+        gestureCallbacksRef.current?.onSelectRange?.(pending.anchor, pending.focus);
+      }
+    });
+  }, []);
 
   const stopSelectionAutoScroll = useCallback(() => {
     if (selectionScrollFrameRef.current != null) {
@@ -392,9 +433,11 @@ export function useSheetGridGestures({
           || selectionDrag.focus;
         if (address && address !== selectionDrag.focus) {
           selectionDrag.focus = address;
-          gestureCallbacksRef.current?.onSelectRange?.(selectionDrag.anchor, address);
         }
+        flushSelectionRangeUpdate();
         releaseSelectionViewportLock();
+      } else if (selectionDrag) {
+        flushSelectionRangeUpdate();
       }
       if (formulaReference && event?.type === "pointerup") {
         const callbacks = gestureCallbacksRef.current;
@@ -419,19 +462,6 @@ export function useSheetGridGestures({
       const callbacks = gestureCallbacksRef.current;
       callbacks?.setFillTarget(null);
       if (formulaReference) callbacks?.setFormulaReferenceRange?.({ anchor: formulaReference.anchor, focus: formulaReference.focus });
-      if (selectionDrag) {
-        // Let the final range paint once with transitions suppressed, then
-        // return the cells to their normal hover/idle motion on the next
-        // frame. This prevents stale per-cell paint animations from piling
-        // up while a pointer drag crosses a rectangular range.
-        if (selectionInteractionFrameRef.current != null) {
-          window.cancelAnimationFrame(selectionInteractionFrameRef.current);
-        }
-        selectionInteractionFrameRef.current = window.requestAnimationFrame(() => {
-          selectionInteractionFrameRef.current = null;
-          setSelectionInteractionActive(false);
-        });
-      }
       if (fill && target && target !== fill.sourceAddress) {
         const changes = fillChanges(callbacks.object, fill.sourceAddress, target, fill.sourceRange);
         callbacks.onCellsChange?.(changes, "fill");
@@ -448,17 +478,16 @@ export function useSheetGridGestures({
       window.removeEventListener("pointerup", finishPointerGesture, true);
       window.removeEventListener("pointercancel", finishPointerGesture, true);
     };
-  }, [cellAddressAtPoint, releaseSelectionViewportLock, stopSelectionAutoScroll, updateFormulaReference, updateSelectionAtPoint]);
+  }, [cellAddressAtPoint, flushSelectionRangeUpdate, releaseSelectionViewportLock, stopSelectionAutoScroll, updateFormulaReference, updateSelectionAtPoint]);
 
   useEffect(() => () => {
     stopSelectionAutoScroll();
-    if (selectionInteractionFrameRef.current != null) {
-      window.cancelAnimationFrame(selectionInteractionFrameRef.current);
-    }
-  }, [stopSelectionAutoScroll]);
+    cancelSelectionRangeUpdate();
+  }, [cancelSelectionRangeUpdate, stopSelectionAutoScroll]);
 
   const startSelection = useCallback((event, cell) => {
     if (event.button !== 0 || formulaEditingCellId) return;
+    cancelSelectionRangeUpdate();
     // Let the browser own drags that begin on a cell's value text. A grid
     // selection gesture would otherwise capture the pointer before a partial
     // text selection can be painted, while clicks still select the cell.
@@ -469,19 +498,13 @@ export function useSheetGridGestures({
       && event.currentTarget.contains(nativeSelection.anchorNode);
     if (!selectingText || !selectionBelongsToCell) nativeSelection?.removeAllRanges();
     event.currentTarget.focus({ preventScroll: true });
+    const currentSelection = selectionContextRef.current;
     const anchor = event.shiftKey
-      ? (selectionRange?.anchor || selectedAddress)
+      ? (currentSelection.selectionRange?.anchor || currentSelection.selectedAddress)
       : cell.address;
-    if (event.shiftKey) onSelectRange?.(anchor, cell.address);
-    else onSelect(cell.address);
+    if (event.shiftKey) gestureCallbacksRef.current?.onSelectRange?.(anchor, cell.address);
+    else gestureCallbacksRef.current?.onSelect?.(cell.address);
     if (selectingText) return;
-    if (!cell.embed) {
-      if (selectionInteractionFrameRef.current != null) {
-        window.cancelAnimationFrame(selectionInteractionFrameRef.current);
-        selectionInteractionFrameRef.current = null;
-      }
-      setSelectionInteractionActive(true);
-    }
     focusSelectedGestureCell(object.id, cell.address);
     if (!cell.embed) {
       const captureTarget = scrollRef.current || event.currentTarget;
@@ -500,7 +523,7 @@ export function useSheetGridGestures({
         clientY: event.clientY,
       };
     }
-  }, [formulaEditingCellId, object.id, onSelect, onSelectRange, scrollRef, selectedAddress, selectionRange?.anchor]);
+  }, [cancelSelectionRangeUpdate, formulaEditingCellId, object.id, scrollRef]);
 
   const moveSelectionGesture = useCallback((cell) => {
     if (fillDragRef.current) {
@@ -511,8 +534,8 @@ export function useSheetGridGestures({
     const drag = selectionDragRef.current;
     if (!drag || drag.focus === cell.address) return;
     drag.focus = cell.address;
-    onSelectRange?.(drag.anchor, cell.address);
-  }, [onSelectRange]);
+    queueSelectionRangeUpdate(drag.anchor, cell.address);
+  }, [queueSelectionRangeUpdate]);
 
   moveSelectionGestureRef.current = moveSelectionGesture;
 
@@ -547,10 +570,11 @@ export function useSheetGridGestures({
     event.preventDefault();
     event.stopPropagation();
     const captureTarget = scrollRef.current || event.currentTarget;
+    const currentSelection = selectionContextRef.current;
     if (event.pointerId != null) captureTarget.setPointerCapture?.(event.pointerId);
     fillDragRef.current = {
       sourceAddress: cell.address,
-      sourceRange: selectionRange || { anchor: cell.address, focus: cell.address },
+      sourceRange: currentSelection.selectionRange || { anchor: cell.address, focus: cell.address },
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -559,7 +583,7 @@ export function useSheetGridGestures({
     };
     fillTargetRef.current = cell.address;
     setFillTarget(cell.address);
-  }, [scrollRef, selectionRange]);
+  }, [scrollRef]);
 
   const axisResizeTargets = useCallback((axis, index) => {
     if (!normalizedSelection) return [index];
@@ -777,6 +801,5 @@ export function useSheetGridGestures({
     restoreSelectionScroll,
     toggleRowGroup,
     toggleColumnGroup,
-    selectionInteractionActive,
   };
 }

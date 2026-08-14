@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { SheetGridCanvas } from "./grid/SheetGridCanvas.jsx";
 import { SheetGridContextMenu } from "./grid/SheetGridContextMenu.jsx";
 import { useSheetGridContextMenu } from "./grid/useSheetGridContextMenu.js";
@@ -8,6 +8,12 @@ import {
   isObjectDragEvent,
   readObjectDragData,
 } from "../../shell/objectDrag.js";
+
+function useLatestCallback(callback) {
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+  return useCallback((...args) => callbackRef.current?.(...args), []);
+}
 
 export function SheetGrid({
   object,
@@ -33,24 +39,34 @@ export function SheetGrid({
   const [fillTarget, setFillTarget] = useState(null);
   const [dropTargetAddress, setDropTargetAddress] = useState("");
   const [resizePreview, setResizePreview] = useState(null);
-  const handleObjectDragOver = (event, address) => {
+  const stableOnSelect = useLatestCallback(onSelect);
+  const stableOnSelectRange = useLatestCallback(onSelectRange);
+  const stableOnFocusFormulaBar = useLatestCallback(onFocusFormulaBar);
+  const stableOnCellChange = useLatestCallback(onCellChange);
+  const stableOnCellsChange = useLatestCallback(onCellsChange);
+  const stableOnUpdateObject = useLatestCallback(onUpdateObject);
+  const stableOnOpenObject = useLatestCallback(onOpenObject);
+  const stableOnReparentObject = useLatestCallback(onReparentObject);
+  const stableOnCreateFile = useLatestCallback(onCreateFile);
+  const stableOnMoveAxis = useLatestCallback(onMoveAxis);
+  const handleObjectDragOver = useCallback((event, address) => {
     if (!isObjectDragEvent(event)) return;
     event.preventDefault();
     event.stopPropagation();
     event.dataTransfer.dropEffect = "move";
     setDropTargetAddress(address);
-  };
-  const handleObjectDragLeave = (event) => {
+  }, []);
+  const handleObjectDragLeave = useCallback((event) => {
     if (event.currentTarget.contains(event.relatedTarget)) return;
     setDropTargetAddress("");
-  };
-  const handleObjectDrop = (event, address) => {
+  }, []);
+  const handleObjectDrop = useCallback((event, address) => {
     event.preventDefault();
     event.stopPropagation();
     const payload = readObjectDragData(event);
     setDropTargetAddress("");
-    if (payload) onReparentObject?.(payload, { parentObjectId: object.id, address });
-  };
+    if (payload) stableOnReparentObject?.(payload, { parentObjectId: object.id, address });
+  }, [object.id, stableOnReparentObject]);
   const projection = useSheetGridProjection({
     object,
     selectedAddress,
@@ -79,12 +95,12 @@ export function SheetGrid({
     rowOffsetForPosition: projection.rowOffsetForPosition,
     rowSizeForPosition: projection.rowSizeForPosition,
     rowSizeForIndex: projection.rowSizeForIndex,
-    onSelect,
-    onSelectRange,
-    onCellChange,
-    onCellsChange,
-    onUpdateObject,
-    onMoveAxis,
+    onSelect: stableOnSelect,
+    onSelectRange: stableOnSelectRange,
+    onCellChange: stableOnCellChange,
+    onCellsChange: stableOnCellsChange,
+    onUpdateObject: stableOnUpdateObject,
+    onMoveAxis: stableOnMoveAxis,
     fillTarget,
     setFillTarget,
     onResizePreview: setResizePreview,
@@ -92,9 +108,9 @@ export function SheetGrid({
   const contextMenu = useSheetGridContextMenu({
     object,
     normalizedSelection: projection.normalizedSelection,
-    onCellsChange,
-    onSelectRange,
-    onCreateFile,
+    onCellsChange: stableOnCellsChange,
+    onSelectRange: stableOnSelectRange,
+    onCreateFile: stableOnCreateFile,
   });
 
   return (
@@ -135,16 +151,15 @@ export function SheetGrid({
         selectedCoordinates={projection.selectedCoordinates}
         formulaEditingCellId={formulaEditingCellId}
         formulaReferenceRange={gestures.formulaReferenceRange}
-        selectionInteractionActive={gestures.selectionInteractionActive}
-        onSelect={onSelect}
-        onSelectRange={onSelectRange}
+        onSelect={stableOnSelect}
+        onSelectRange={stableOnSelectRange}
         onSelectionStart={gestures.startSelection}
         onSelectionMove={gestures.moveSelectionGesture}
         onFormulaReferenceStart={gestures.startFormulaReference}
         onFormulaReferenceMove={gestures.moveFormulaReference}
         onFillStart={gestures.startFill}
-        onFocusFormulaBar={onFocusFormulaBar}
-        onOpenObject={onOpenObject}
+        onFocusFormulaBar={stableOnFocusFormulaBar}
+        onOpenObject={stableOnOpenObject}
         dropTargetAddress={dropTargetAddress}
         onObjectDragOver={handleObjectDragOver}
         onObjectDragLeave={handleObjectDragLeave}

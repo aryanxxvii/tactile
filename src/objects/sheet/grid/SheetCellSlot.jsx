@@ -34,7 +34,6 @@ const CellSlot = memo(function CellSlot({
   inSelectedRow,
   inSelectedColumn,
   formulaEditingCellId,
-  selectionInteractionActive,
   onEmbeddedClick,
   onEmbeddedDoubleClick,
   dropTarget,
@@ -85,7 +84,6 @@ const CellSlot = memo(function CellSlot({
         inSelectedRow={inSelectedRow}
         inSelectedColumn={inSelectedColumn}
         formulaEditingCellId={formulaEditingCellId}
-        selectionInteractionActive={selectionInteractionActive}
         onEmbeddedClick={onEmbeddedClick}
         onEmbeddedDoubleClick={onEmbeddedDoubleClick}
         dropTarget={dropTarget}

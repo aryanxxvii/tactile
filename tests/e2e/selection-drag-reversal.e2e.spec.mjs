@@ -138,7 +138,7 @@ test("holds cell paint transitions stable while a range drag is live", async ({ 
 
   await expect
     .poll(() => page.evaluate(() => getComputedStyle(document.querySelector('[data-cell-address="C5"]')).transition))
-    .toContain("0.13s");
+    .toBe("none");
 });
 
 test("applies the pointer-up endpoint when no intermediate move is delivered", async ({ page }) => {
