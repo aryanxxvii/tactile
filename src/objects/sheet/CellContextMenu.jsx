@@ -197,12 +197,14 @@ export function CellContextMenu({
     if (!menu) return undefined;
     let cancelled = false;
     let focusFrame = 0;
+    let focusAttempts = 0;
     const focusMenu = () => {
       if (cancelled) return;
       if (menuRef.current) {
         focusFirstMenuItem(menuRef.current);
-        return;
+        if (menuRef.current.contains(document.activeElement) || focusAttempts >= 8) return;
       }
+      focusAttempts += 1;
       focusFrame = window.requestAnimationFrame(focusMenu);
     };
     const handlePointerDown = (event) => {
