@@ -276,7 +276,7 @@ function FilesRenamePopover({ entry, index, x, y, themeSource, onClose, onCommit
   );
 }
 
-function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onRename, onSetHome, onToggle, onCustomize, onCopyPath, onDelete }) {
+function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onRename, onSetHome, onToggle, onCustomize, onCopyPath, onDelete, onCreateObject }) {
   const parentRoute = parentRouteFor(menu.location);
   const [position, setPosition] = useState({ left: menu.x, top: menu.y });
 
@@ -319,6 +319,34 @@ function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onRenam
       items[nextIndex]?.focus();
     }
   };
+
+  if (menu.kind === "create") {
+    return (
+      <PaperPortal className="tactile-context-menu-layer" themeSource={themeSource}>
+        <div
+          ref={menuRef}
+          className="files-context-menu"
+          role="menu"
+          aria-label="Create new object"
+          style={{ left: position.left, top: position.top }}
+          onContextMenu={(event) => event.preventDefault()}
+          onKeyDown={handleKeyDown}
+        >
+          <div className="files-context-menu-heading">
+            <span>Create new</span>
+          </div>
+          <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Create Tiles" onClick={() => onCreateObject?.("sheet")} data-context-action="create-tiles">
+            <IconTable size={14} stroke={1.7} />
+            <span>Tiles</span>
+          </button>
+          <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Create Text" onClick={() => onCreateObject?.("markdown")} data-context-action="create-text">
+            <IconFileText size={14} stroke={1.7} />
+            <span>Text</span>
+          </button>
+        </div>
+      </PaperPortal>
+    );
+  }
 
   return (
     <PaperPortal className="tactile-context-menu-layer" themeSource={themeSource}>
@@ -377,6 +405,16 @@ function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onRenam
       <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Copy path" onClick={onCopyPath} data-context-action="copy-path">
         <IconCopy size={14} stroke={1.7} />
         <span>Copy path</span>
+      </button>
+      <div className="files-context-menu-divider" />
+      <div className="files-context-menu-label">Create new</div>
+      <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Create Tiles" onClick={() => onCreateObject?.("sheet")} data-context-action="create-tiles">
+        <IconTable size={14} stroke={1.7} />
+        <span>Tiles</span>
+      </button>
+      <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Create Text" onClick={() => onCreateObject?.("markdown")} data-context-action="create-text">
+        <IconFileText size={14} stroke={1.7} />
+        <span>Text</span>
       </button>
       <div className="files-context-menu-divider" />
       <button
@@ -828,6 +866,25 @@ export function FilesPanel({
     onCreateObject?.(type);
   };
 
+  const handleContextCreate = (type) => {
+    setContextMenu(null);
+    handleCreateObject(type);
+  };
+
+  const openCreateContextMenu = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const panelBox = panelRef.current?.getBoundingClientRect();
+    if (!panelBox) return;
+    setCustomizingKey(null);
+    setRenameState(null);
+    setContextMenu({
+      kind: "create",
+      x: Number.isFinite(event.clientX) ? event.clientX : panelBox.left + 16,
+      y: Number.isFinite(event.clientY) ? event.clientY : panelBox.top + 24,
+    });
+  };
+
   return (
     <div className={`files-layer ${pinned ? "is-pinned" : ""}`} role="presentation">
       <button
@@ -922,7 +979,7 @@ export function FilesPanel({
           </button>
         </div>
 
-        <div className="files-panel-body" aria-live="polite">
+        <div className="files-panel-body" aria-live="polite" onContextMenu={openCreateContextMenu}>
           {searching ? (
             <div className="files-results" role="listbox" aria-label="File search results">
               <div className="files-result-count">{results.length} result{results.length === 1 ? "" : "s"}</div>
@@ -1058,6 +1115,7 @@ export function FilesPanel({
             onCustomize={handleContextCustomize}
             onCopyPath={handleContextCopyPath}
             onDelete={handleContextDelete}
+            onCreateObject={handleContextCreate}
           />
         ) : null}
         {renameState ? (

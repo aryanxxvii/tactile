@@ -5338,7 +5338,7 @@ kbd {
   inset: 0 auto 0 0;
   width: min(var(--files-sidebar-width, 360px), calc(100vw - 24px));
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
   overflow: hidden;
   border-right: 1px solid var(--line-strong);
   color: var(--ink);
@@ -5497,6 +5497,12 @@ kbd {
   color: var(--faint);
   font-size: 8px;
   font-weight: 650;
+}
+
+.files-create-row {
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 8px;
 }
 
 .files-create-row button {
