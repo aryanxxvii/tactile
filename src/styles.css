@@ -3472,26 +3472,11 @@ kbd {
 }
 
 .sheet-scroll {
-  --sheet-scroll-x: 0px;
-  --sheet-scroll-y: 0px;
   overflow: scroll;
   overflow-anchor: none;
   scroll-behavior: auto;
   scrollbar-gutter: stable;
   contain: layout size;
-  will-change: scroll-position;
-}
-
-.sheet-scroll[data-sheet-scrolling="true"] .sheet-cell {
-  background: var(--cell);
-  box-shadow: none;
-  transform: none;
-  transition: none;
-}
-
-.virtual-sheet-header {
-  will-change: transform;
-  backface-visibility: hidden;
 }
 
 /* Keep the sticky row-number rail as the viewport edge above every data-cell
@@ -3511,7 +3496,26 @@ kbd {
   background: color-mix(in srgb, var(--tray) 94%, var(--paper));
 }
 
-.sheet-column-header-rail > .column-header {
+.sheet-column-header-rail > .column-header,
+.sheet-column-header-rail > .sheet-corner {
+  pointer-events: auto;
+}
+
+.sheet-corner.virtual-sheet-header {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 90;
+}
+
+.sheet-row-header-rail {
+  position: sticky;
+  left: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.sheet-row-header-rail > .row-header {
   pointer-events: auto;
 }
 

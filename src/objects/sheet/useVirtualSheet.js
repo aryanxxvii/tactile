@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 
 export const SHEET_METRICS = {
   rowHeight: 31,
@@ -17,10 +16,6 @@ export const SHEET_METRICS = {
 
 const SUSPENDED_SHEET_VIEW = new Map();
 const MAX_DIRECTIONAL_AHEAD = 6;
-// The default sheet is a finite 256 x 64 surface. Keep that complete surface
-// mounted so native scrollbar movement only changes the browser's viewport;
-// larger imported sheets still use the bounded virtual window.
-const FULL_RENDER_CELL_LIMIT = 256 * 64;
 
 function rememberSheetViewport(viewStateKey, viewport) {
   if (!viewStateKey || !viewport) return;
@@ -175,14 +170,6 @@ export function rangeContains(range, visibleRange) {
     && visibleRange.columnEnd <= range.columnEnd;
 }
 
-function rangesOverlap(left, right) {
-  return Boolean(left && right)
-    && left.rowStart <= right.rowEnd
-    && left.rowEnd >= right.rowStart
-    && left.columnStart <= right.columnEnd
-    && left.columnEnd >= right.columnStart;
-}
-
 export function expandedRange(range, rowCount, columnCount, padding) {
   const rowMax = axisMax(rowCount);
   const columnMax = axisMax(columnCount);
@@ -291,13 +278,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   const pendingRangeRef = useRef(null);
   const pendingViewportRef = useRef(null);
   const syncViewportRef = useRef(null);
-  const primeWheelViewportRef = useRef(null);
-  const scrollSyncFrameRef = useRef(null);
-  const scrollSyncStableFramesRef = useRef(0);
-  const lastWheelInputAtRef = useRef(0);
-  const scrollBurstRef = useRef(false);
-  const wheelPrimeRangeRef = useRef(null);
-  const wheelPrimeFrameRef = useRef(null);
+  const scrollFallbackRef = useRef(null);
   const initialViewport = useMemo(() => initialViewportFor(viewStateKey), [viewStateKey]);
   const scrollPositionRef = useRef({
     scrollLeft: initialViewport.scrollLeft,
@@ -336,63 +317,44 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     overscan,
   ), [columnGeometry, columnIndexMap.length, metrics, renderOverscan, rowGeometry, rowIndexMap.length, viewportForRange]);
   const initialRange = useMemo(
-    () => (rowIndexMap.length * columnIndexMap.length <= FULL_RENDER_CELL_LIMIT
-      ? {
-        rowStart: 0,
-        rowEnd: Math.max(0, rowIndexMap.length - 1),
-        columnStart: 0,
-        columnEnd: Math.max(0, columnIndexMap.length - 1),
-      }
-      : buildRenderRange({
-        ...viewportSize,
-        ...scrollPositionRef.current,
-      })),
-    [buildRenderRange, columnIndexMap.length, rowIndexMap.length, viewportSize],
+    () => buildRenderRange({
+      ...viewportSize,
+      ...scrollPositionRef.current,
+    }),
+    [buildRenderRange, viewportSize],
   );
-  const mountAllCells = rowIndexMap.length * columnIndexMap.length <= FULL_RENDER_CELL_LIMIT;
-  const fullRange = useMemo(() => ({
-    rowStart: 0,
-    rowEnd: Math.max(0, rowIndexMap.length - 1),
-    columnStart: 0,
-    columnEnd: Math.max(0, columnIndexMap.length - 1),
-  }), [columnIndexMap.length, rowIndexMap.length]);
   const [range, setRange] = useState(initialRange);
-  const renderedRange = mountAllCells ? fullRange : range;
   // Requested and committed ranges are deliberately separate. During a fast
-  // scroll burst, React may defer an update requested from requestAnimationFrame.
-  // Treating that requested slice as painted lets later scroll events skip the
-  // synchronous handoff and exposes the old DOM far outside the viewport.
-  const requestedRangeRef = useRef(renderedRange);
-  const committedRangeRef = useRef(renderedRange);
-  const commitRange = useCallback((nextRange, immediate = false) => {
-    const requestUnchanged = rangesEqual(requestedRangeRef.current, nextRange);
-    const committedUnchanged = rangesEqual(committedRangeRef.current, nextRange);
-    if (requestUnchanged && (!immediate || committedUnchanged)) return false;
+  // scroll burst, React may still be rendering the range requested on the
+  // previous frame. Keep only the newest destination and never mistake a
+  // requested range for DOM that has already committed.
+  const requestedRangeRef = useRef(range);
+  const committedRangeRef = useRef(range);
+  const scheduleRange = useCallback((nextRange) => {
+    if (rangesEqual(requestedRangeRef.current, nextRange)) return false;
     requestedRangeRef.current = nextRange;
-    if (immediate) {
-      if (rangeFrameRef.current != null) window.cancelAnimationFrame(rangeFrameRef.current);
-      rangeFrameRef.current = null;
-      pendingRangeRef.current = null;
-      flushSync(() => setRange(nextRange));
-      return true;
-    }
     pendingRangeRef.current = nextRange;
     if (rangeFrameRef.current == null) {
       rangeFrameRef.current = window.requestAnimationFrame(() => {
         rangeFrameRef.current = null;
         const pendingRange = pendingRangeRef.current;
         pendingRangeRef.current = null;
-        if (pendingRange) setRange(pendingRange);
+        if (pendingRange && !rangesEqual(committedRangeRef.current, pendingRange)) {
+          setRange(pendingRange);
+        }
       });
     }
     return true;
   }, []);
 
-  const syncScrollStyles = useCallback((element, position = nativeScrollPosition(element)) => {
-    if (!element) return;
+  const syncScrollPosition = useCallback((position) => {
     scrollPositionRef.current = position;
-    element.style.setProperty("--sheet-scroll-x", `${position.scrollLeft}px`);
-    element.style.setProperty("--sheet-scroll-y", `${position.scrollTop}px`);
+    const fallback = scrollFallbackRef.current;
+    if (!fallback) return;
+    // These variables live on the one small fallback surface. Updating them
+    // cannot invalidate styles across every mounted cell.
+    fallback.style.setProperty("--sheet-fallback-x", `${-position.scrollLeft}px`);
+    fallback.style.setProperty("--sheet-fallback-y", `${-position.scrollTop}px`);
   }, []);
 
   const scheduleViewportMemory = useCallback((viewport) => {
@@ -407,11 +369,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     });
   }, [viewStateKey]);
 
-  const syncViewport = useCallback((element, {
-    forceRange = false,
-    immediateRange = false,
-    scrollBurst = false,
-  } = {}) => {
+  const syncViewport = useCallback((element, { forceRange = false } = {}) => {
     if (!element) return;
     const previousPosition = scrollPositionRef.current;
     const position = nativeScrollPosition(element);
@@ -419,7 +377,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       scrollLeft: position.scrollLeft - previousPosition.scrollLeft,
       scrollTop: position.scrollTop - previousPosition.scrollTop,
     };
-    syncScrollStyles(element, position);
+    syncScrollPosition(position);
     const next = {
       width: Math.max(1, element.clientWidth || viewportSizeRef.current.width || 900),
       height: Math.max(1, element.clientHeight || viewportSizeRef.current.height || 500),
@@ -435,134 +393,35 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     }
     scheduleViewportMemory(next);
 
-    if (mountAllCells) return;
-
     const visibleRange = buildVisibleRange(next);
-    // Keep the mounted band centered around the current viewport. Directional
-    // overscan can leave the previous slice painted on the wrong side during a
-    // coalesced reverse jump, which reads as if tiles are travelling opposite
-    // to the native scroll. A symmetric band remains bounded while ensuring
-    // every committed slice belongs to the current scroll scope.
-    const compactRange = buildRenderRange(next, renderOverscan);
-    // A native scrollbar drag can move through many row windows before React
-    // gets another paint opportunity. Warm the dominant axis for the duration
-    // of that drag so rebasing never leaves the current viewport outside the
-    // mounted DOM. The idle reconciliation below shrinks it back to the
-    // bounded window once movement stops.
-    const verticalBurst = scrollBurst
-      && Math.abs(delta.scrollTop) > 0
-      && Math.abs(delta.scrollTop) >= Math.abs(delta.scrollLeft);
-    const horizontalBurst = scrollBurst
-      && Math.abs(delta.scrollLeft) > 0
-      && Math.abs(delta.scrollLeft) > Math.abs(delta.scrollTop);
-    const nextRange = {
-      ...compactRange,
-      ...(verticalBurst ? { rowStart: 0, rowEnd: Math.max(0, rowIndexMap.length - 1) } : {}),
-      ...(horizontalBurst ? { columnStart: 0, columnEnd: Math.max(0, columnIndexMap.length - 1) } : {}),
-    };
-    const committedCoversViewport = rangeContains(committedRangeRef.current, visibleRange);
-    if (!forceRange
-      && committedCoversViewport
-      && rangeContains(requestedRangeRef.current, nextRange)) return;
-    // Native scrolling and sticky-header CSS stay immediate. Ordinary wheel
-    // movement commits on the next frame so a burst of events cannot force one
-    // React commit per event. A jump larger than one viewport is flushed now,
-    // so the first paint after a trackpad/wheel jump cannot expose a stale
-    // virtual slice.
-    const newlyExposed = !committedCoversViewport;
-    const largeJump = newlyExposed
-      || Math.abs(delta.scrollTop) > next.height
-      || Math.abs(delta.scrollLeft) > next.width;
-    commitRange(nextRange, immediateRange || largeJump);
-  }, [buildRenderRange, buildVisibleRange, columnIndexMap.length, commitRange, metrics, mountAllCells, renderOverscan, rowIndexMap.length, scheduleViewportMemory, syncScrollStyles]);
+    const guardedVisibleRange = expandedRange(
+      visibleRange,
+      rowIndexMap.length,
+      columnIndexMap.length,
+      metrics.overscanHysteresis,
+    );
+    if (!forceRange && rangeContains(committedRangeRef.current, guardedVisibleRange)) {
+      // If the pointer reverses before the queued frame runs, discard the
+      // now-wrong destination instead of briefly committing it after the
+      // viewport has returned to the painted band.
+      if (!rangeContains(requestedRangeRef.current, guardedVisibleRange)) {
+        requestedRangeRef.current = committedRangeRef.current;
+        pendingRangeRef.current = committedRangeRef.current;
+      }
+      return;
+    }
+    if (!forceRange && rangeContains(requestedRangeRef.current, guardedVisibleRange)) return;
+
+    // Directional look-ahead reduces rebases during ordinary movement but is
+    // strictly capped. A scrollbar thumb may jump to any offset, so the cheap
+    // sticky fallback owns that handoff while this latest range commits.
+    scheduleRange(buildRenderRange(
+      next,
+      directionalOverscan(metrics, delta, renderOverscan),
+    ));
+  }, [buildRenderRange, buildVisibleRange, columnIndexMap.length, metrics, renderOverscan, rowIndexMap.length, scheduleRange, scheduleViewportMemory, syncScrollPosition]);
 
   syncViewportRef.current = syncViewport;
-
-  const primeWheelViewport = useCallback((element, event) => {
-    if (!element || !event) return;
-    lastWheelInputAtRef.current = typeof performance === "undefined" ? Date.now() : performance.now();
-    const current = nativeScrollPosition(element);
-    const pageWidth = Math.max(1, element.clientWidth || viewportSizeRef.current.width || 900);
-    const pageHeight = Math.max(1, element.clientHeight || viewportSizeRef.current.height || 500);
-    const deltaScaleX = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? pageWidth : 1;
-    const deltaScaleY = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? pageHeight : 1;
-    const shiftToHorizontal = event.shiftKey && !event.deltaX;
-    const deltaLeft = (shiftToHorizontal ? event.deltaY : event.deltaX) * deltaScaleX;
-    const deltaTop = (shiftToHorizontal ? 0 : event.deltaY) * deltaScaleY;
-    const projected = {
-      width: pageWidth,
-      height: pageHeight,
-      scrollLeft: clamp(
-        current.scrollLeft + finiteCoordinate(deltaLeft),
-        0,
-        Math.max(0, element.scrollWidth - pageWidth),
-      ),
-      scrollTop: clamp(
-        current.scrollTop + finiteCoordinate(deltaTop),
-        0,
-        Math.max(0, element.scrollHeight - pageHeight),
-      ),
-    };
-    const currentVisibleRange = buildVisibleRange({
-      width: pageWidth,
-      height: pageHeight,
-      ...current,
-    });
-    const projectedVisibleRange = buildVisibleRange(projected);
-    if (rangeContains(committedRangeRef.current, projectedVisibleRange)) return;
-    const projectedRenderRange = buildRenderRange(projected, renderOverscan);
-    // Replacing the entire range during the wheel event can remove the node
-    // beneath the pointer before the browser performs its default scroll,
-    // which cancels very large synthetic/native wheel jumps. Those disjoint
-    // jumps are handled synchronously by the ensuing scroll event instead.
-    if (!rangesOverlap(currentVisibleRange, projectedRenderRange)) return;
-
-    // Wheel/trackpad input arrives before the browser applies its native
-    // scroll offset. Paint the destination slice during that event so the
-    // compositor never gets a frame in which only the old slice has moved
-    // away. The scroll handler reconciles the exact clamped position after
-    // the browser performs the default action.
-    wheelPrimeRangeRef.current = projectedRenderRange;
-    if (wheelPrimeFrameRef.current != null) window.cancelAnimationFrame(wheelPrimeFrameRef.current);
-    commitRange(projectedRenderRange, true);
-    wheelPrimeFrameRef.current = window.requestAnimationFrame(() => {
-      wheelPrimeFrameRef.current = null;
-      wheelPrimeRangeRef.current = null;
-      syncViewportRef.current?.(element);
-    });
-  }, [buildRenderRange, buildVisibleRange, commitRange, renderOverscan]);
-
-  primeWheelViewportRef.current = primeWheelViewport;
-
-  const scheduleNativeScrollReconcile = useCallback((element) => {
-    if (!element || scrollSyncFrameRef.current != null) return;
-    element.dataset.sheetScrolling = "true";
-    scrollSyncStableFramesRef.current = 0;
-    const reconcile = () => {
-      scrollSyncFrameRef.current = null;
-      const before = scrollPositionRef.current;
-      const current = nativeScrollPosition(element);
-      const moved = before.scrollLeft !== current.scrollLeft || before.scrollTop !== current.scrollTop;
-      const scrollBurst = scrollBurstRef.current;
-      syncViewportRef.current?.(element, { immediateRange: true, scrollBurst });
-      scrollSyncStableFramesRef.current = moved
-        ? 0
-        : scrollSyncStableFramesRef.current + 1;
-      // A scrollbar drag can advance the native offset between scroll events.
-      // Reconcile at frame rate until two consecutive frames are still so the
-      // compositor and the virtual React window keep the same cadence.
-      if (moved || scrollSyncStableFramesRef.current < 2) {
-        scrollSyncFrameRef.current = window.requestAnimationFrame(reconcile);
-      } else if (scrollBurstRef.current) {
-        // Leave the warm window only after the last stable frame has painted.
-        syncViewportRef.current?.(element, { forceRange: true, immediateRange: true });
-      }
-      if (scrollSyncStableFramesRef.current >= 2) {
-        delete element.dataset.sheetScrolling;
-      }
-    };
-    scrollSyncFrameRef.current = window.requestAnimationFrame(reconcile);
-  }, []);
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
@@ -573,27 +432,8 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       element.scrollTop = Math.max(0, finiteCoordinate(saved.scrollTop));
     }
 
-    const handleNativeScroll = () => {
-      if (wheelPrimeFrameRef.current != null) {
-        window.cancelAnimationFrame(wheelPrimeFrameRef.current);
-        wheelPrimeFrameRef.current = null;
-      }
-      wheelPrimeRangeRef.current = null;
-      // Native scrollbar movement is not a wheel gesture. Commit the
-      // destination range in the same turn as the scroll event; waiting for
-      // a coalesced RAF can expose the empty gap between virtual windows.
-      const now = typeof performance === "undefined" ? Date.now() : performance.now();
-      const wheelDriven = now - lastWheelInputAtRef.current < 120;
-      scrollBurstRef.current = !wheelDriven;
-      element.dataset.sheetScrolling = "true";
-      syncViewportRef.current?.(element, { immediateRange: true, scrollBurst: !wheelDriven });
-      scheduleNativeScrollReconcile(element);
-    };
-    const handleNativeWheel = (event) => {
-      primeWheelViewportRef.current?.(element, event);
-    };
+    const handleNativeScroll = () => syncViewportRef.current?.(element);
     handleNativeScroll();
-    element.addEventListener("wheel", handleNativeWheel, { passive: true });
     element.addEventListener("scroll", handleNativeScroll, { passive: true });
 
     const observer = typeof ResizeObserver === "function"
@@ -609,26 +449,19 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     });
     return () => {
       window.cancelAnimationFrame(layoutFrame);
-      if (scrollSyncFrameRef.current != null) {
-        window.cancelAnimationFrame(scrollSyncFrameRef.current);
-        scrollSyncFrameRef.current = null;
-      }
-      delete element.dataset.sheetScrolling;
       observer?.disconnect();
-      element.removeEventListener("wheel", handleNativeWheel);
       element.removeEventListener("scroll", handleNativeScroll);
     };
-  }, [scheduleNativeScrollReconcile, viewStateKey]);
+  }, [viewStateKey]);
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element) return undefined;
-    committedRangeRef.current = renderedRange;
-    requestedRangeRef.current = renderedRange;
-    if (rangesEqual(wheelPrimeRangeRef.current, renderedRange)) return undefined;
+    committedRangeRef.current = range;
+    if (rangesEqual(requestedRangeRef.current, range)) requestedRangeRef.current = range;
     syncViewportRef.current?.(element);
     return undefined;
-  }, [range, renderedRange]);
+  }, [columnGeometry, range, rowGeometry]);
 
   useEffect(() => () => {
     if (memoryFrameRef.current != null) {
@@ -639,29 +472,13 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       window.cancelAnimationFrame(rangeFrameRef.current);
       rangeFrameRef.current = null;
     }
-    if (wheelPrimeFrameRef.current != null) {
-      window.cancelAnimationFrame(wheelPrimeFrameRef.current);
-      wheelPrimeFrameRef.current = null;
-    }
-    if (scrollSyncFrameRef.current != null) {
-      window.cancelAnimationFrame(scrollSyncFrameRef.current);
-      scrollSyncFrameRef.current = null;
-    }
     // StrictMode replays effect cleanup during development. Discard any
     // requested-but-uncommitted slice so later scroll events compare against
     // the range that is actually mounted.
     requestedRangeRef.current = committedRangeRef.current;
-    wheelPrimeRangeRef.current = null;
     pendingViewportRef.current = null;
     pendingRangeRef.current = null;
   }, []);
-
-  const onScroll = useCallback((event) => {
-    const element = event?.currentTarget || scrollRef.current;
-    if (element) element.dataset.sheetScrolling = "true";
-    syncViewport(element, { immediateRange: true, scrollBurst: scrollBurstRef.current });
-    scheduleNativeScrollReconcile(element);
-  }, [scheduleNativeScrollReconcile, syncViewport]);
 
   const canvasSize = useMemo(() => ({
     width: metrics.rowHeaderWidth + metrics.bodyLeftInset + columnGeometry.total,
@@ -685,14 +502,14 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
 
   return {
     scrollRef,
+    scrollFallbackRef,
     viewport: {
       ...viewportSize,
       ...scrollPositionRef.current,
     },
-    range: renderedRange,
+    range,
     canvasSize,
     metrics,
-    onScroll,
     rowIndexMap,
     rowPositionForIndex,
     rowOffsetForPosition,

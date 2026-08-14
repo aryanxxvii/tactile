@@ -22,10 +22,11 @@ export function SheetGridCanvas({
   columnGroupByStart,
   visibleRows,
   visibleColumns,
+  viewport,
   canvasSize,
   metrics,
   scrollRef,
-  onScroll,
+  scrollFallbackRef,
   rowOffsetForPosition,
   rowSizeForPosition,
   columnOffsetForPosition,
@@ -86,7 +87,7 @@ export function SheetGridCanvas({
   }, [embeddedTypes]);
 
   return (
-    <div className="sheet-scroll" data-sheet-scroll ref={scrollRef} onScroll={onScroll}>
+    <div className="sheet-scroll" data-sheet-scroll ref={scrollRef}>
       <div
         className="virtual-sheet-canvas"
         role="grid"
@@ -99,53 +100,69 @@ export function SheetGridCanvas({
         }}
       >
         <div
+          className="sheet-scroll-fallback-layer"
           aria-hidden="true"
           style={{
             position: "absolute",
+            inset: 0,
             zIndex: 0,
-            left: rowHeaderWidth + bodyLeftInset,
-            top: columnHeaderHeight + bodyTopInset,
-            width: "100vw",
-            height: "100vh",
             pointerEvents: "none",
-            transform: "translate3d(var(--sheet-scroll-x, 0px), var(--sheet-scroll-y, 0px), 0)",
-            background: "repeating-linear-gradient(to right, transparent 0 125px, var(--tray) 125px 126px), repeating-linear-gradient(to bottom, var(--cell) 0 30px, var(--tray) 30px 31px)",
           }}
-        />
-        <div
-          className="sheet-corner virtual-sheet-header"
-          role="button"
-          tabIndex={0}
-          aria-label="Select entire sheet"
-          aria-selected={normalizedSelection?.rowStart === 0
-            && normalizedSelection?.rowEnd === object.rows - 1
-            && normalizedSelection?.columnStart === 0
-            && normalizedSelection?.columnEnd === object.columns - 1}
-          onPointerDown={onStartCornerSelection}
-          onClick={() => {
-            onSelectRange?.("A1", cellAddress(object.rows - 1, object.columns - 1), selectedAddress);
-            onRestoreSelectionScroll();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              onSelectRange?.("A1", cellAddress(object.rows - 1, object.columns - 1), selectedAddress);
-            }
-          }}
-          style={{
-            left: 0,
-            top: 0,
-            width: rowHeaderWidth,
-            height: columnHeaderHeight,
-            transform: "translate3d(var(--sheet-scroll-x, 0px), var(--sheet-scroll-y, 0px), 0)",
-          }}
-        />
+        >
+          <div
+            ref={scrollFallbackRef}
+            className="sheet-scroll-fallback"
+            style={{
+              position: "sticky",
+              boxSizing: "border-box",
+              contain: "strict",
+              pointerEvents: "none",
+              width: Math.max(1, viewport.width - rowHeaderWidth - bodyLeftInset),
+              height: Math.max(1, viewport.height - columnHeaderHeight - bodyTopInset),
+              marginLeft: rowHeaderWidth + bodyLeftInset,
+              marginTop: columnHeaderHeight + bodyTopInset,
+              left: rowHeaderWidth + bodyLeftInset,
+              top: columnHeaderHeight + bodyTopInset,
+              "--sheet-fallback-column-width": `${metrics.columnWidth}px`,
+              "--sheet-fallback-row-height": `${metrics.rowHeight}px`,
+              backgroundImage: "repeating-linear-gradient(to right, transparent 0 calc(var(--sheet-fallback-column-width) - 1px), var(--tray) calc(var(--sheet-fallback-column-width) - 1px) var(--sheet-fallback-column-width)), repeating-linear-gradient(to bottom, var(--cell) 0 calc(var(--sheet-fallback-row-height) - 1px), var(--tray) calc(var(--sheet-fallback-row-height) - 1px) var(--sheet-fallback-row-height))",
+              backgroundPosition: "var(--sheet-fallback-x, 0) 0, 0 var(--sheet-fallback-y, 0)",
+            }}
+          />
+        </div>
 
         <div
           className="sheet-column-header-rail"
           aria-hidden="false"
           style={{ width: canvasSize.width, height: columnHeaderHeight }}
         >
+          <div
+            className="sheet-corner virtual-sheet-header"
+            role="button"
+            tabIndex={0}
+            aria-label="Select entire sheet"
+            aria-selected={normalizedSelection?.rowStart === 0
+              && normalizedSelection?.rowEnd === object.rows - 1
+              && normalizedSelection?.columnStart === 0
+              && normalizedSelection?.columnEnd === object.columns - 1}
+            onPointerDown={onStartCornerSelection}
+            onClick={() => {
+              onSelectRange?.("A1", cellAddress(object.rows - 1, object.columns - 1), selectedAddress);
+              onRestoreSelectionScroll();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectRange?.("A1", cellAddress(object.rows - 1, object.columns - 1), selectedAddress);
+              }
+            }}
+            style={{
+              left: 0,
+              top: 0,
+              width: rowHeaderWidth,
+              height: columnHeaderHeight,
+            }}
+          />
         {visibleColumns.map(({ column, position }) => {
           const columnGroup = columnGroupByStart.get(column);
           return (
@@ -217,6 +234,13 @@ export function SheetGridCanvas({
         })}
         </div>
 
+        <div
+          className="sheet-row-header-rail"
+          style={{
+            width: rowHeaderWidth,
+            height: Math.max(0, canvasSize.height - columnHeaderHeight),
+          }}
+        >
         {visibleRows.map(({ row, position }) => {
           const rowGroup = rowGroupByStart.get(row);
           return (
@@ -246,14 +270,13 @@ export function SheetGridCanvas({
               }}
               style={{
                 left: 0,
-                top: columnHeaderHeight + bodyTopInset + rowOffsetForPosition(position),
+                top: bodyTopInset + rowOffsetForPosition(position),
                 width: rowHeaderWidth,
                 height: rowSizeForPosition(position),
                 // The bottom resize handle straddles the next row header. Paint
                 // earlier rows above later rows so the active seam remains a
                 // real pointer target instead of being covered by its neighbor.
                 zIndex: object.rows - row + 60,
-                transform: "translate3d(var(--sheet-scroll-x, 0px), 0, 0)",
               }}
             >
               {rowGroup ? (
@@ -286,6 +309,7 @@ export function SheetGridCanvas({
             </div>
           );
         })}
+        </div>
 
         {visibleRows.flatMap(({ row, position }) => visibleColumns.map(({ column, position: columnPosition }) => {
           const id = cellId(row, column);

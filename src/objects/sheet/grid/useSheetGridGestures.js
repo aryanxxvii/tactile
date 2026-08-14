@@ -338,10 +338,6 @@ export function useSheetGridGestures({
       }
 
       scroller.scrollTo({ left: nextLeft, top: nextTop, behavior: "auto" });
-      // Native scrolling updates this in the scroll listener, but writing it
-      // here keeps sticky rails in the same frame as the drag hit-test.
-      scroller.style.setProperty("--sheet-scroll-x", `${nextLeft}px`);
-      scroller.style.setProperty("--sheet-scroll-y", `${nextTop}px`);
       updateSelectionAtPoint(pointer, true);
       selectionScrollFrameRef.current = window.requestAnimationFrame(tick);
     };
@@ -706,8 +702,6 @@ export function useSheetGridGestures({
       const scroller = scrollRef.current;
       if (scroller) {
         scroller.scrollTo({ left: saved.left, top: saved.top, behavior: "auto" });
-        scroller.style.setProperty("--sheet-scroll-x", `${saved.left}px`);
-        scroller.style.setProperty("--sheet-scroll-y", `${saved.top}px`);
       }
       releaseSelectionViewportLock();
     });

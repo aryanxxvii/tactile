@@ -114,14 +114,63 @@ test("horizontal virtual ranges keep a 65-column sheet inside its axis bounds", 
 test("rapid scroll look-ahead is directional and bounded", () => {
   assert.deepEqual(directionalOverscan({ rowHeight: 31, columnWidth: 126 }, { scrollTop: 620, scrollLeft: 260 }, 5), {
     top: 5,
-    bottom: 13,
+    bottom: 11,
     left: 5,
     right: 8,
   });
   assert.deepEqual(
     directionalOverscan({ rowHeight: 31, columnWidth: 126 }, { scrollTop: -10_000, scrollLeft: -10_000 }, 5),
-    { top: 13, bottom: 5, left: 13, right: 5 },
+    { top: 11, bottom: 5, left: 11, right: 5 },
   );
+});
+
+test("default-matrix render windows stay bounded at arbitrary offsets", () => {
+  const { rows, columns, rowGeometry, columnGeometry, metrics } = fixtureGeometry();
+  const viewport = { width: 1_280, height: 720 };
+  const destinations = [
+    { scrollLeft: 0, scrollTop: 0 },
+    { scrollLeft: columnGeometry.total / 2, scrollTop: rowGeometry.total / 2 },
+    {
+      scrollLeft: Math.max(0, columnGeometry.total - viewport.width),
+      scrollTop: Math.max(0, rowGeometry.total - viewport.height),
+    },
+  ];
+  let previous = destinations[0];
+
+  destinations.forEach((destination) => {
+    const projectedViewport = { ...viewport, ...destination };
+    const range = buildVirtualRange(
+      rowGeometry,
+      columnGeometry,
+      rows.length,
+      columns.length,
+      metrics,
+      projectedViewport,
+      directionalOverscan(
+        { ...metrics, rowHeight: 31, columnWidth: 126 },
+        {
+          scrollLeft: destination.scrollLeft - previous.scrollLeft,
+          scrollTop: destination.scrollTop - previous.scrollTop,
+        },
+        5,
+      ),
+    );
+    const visible = buildVirtualRange(
+      rowGeometry,
+      columnGeometry,
+      rows.length,
+      columns.length,
+      metrics,
+      projectedViewport,
+      0,
+    );
+    const mountedCellCount = (range.rowEnd - range.rowStart + 1) * (range.columnEnd - range.columnStart + 1);
+
+    assert.equal(rangeContains(range, visible), true);
+    assert.ok(mountedCellCount > 0);
+    assert.ok(mountedCellCount < 2_048, `expected a bounded window, received ${mountedCellCount} cells`);
+    previous = destination;
+  });
 });
 
 test("virtual range math clamps malformed offsets and geometry mismatches", () => {

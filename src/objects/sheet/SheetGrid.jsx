@@ -121,10 +121,11 @@ export function SheetGrid({
         columnGroupByStart={projection.columnGroupByStart}
         visibleRows={projection.visibleRows}
         visibleColumns={projection.visibleColumns}
+        viewport={projection.viewport}
         canvasSize={projection.canvasSize}
         metrics={projection.metrics}
         scrollRef={projection.scrollRef}
-        onScroll={projection.onScroll}
+        scrollFallbackRef={projection.scrollFallbackRef}
         rowOffsetForPosition={projection.rowOffsetForPosition}
         rowSizeForPosition={projection.rowSizeForPosition}
         columnOffsetForPosition={projection.columnOffsetForPosition}

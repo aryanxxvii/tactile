@@ -1,26 +1,41 @@
 import { expect, test } from "@playwright/test";
 
-test("mounts tiles through the initial viewport instead of leaving a lower blank band", async ({ page }) => {
+test("mounts a bounded tile window over a viewport-sized fallback", async ({ page }) => {
   await page.goto("/");
 
   const sheet = page.locator("[data-sheet-scroll]").last();
   await expect(sheet).toBeVisible();
   await expect
-    .poll(() => sheet.evaluate((element) => {
-      const columnHeader = element.querySelector(".column-header");
-      const scrollerBox = element.getBoundingClientRect();
-      const bodyTop = scrollerBox.top + (columnHeader?.getBoundingClientRect().height || 25);
-      const bodyBottom = scrollerBox.bottom;
-      const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
-        .map((slot) => slot.getBoundingClientRect())
-        .filter((box) => box.bottom > bodyTop && box.top < bodyBottom);
-      return {
-        mountedCells: element.querySelectorAll(".virtual-cell-slot").length,
-        coversViewport: visibleSlots.length > 0
-          && Math.max(...visibleSlots.map((box) => box.bottom)) >= bodyBottom - 1,
-      };
-    }))
-    .toMatchObject({ coversViewport: true });
+    .poll(() =>
+      sheet.evaluate((element) => {
+        const columnHeader = element.querySelector(".column-header");
+        const scrollerBox = element.getBoundingClientRect();
+        const bodyTop = scrollerBox.top + (columnHeader?.getBoundingClientRect().height || 25);
+        const bodyBottom = scrollerBox.bottom;
+        const fallback = element.querySelector(".sheet-scroll-fallback");
+        const fallbackBox = fallback?.getBoundingClientRect();
+        const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
+          .map((slot) => slot.getBoundingClientRect())
+          .filter((box) => box.bottom > bodyTop && box.top < bodyBottom);
+        return {
+          mountedCells: element.querySelectorAll(".virtual-cell-slot").length,
+          coversViewport:
+            visibleSlots.length > 0 && Math.max(...visibleSlots.map((box) => box.bottom)) >= bodyBottom - 1,
+          fallbackIsSticky: fallback ? getComputedStyle(fallback).position === "sticky" : false,
+          fallbackIsViewportBounded:
+            Boolean(fallbackBox) && fallbackBox.width <= scrollerBox.width && fallbackBox.height <= scrollerBox.height,
+        };
+      }),
+    )
+    .toMatchObject({
+      coversViewport: true,
+      fallbackIsSticky: true,
+      fallbackIsViewportBounded: true,
+    });
+
+  const mountedCells = await sheet.locator(".virtual-cell-slot").count();
+  expect(mountedCells).toBeGreaterThan(0);
+  expect(mountedCells).toBeLessThan(2_048);
 });
 
 test("keeps the column label lane intact on the first few scroll pixels", async ({ page }) => {
@@ -147,9 +162,7 @@ test("keeps active, hovered, and selected cells below the sticky column identifi
   expect(deepHoverPaint.maxDataSlotZ).toBeLessThan(deepHoverPaint.railZ);
 });
 
-test("keeps the full default tile matrix and both sticky rails aligned on the first frame of a fast wheel jump", async ({
-  page,
-}) => {
+test("keeps a bounded tile window and both sticky rails aligned after a fast wheel jump", async ({ page }) => {
   await page.goto("/");
 
   const scroll = page.locator("[data-sheet-scroll]");
@@ -210,27 +223,26 @@ test("keeps the full default tile matrix and both sticky rails aligned on the fi
   });
   expect(state.scrollTop).toBeGreaterThan(0);
   expect(state.scrollLeft).toBeGreaterThan(0);
-  expect(state.mountedCells).toBeGreaterThanOrEqual(256 * 64);
+  expect(state.mountedCells).toBeGreaterThan(0);
+  expect(state.mountedCells).toBeLessThan(2_048);
 });
 
-test("keeps the painted range current through a synchronous rapid-scroll burst", async ({ page }) => {
+test("coalesces a burst into one bounded destination range", async ({ page }) => {
   await page.goto("/");
 
   const sheet = page.locator("[data-sheet-scroll]").last();
   await expect(sheet).toBeVisible();
 
-  const state = await sheet.evaluate((element) => {
+  const state = await sheet.evaluate(async (element) => {
     const maxTop = Math.max(0, element.scrollHeight - element.clientHeight);
     const maxLeft = Math.max(0, element.scrollWidth - element.clientWidth);
     const steps = 140;
     for (let index = 1; index <= steps; index += 1) {
       element.scrollTop = Math.min(maxTop, index * 31);
       element.scrollLeft = Math.min(maxLeft, index * 24);
-      // A trackpad burst can deliver many scroll positions before React's
-      // scheduled range update commits. Dispatch synchronously to preserve
-      // that ordering and catch requested-vs-painted range races.
-      element.dispatchEvent(new Event("scroll"));
     }
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
 
     const scrollerBox = element.getBoundingClientRect();
     const columnHeader = element.querySelector(".column-header");
@@ -239,22 +251,23 @@ test("keeps the painted range current through a synchronous rapid-scroll burst",
     const bodyLeft = scrollerBox.left + (corner?.getBoundingClientRect().width ?? 34);
     const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
       .map((slot) => slot.getBoundingClientRect())
-      .filter((box) => (
-        box.bottom > bodyTop
-        && box.top < scrollerBox.bottom
-        && box.right > bodyLeft
-        && box.left < scrollerBox.right
-      ));
+      .filter(
+        (box) =>
+          box.bottom > bodyTop && box.top < scrollerBox.bottom && box.right > bodyLeft && box.left < scrollerBox.right,
+      );
     return {
       scrollTop: element.scrollTop,
       scrollLeft: element.scrollLeft,
+      mountedCells: element.querySelectorAll(".virtual-cell-slot").length,
       visibleCells: visibleSlots.length,
-      rowCoverage: visibleSlots.length > 0
-        && Math.min(...visibleSlots.map((box) => box.top)) <= bodyTop + 1
-        && Math.max(...visibleSlots.map((box) => box.bottom)) >= scrollerBox.bottom - 1,
-      columnCoverage: visibleSlots.length > 0
-        && Math.min(...visibleSlots.map((box) => box.left)) <= bodyLeft + 1
-        && Math.max(...visibleSlots.map((box) => box.right)) >= scrollerBox.right - 1,
+      rowCoverage:
+        visibleSlots.length > 0 &&
+        Math.min(...visibleSlots.map((box) => box.top)) <= bodyTop + 1 &&
+        Math.max(...visibleSlots.map((box) => box.bottom)) >= scrollerBox.bottom - 1,
+      columnCoverage:
+        visibleSlots.length > 0 &&
+        Math.min(...visibleSlots.map((box) => box.left)) <= bodyLeft + 1 &&
+        Math.max(...visibleSlots.map((box) => box.right)) >= scrollerBox.right - 1,
     };
   });
 
@@ -265,65 +278,32 @@ test("keeps the painted range current through a synchronous rapid-scroll burst",
   expect(state.scrollTop).toBeGreaterThan(3000);
   expect(state.scrollLeft).toBeGreaterThan(2000);
   expect(state.visibleCells).toBeGreaterThan(0);
+  expect(state.mountedCells).toBeLessThan(2_048);
 });
 
-test("prepaints an overlapping wheel destination before native scrolling moves the viewport", async ({ page }) => {
+test("keeps the fallback isolated from the virtual cell tree", async ({ page }) => {
   await page.goto("/");
 
   const sheet = page.locator("[data-sheet-scroll]").last();
   await expect(sheet).toBeVisible();
-  const scrollBox = await sheet.boundingBox();
-  if (!scrollBox) throw new Error("The sheet scroll surface has no layout box.");
-
-  await sheet.evaluate((element) => {
-    window.__tactileWheelPrimeProbe = null;
-    element.addEventListener("wheel", (event) => {
-      const projectedTop = Math.max(0, Math.min(
-        element.scrollTop + event.deltaY,
-        element.scrollHeight - element.clientHeight,
-      ));
-      const projectedLeft = Math.max(0, Math.min(
-        element.scrollLeft + event.deltaX,
-        element.scrollWidth - element.clientWidth,
-      ));
-      const bodyTop = projectedTop + 25;
-      const bodyLeft = projectedLeft + 34;
-      const bodyBottom = projectedTop + element.clientHeight;
-      const bodyRight = projectedLeft + element.clientWidth;
-      const projectedSlots = [...element.querySelectorAll(".virtual-cell-slot")]
-        .map((slot) => ({
-          top: slot.offsetTop,
-          bottom: slot.offsetTop + slot.offsetHeight,
-          left: slot.offsetLeft,
-          right: slot.offsetLeft + slot.offsetWidth,
-        }))
-        .filter((box) => (
-          box.bottom > bodyTop
-          && box.top < bodyBottom
-          && box.right > bodyLeft
-          && box.left < bodyRight
-        ));
-      window.__tactileWheelPrimeProbe = {
-        visibleCells: projectedSlots.length,
-        rowCoverage: projectedSlots.length > 0
-          && Math.min(...projectedSlots.map((box) => box.top)) <= bodyTop + 1
-          && Math.max(...projectedSlots.map((box) => box.bottom)) >= bodyBottom - 1,
-        columnCoverage: projectedSlots.length > 0
-          && Math.min(...projectedSlots.map((box) => box.left)) <= bodyLeft + 1
-          && Math.max(...projectedSlots.map((box) => box.right)) >= bodyRight - 1,
-      };
-    }, { once: true });
+  const state = await sheet.evaluate((element) => {
+    const fallback = element.querySelector(".sheet-scroll-fallback");
+    return {
+      fallbackParent: fallback?.parentElement?.className || "",
+      fallbackContain: fallback ? getComputedStyle(fallback).contain : "",
+      cellDescendants: fallback?.querySelectorAll(".sheet-cell").length ?? -1,
+      inheritedScrollX: element.style.getPropertyValue("--sheet-scroll-x"),
+      inheritedScrollY: element.style.getPropertyValue("--sheet-scroll-y"),
+    };
   });
 
-  await page.mouse.move(scrollBox.x + scrollBox.width / 2, scrollBox.y + scrollBox.height / 2);
-  await page.mouse.wheel(900, 420);
-  const probe = await page.evaluate(() => window.__tactileWheelPrimeProbe);
-
-  expect(probe).toMatchObject({
-    rowCoverage: true,
-    columnCoverage: true,
+  expect(state).toEqual({
+    fallbackParent: "sheet-scroll-fallback-layer",
+    fallbackContain: "strict",
+    cellDescendants: 0,
+    inheritedScrollX: "",
+    inheritedScrollY: "",
   });
-  expect(probe.visibleCells).toBeGreaterThan(0);
 });
 
 test("keeps active and hovered first-column cells behind the row rail after deep jumps", async ({ page }) => {
@@ -427,7 +407,7 @@ test("refreshes the virtual slice before the first frame after a direct large of
   expect(state.scrollTop).toBeGreaterThan(0);
 });
 
-test("keeps the full default tile matrix aligned at the horizontal sheet edge", async ({ page }) => {
+test("keeps the bounded tile window aligned at the horizontal sheet edge", async ({ page }) => {
   await page.goto("/");
 
   const state = await page
@@ -472,8 +452,9 @@ test("keeps the full default tile matrix aligned at the horizontal sheet edge", 
     inCanvasBounds: true,
   });
   expect(state.scrollLeft).toBeGreaterThanOrEqual(state.maxScrollLeft - 20);
-  expect(state.maxRow).toBe(255);
-  expect(state.mountedCells).toBeGreaterThanOrEqual(256 * 64);
+  expect(state.maxRow).toBeLessThan(255);
+  expect(state.mountedCells).toBeGreaterThan(0);
+  expect(state.mountedCells).toBeLessThan(2_048);
 });
 
 test("keeps the active cell and formula bar coherent through a coalesced native jump", async ({ page }) => {
@@ -523,12 +504,9 @@ test("keeps the active cell and formula bar coherent through a coalesced native 
       const active = document.querySelector('.sheet-cell[aria-selected="true"]');
       const formula = document.querySelector(".formula-editor");
       const status = document.querySelector(".active-cell-status code");
-      const styles = getComputedStyle(element);
       return {
         scrollTop: element.scrollTop,
         scrollLeft: element.scrollLeft,
-        scrollX: Number.parseFloat(styles.getPropertyValue("--sheet-scroll-x")),
-        scrollY: Number.parseFloat(styles.getPropertyValue("--sheet-scroll-y")),
         mountedCells: allSlots.length,
         visibleCells: visibleSlots.length,
         rowCoverage:
@@ -571,12 +549,9 @@ test("keeps the active cell and formula bar coherent through a coalesced native 
     statusAddress: "B2",
   });
   expect(state.visibleCells).toBeGreaterThan(0);
-  expect(state.mountedCells).toBeGreaterThanOrEqual(256 * 64);
+  expect(state.mountedCells).toBeLessThan(2_048);
   expect(state.scrollTop).toBeGreaterThanOrEqual(target.top - 20);
   expect(state.scrollLeft).toBeGreaterThanOrEqual(target.left - 20);
-  expect(state.scrollX).toBeCloseTo(state.scrollLeft, 1);
-  expect(state.scrollY).toBeCloseTo(state.scrollTop, 1);
-
   await expect
     .poll(() =>
       scroll.evaluate((element) => ({
