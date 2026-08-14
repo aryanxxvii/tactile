@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 — 2026-08-15
+
+Release workflow correction: clean macOS runners now produce an explicitly unsigned DMG when Apple signing credentials are not configured, while retaining the signed/notarized path when the release owner supplies them.
+
 ## 0.1.1 — 2026-08-15
 
 Packaging correction for the first public release. Native icon assets are now explicitly included in source checkouts, allowing the Windows, macOS, and Linux release jobs to build from the same tag.

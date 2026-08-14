@@ -137,7 +137,22 @@ jobs:
       - name: Build Tauri bundle
         env:
           APPLE_SIGNING_IDENTITY: ${{ steps.apple-prereqs.outputs.signing_ready == 'true' && secrets.APPLE_SIGNING_IDENTITY || '' }}
-        run: npx --yes @tauri-apps/cli@2.11.4 build --target ${{ matrix.rust-target }} --bundles ${{ matrix.bundles }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ '${{ matrix.platform }}' == 'macos-universal' && '${{ steps.apple-prereqs.outputs.signing_ready }}' != 'true' ]]; then
+            # Tauri otherwise attempts to sign with the empty identity on a
+            # clean hosted runner. An unsigned DMG is intentional until the
+            # release owner supplies Developer ID credentials.
+            npx --yes @tauri-apps/cli@2.11.4 build \
+              --target '${{ matrix.rust-target }}' \
+              --bundles '${{ matrix.bundles }}' \
+              --config '{"bundle":{"macOS":{"signingIdentity":null}}}'
+          else
+            npx --yes @tauri-apps/cli@2.11.4 build \
+              --target '${{ matrix.rust-target }}' \
+              --bundles '${{ matrix.bundles }}'
+          fi
 
       - name: Sign macOS DMG
         if: matrix.platform == 'macos-universal' && steps.apple-prereqs.outputs.signing_ready == 'true'
