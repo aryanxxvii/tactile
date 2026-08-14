@@ -48,18 +48,18 @@ function ColorRow({ label, icon: Icon, colors, onSelect }) {
     <div className="files-context-menu-item markdown-context-menu-color-row" role="group" aria-label={label}>
       <Icon size={14} stroke={1.65} aria-hidden="true" />
       <span>{label}</span>
-      <div style={{ display: "inline-flex", gap: 2 }}>
+      <div className="cell-color-swatches">
         {colors.map((color) => (
           <button
             key={color.value}
+            className="cell-color-swatch"
             type="button"
             role="menuitem"
             aria-label={`${label}: ${color.name}`}
             data-tooltip={color.name}
-            style={{ width: 18, height: 18, padding: 2, border: "1px solid var(--line)", borderRadius: 4, background: "var(--paper)" }}
             onClick={() => onSelect(color.value)}
           >
-            <span style={{ backgroundColor: color.value, width: "100%", height: "100%", display: "block" }} />
+            <span style={{ backgroundColor: color.value }} />
           </button>
         ))}
       </div>
