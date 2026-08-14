@@ -152,6 +152,7 @@ export function SheetGrid({
         onStartCornerSelection={gestures.startCornerSelection}
         onStartResize={gestures.startResize}
         onResizeAxisWithKeyboard={gestures.resizeAxisWithKeyboard}
+        onResetAxisSize={gestures.resetAxisSize}
         onRestoreSelectionScroll={gestures.restoreSelectionScroll}
         onToggleRowGroup={(groupId) => gestures.toggleRowGroup(groupId, projection.rowGroups)}
         onToggleColumnGroup={(groupId) => gestures.toggleColumnGroup(groupId, projection.columnGroups)}

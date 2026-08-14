@@ -638,6 +638,15 @@ export function useSheetGridGestures({
     onUpdateObject?.(axis === "column" ? { columnWidths: nextSizes } : { rowHeights: nextSizes });
   }, [axisResizeTargets, columnSizeForIndex, object.columnWidths, object.rowHeights, onUpdateObject, rowSizeForIndex]);
 
+  const resetAxisSize = useCallback((axis, index) => {
+    const targets = new Set(axisResizeTargets(axis, index));
+    const current = axis === "column" ? object.columnWidths : object.rowHeights;
+    const next = Object.fromEntries(
+      Object.entries(current || {}).filter(([key]) => !targets.has(Number(key))),
+    );
+    onUpdateObject?.(axis === "column" ? { columnWidths: next } : { rowHeights: next });
+  }, [axisResizeTargets, object.columnWidths, object.rowHeights, onUpdateObject]);
+
   const startAxisDrag = useCallback((event, axis, index) => {
     if (event.button !== 0 || event.target.closest(".column-resize-handle, .row-resize-handle, .column-group-toggle, .row-group-toggle")) return;
     event.preventDefault();
@@ -745,6 +754,7 @@ export function useSheetGridGestures({
     startFill,
     startResize,
     resizeAxisWithKeyboard,
+    resetAxisSize,
     startAxisDrag,
     startCornerSelection,
     restoreSelectionScroll,

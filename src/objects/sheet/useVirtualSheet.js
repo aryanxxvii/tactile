@@ -393,7 +393,12 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     scheduleViewportMemory(next);
 
     const visibleRange = buildVisibleRange(next);
-    const nextRange = buildRenderRange(next, directionalOverscan(metrics, delta, renderOverscan));
+    // Keep the mounted band centered around the current viewport. Directional
+    // overscan can leave the previous slice painted on the wrong side during a
+    // coalesced reverse jump, which reads as if tiles are travelling opposite
+    // to the native scroll. A symmetric band remains bounded while ensuring
+    // every committed slice belongs to the current scroll scope.
+    const nextRange = buildRenderRange(next, renderOverscan);
     if (!forceRange
       && rangeContains(rangeRef.current, visibleRange)
       && rangeContains(rangeRef.current, nextRange)) return;

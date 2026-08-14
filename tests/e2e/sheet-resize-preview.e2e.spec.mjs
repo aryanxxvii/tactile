@@ -26,6 +26,17 @@ test("previews column resizing before the pointer is released", async ({ page })
     .poll(async () => (await columnCell.boundingBox())?.width || 0)
     .toBeGreaterThan(columnBefore.width + 20);
   await page.mouse.up();
+
+  const resizedColumn = await columnCell.boundingBox();
+  const resetColumnHandle = await columnHandle.boundingBox();
+  if (!resizedColumn || !resetColumnHandle) throw new Error("Resized column fixture is not measurable.");
+  await page.mouse.dblclick(
+    resetColumnHandle.x + resetColumnHandle.width / 2,
+    resetColumnHandle.y + resetColumnHandle.height / 2,
+  );
+  await expect
+    .poll(async () => Math.round((await columnCell.boundingBox())?.width || 0))
+    .toBe(Math.round(columnBefore.width));
 });
 
 test("previews row resizing before the pointer is released", async ({ page }) => {
@@ -54,4 +65,14 @@ test("previews row resizing before the pointer is released", async ({ page }) =>
     .poll(async () => (await rowCell.boundingBox())?.height || 0)
     .toBeGreaterThan(rowBefore.height + 10);
   await page.mouse.up();
+
+  const resetRowHandle = await rowHandle.boundingBox();
+  if (!resetRowHandle) throw new Error("Resized row fixture is not measurable.");
+  await page.mouse.dblclick(
+    resetRowHandle.x + resetRowHandle.width / 2,
+    resetRowHandle.y + resetRowHandle.height / 2,
+  );
+  await expect
+    .poll(async () => Math.round((await rowCell.boundingBox())?.height || 0))
+    .toBe(Math.round(rowBefore.height));
 });
