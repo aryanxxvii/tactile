@@ -135,7 +135,16 @@ export function SheetGridCanvas({
         <div
           className="sheet-column-header-rail"
           aria-hidden="false"
-          style={{ width: canvasSize.width, height: columnHeaderHeight }}
+          style={{
+            width: canvasSize.width,
+            height: columnHeaderHeight,
+            // The column lane owns the top stacking context. Its rail-level
+            // rule also closes the deliberate 3px inset before the first
+            // data column, so the corner and header seam stay continuous.
+            zIndex: 25,
+            borderBottom: "1px solid var(--line-strong)",
+            boxSizing: "border-box",
+          }}
         >
           <div
             className="sheet-corner virtual-sheet-header"
@@ -240,6 +249,13 @@ export function SheetGridCanvas({
           style={{
             width: rowHeaderWidth,
             height: Math.max(0, canvasSize.height - columnHeaderHeight),
+            // Row identifiers must stay above data tiles, but their nested
+            // per-row z-indices must never cover the corner/column lane while
+            // the canvas is scrolled. Keep this stacking context below the
+            // column rail and close the vertical seam at the rail level.
+            zIndex: 15,
+            borderRight: "1px solid var(--line-strong)",
+            boxSizing: "border-box",
           }}
         >
         {visibleRows.map(({ row, position }) => {

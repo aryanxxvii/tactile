@@ -59,6 +59,90 @@ test("keeps the column label lane intact on the first few scroll pixels", async 
   expect(state.headerBottom).toBeCloseTo(state.scrollTop + state.headerHeight, 1);
 });
 
+test("keeps the selector corner above scrolled row identifiers and closes the rail seam", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+
+  const state = await sheet.evaluate(async (element) => {
+    const samples = [];
+    for (const scrollTop of [0, 12, 480]) {
+      element.scrollTo({ top: scrollTop, left: 0, behavior: "auto" });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
+      const corner = element.querySelector(".sheet-corner");
+      const columnRail = element.querySelector(".sheet-column-header-rail");
+      const rowRail = element.querySelector(".sheet-row-header-rail");
+      const cornerBox = corner?.getBoundingClientRect();
+      const columnRailBox = columnRail?.getBoundingClientRect();
+      const rowRailBox = rowRail?.getBoundingClientRect();
+      if (!corner || !columnRail || !rowRail || !cornerBox || !columnRailBox || !rowRailBox) {
+        throw new Error("The sheet rail fixture is not measurable.");
+      }
+
+      const overlapRows = [...element.querySelectorAll(".row-header")]
+        .map((node) => ({ node, box: node.getBoundingClientRect() }))
+        .filter(({ box }) => box.bottom > cornerBox.top && box.top < cornerBox.bottom);
+      const cornerHit = document.elementFromPoint(
+        cornerBox.left + cornerBox.width / 2,
+        cornerBox.top + cornerBox.height / 2,
+      );
+
+      samples.push({
+        scrollTop: element.scrollTop,
+        cornerHit: cornerHit?.closest(".sheet-corner") ? "corner" : cornerHit?.className || "",
+        overlapRows: overlapRows.map(({ node }) => node.dataset.axisIndex),
+        columnRailZ: getComputedStyle(columnRail).zIndex,
+        rowRailZ: getComputedStyle(rowRail).zIndex,
+        columnBoundary: {
+          style: getComputedStyle(columnRail).borderBottomStyle,
+          width: getComputedStyle(columnRail).borderBottomWidth,
+        },
+        rowBoundary: {
+          style: getComputedStyle(rowRail).borderRightStyle,
+          width: getComputedStyle(rowRail).borderRightWidth,
+        },
+        cornerRightDelta: Math.abs(cornerBox.right - rowRailBox.right),
+        cornerBottomDelta: Math.abs(cornerBox.bottom - columnRailBox.bottom),
+      });
+    }
+
+    element.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const cell = element.querySelector('.sheet-cell[data-cell-address="A1"]');
+    const cellBox = cell?.getBoundingClientRect();
+    const corner = element.querySelector(".sheet-corner")?.getBoundingClientRect();
+    const rowRail = element.querySelector(".sheet-row-header-rail")?.getBoundingClientRect();
+    const columnRail = element.querySelector(".sheet-column-header-rail")?.getBoundingClientRect();
+    return {
+      samples,
+      railToCell: {
+        horizontal: cellBox && rowRail ? cellBox.left - rowRail.right : null,
+        vertical: cellBox && columnRail ? cellBox.top - columnRail.bottom : null,
+        cornerRight: corner && rowRail ? Math.abs(corner.right - rowRail.right) : null,
+        cornerBottom: corner && columnRail ? Math.abs(corner.bottom - columnRail.bottom) : null,
+      },
+    };
+  });
+
+  expect(state.samples).toHaveLength(3);
+  expect(state.samples[2]).toMatchObject({
+    cornerHit: "corner",
+    columnRailZ: "25",
+    rowRailZ: "15",
+    columnBoundary: { style: "solid", width: expect.stringMatching(/^(1|0\.\d+)px$/) },
+    rowBoundary: { style: "solid", width: expect.stringMatching(/^(1|0\.\d+)px$/) },
+  });
+  expect(state.samples[2].overlapRows.length).toBeGreaterThan(0);
+  for (const sample of state.samples) {
+    expect(sample.cornerHit).toBe("corner");
+    expect(sample.cornerRightDelta).toBeLessThan(0.5);
+    expect(sample.cornerBottomDelta).toBeLessThan(0.5);
+  }
+  expect(state.railToCell).toMatchObject({ horizontal: 3, vertical: 3, cornerRight: 0, cornerBottom: 0 });
+});
+
 test("keeps active, hovered, and selected cells below the sticky column identifiers", async ({ page }) => {
   await page.goto("/");
 
