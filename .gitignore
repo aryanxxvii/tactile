@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.png
+!src-tauri/icons/*.png
 *.xlsx
 audits/
 .cache/

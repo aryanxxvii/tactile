@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — 2026-08-15
+
+Packaging correction for the first public release. Native icon assets are now explicitly included in source checkouts, allowing the Windows, macOS, and Linux release jobs to build from the same tag.
+
 This file records user-visible and release-process changes. It does not declare a release until a release owner assigns a version and publishes the required artifacts.
 
 ## 0.1.0 — 2026-08-15
