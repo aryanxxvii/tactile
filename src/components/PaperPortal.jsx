@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 const PAPER_THEME_VARIABLES = [
   "--app-background",
@@ -67,21 +67,29 @@ function themeVariablesFor(source) {
 }
 
 export function PaperPortal({ children, className = "", themeSource = null }) {
-  const [target, setTarget] = useState(null);
+  const target = documentLevelPortalTarget();
+  const layerRef = useRef(null);
 
   useLayoutEffect(() => {
-    setTarget(documentLevelPortalTarget());
-  }, [className]);
+    const layer = layerRef.current;
+    if (!layer) return;
+    for (let index = layer.style.length - 1; index >= 0; index -= 1) {
+      const name = layer.style.item(index);
+      if (name?.startsWith("--")) layer.style.removeProperty(name);
+    }
+    Object.entries(themeVariablesFor(themeSource)).forEach(([name, value]) => {
+      layer.style.setProperty(name, value);
+    });
+  });
 
   if (!target) return null;
 
   const overlayProps = {
     className: ["tactile-overlay-layer", className].filter(Boolean).join(" "),
-    style: themeVariablesFor(themeSource),
     "data-overlay-layer": "true",
     "data-floating-interactive": "true",
     ...(className.includes("tactile-tooltip-layer") ? { "data-tooltip-layer": "true" } : {}),
   };
 
-  return createPortal(<div {...overlayProps}>{children}</div>, target);
+  return createPortal(<div {...overlayProps} ref={layerRef}>{children}</div>, target);
 }

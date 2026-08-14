@@ -210,6 +210,35 @@ test("renders only the active parent and child during nested In & Out navigation
   await expect(page.locator('.base-object-layer [data-object-id="home"]')).not.toHaveCount(0);
 });
 
+test("retains the mounted spatial layer slot across nested advance and return", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  await cellLocator(page, "home", "A1").click();
+  const spatialLayer = page.locator(".spatial-layer");
+  await expect(spatialLayer).toHaveCount(1);
+  await expect(page.locator('[data-layer-object="layer-two"]')).toHaveAttribute("data-spatial-phase", "floating");
+  const slotIdentity = await spatialLayer.evaluate((element) => {
+    window.__tactileSpatialSlotIdentity = (window.__tactileSpatialSlotIdentity || 0) + 1;
+    const identity = `slot-${window.__tactileSpatialSlotIdentity}`;
+    element.dataset.testSpatialSlotIdentity = identity;
+    return identity;
+  });
+
+  await cellLocator(page, "layer-two", "A1").click();
+  await expect(page.locator('[data-layer-object="layer-three"]')).toHaveAttribute("data-spatial-phase", "floating", {
+    timeout: 4_000,
+  });
+  await expect(spatialLayer).toHaveAttribute("data-layer-object", "layer-three");
+  await expect(spatialLayer).toHaveAttribute("data-test-spatial-slot-identity", slotIdentity);
+
+  await page.keyboard.press("[");
+  await expect(page.locator('[data-layer-object="layer-three"]')).toHaveCount(0, { timeout: 4_000 });
+  await expect(page.locator('[data-layer-object="layer-two"]')).toHaveAttribute("data-spatial-phase", "full");
+  await expect(spatialLayer).toHaveAttribute("data-layer-object", "layer-two");
+  await expect(spatialLayer).toHaveAttribute("data-test-spatial-slot-identity", slotIdentity);
+});
+
 test("opens an embedded tile with Enter just like the In & Out shortcut", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);
