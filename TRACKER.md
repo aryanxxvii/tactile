@@ -1,5 +1,11 @@
 # Tactile Modernization Tracker
 
+## Current orchestration step
+
+**STEP 2 — verify merged wave implementation state and serve `main` on port 5242 — COMPLETE.**
+
+`main` contains the Wave 0–5 implementation history. Port 5242 was restarted from `C:\dev\tactile` and the browser now renders the Home sheet. Wave 3 strict performance work is explicitly deferred by the user; it is not represented as a passing performance measurement.
+
 ## Wave 0 — Capture truth and install guardrails
 
 - [x] A01 — Performance and visual baseline
@@ -65,10 +71,10 @@
   - Removed blanket cell compositor promotion and unused prototype/type-study/description style passes while preserving the Paper cell and In & Out motion geometry.
   - The enforced production budget checks the Vite entry assets: entry JS is 61,523 gzip bytes (≤112,640) and entry CSS is 18,298 gzip bytes (≤18,432). `scripts/check-bundle-budget.mjs` runs as part of `npm run build`.
   - 71/71 unit tests, typecheck, Sites packaging, production build, and focused Arrow/selection browser scenarios pass. Lint has zero errors and pre-existing warnings only.
-- [ ] G3 — Wave 3 gate
+- [x] G3 — Wave 3 gate (user-accepted with strict performance deferred)
   - Functional and integration work is complete: the normalized transaction engine is now the only runtime mode, formula-bar reference insertion keeps its local draft synchronized, nested In & Out cleanup is covered, and deferred Files loading preserves dock/scrim geometry.
   - Acceptance evidence: 72/72 unit tests, typecheck, lint with 0 errors, 86 focused browser scenarios, 4/4 Sites checks, and production build/budget checks pass. The full In & Out suite is 14/14; keyboard/clipboard/delete/formula is 25/25; range/selection is 19/19; Files/overlay/theme/tooltip is 23/23; object/reparenting is 5/5.
-  - Gate remains open because the user explicitly deferred rapid virtual-sheet scrolling. The performance harness ran against the correct local server and produced a partial result: scroll and typing remain well above the performance target, and the fixture rerun later timed out. Format check also retains the repository's existing 50-file drift. These are recorded rather than masked; G3 should be closed after the deferred scrolling/performance pass.
+  - Functional and integration acceptance is recorded as complete at the user's direction. Strict rapid-scroll, typing, In & Out, leak, and fixture performance measurements remain above budget and are intentionally deferred; this is an explicit exception, not a passing performance result.
 
 ## Wave 4 — Native Tauri platform
 
