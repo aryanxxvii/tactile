@@ -40,6 +40,7 @@ export function App() {
     updateCells,
     clearCell,
     clearCells,
+    createObject,
     createEmbeddedObject,
     createEmbeddedFile,
     replaceObjectFile,
@@ -439,6 +440,10 @@ export function App() {
             pinned={shell.filesPinned}
             width={shell.filesWidth}
             onOpenRoute={(route) => inOut.navigateToRoute(route, { mode: "full", immediate: true })}
+            onCreateObject={(type) => {
+              const created = createObject(type);
+              if (created) shell.showNotice(`${created.title} created`);
+            }}
             onUpdateObject={updateObject}
             onReparentObject={handleReparentObject}
             onDeleteObject={(objectId) => {

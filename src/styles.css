@@ -5492,6 +5492,19 @@ kbd {
   background: var(--accent-soft);
 }
 
+.files-create-label {
+  margin-right: auto;
+  color: var(--faint);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.files-create-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .files-panel-body {
   min-height: 0;
   overflow: auto;

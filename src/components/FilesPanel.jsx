@@ -5,10 +5,12 @@ import {
   IconChevronRight,
   IconCopy,
   IconHome,
+  IconFileText,
   IconPalette,
   IconPencil,
   IconPin,
   IconPinned,
+  IconTable,
   IconSearch,
   IconTrash,
   IconX,
@@ -547,6 +549,7 @@ export function FilesPanel({
   pinned = false,
   width = 360,
   onOpenRoute,
+  onCreateObject,
   onUpdateObject,
   onReparentObject,
   onDeleteObject,
@@ -819,6 +822,12 @@ export function FilesPanel({
     }
   };
 
+  const handleCreateObject = (type) => {
+    setQuery("");
+    setCategory("all");
+    onCreateObject?.(type);
+  };
+
   return (
     <div className={`files-layer ${pinned ? "is-pinned" : ""}`} role="presentation">
       <button
@@ -899,6 +908,18 @@ export function FilesPanel({
               {filter.label}
             </button>
           ))}
+        </div>
+
+        <div className="files-filter-row files-create-row" role="group" aria-label="Create object">
+          <span className="files-create-label">Create new</span>
+          <button type="button" onClick={() => handleCreateObject("sheet")} data-create-object="sheet">
+            <IconTable size={13} stroke={1.7} />
+            <span>Tiles</span>
+          </button>
+          <button type="button" onClick={() => handleCreateObject("markdown")} data-create-object="markdown">
+            <IconFileText size={13} stroke={1.7} />
+            <span>Text</span>
+          </button>
         </div>
 
         <div className="files-panel-body" aria-live="polite">

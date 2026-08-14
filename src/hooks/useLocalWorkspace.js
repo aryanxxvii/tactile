@@ -393,6 +393,16 @@ export function useLocalWorkspace() {
     return created;
   }, [commitWorkspace]);
 
+  const createObject = useCallback((type) => {
+    if (type !== "sheet" && type !== "markdown") return null;
+    const created = createObjectForType(type);
+    commitWorkspace((current) => touch(current, {
+      ...current.objects,
+      [created.id]: created,
+    }, true), `create-root:${created.id}`);
+    return created;
+  }, [commitWorkspace]);
+
   const createEmbeddedFile = useCallback((parentObjectId, parentCellId, fileAsset) => {
     const coordinates = coordinatesFromCellId(parentCellId);
     if (!coordinates || !fileAsset) return null;
@@ -674,6 +684,7 @@ export function useLocalWorkspace() {
     updateCells,
     clearCell,
     clearCells,
+    createObject,
     createEmbeddedObject,
     createEmbeddedFile,
     replaceObjectFile,
