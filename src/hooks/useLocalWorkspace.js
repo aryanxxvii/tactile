@@ -45,6 +45,30 @@ function touch(workspace, objects, repairTopology = false) {
   return repairTopology ? repairWorkspaceTopology(next) : next;
 }
 
+function cloneHistoryWorkspace(workspace) {
+  if (typeof structuredClone === "function") return structuredClone(workspace);
+  return JSON.parse(JSON.stringify(workspace));
+}
+
+function cloneHistoryCell(cell) {
+  return cell ? { ...cell } : null;
+}
+
+function applyCellHistory(workspace, entry, direction) {
+  const object = workspace.objects[entry.objectId];
+  if (object?.type !== "sheet") return workspace;
+  const cells = object.cells;
+  entry.changes.forEach((change) => {
+    const cell = change[direction];
+    if (cell) cells[change.cellId] = { ...cell };
+    else delete cells[change.cellId];
+  });
+  return touch({
+    ...workspace,
+    objects: { ...workspace.objects, [entry.objectId]: { ...object, cells } },
+  }, { ...workspace.objects, [entry.objectId]: { ...object, cells } }, entry.changes.some((change) => Boolean(change.before?.embed || change.after?.embed)));
+}
+
 function shiftCells(object, axis, index) {
   const cells = {};
   Object.values(object.cells || {}).forEach((cell) => {
@@ -207,13 +231,70 @@ export function useLocalWorkspace() {
       const now = Date.now();
       const coalesced = history.lastKey === historyKey && now - history.lastAt < 650;
       if (!coalesced) {
-        history.past.push(current);
+        history.past.push({ kind: "snapshot", value: cloneHistoryWorkspace(current) });
         if (history.past.length > 120) history.past.shift();
       }
       history.future = [];
       history.lastKey = historyKey;
       history.lastAt = now;
       return next;
+    });
+  }, []);
+
+  const commitCellChanges = useCallback((objectId, changes, historyKey = "range") => {
+    if (!Array.isArray(changes) || !changes.length) return;
+    setWorkspace((current) => {
+      const object = current.objects[objectId];
+      if (object?.type !== "sheet") return current;
+      const historyChanges = [];
+      let changed = false;
+      const cells = object.cells;
+      changes.forEach(({ cellId: targetCellId, patch }) => {
+        const coordinates = coordinatesFromCellId(targetCellId);
+        if (!coordinates) return;
+        const before = cells[targetCellId] || null;
+        const cell = createCellRecord(coordinates.row, coordinates.column, {
+          ...(before || {}),
+          ...(patch || {}),
+        });
+        const after = isCellUsed(cell) ? cell : null;
+        const beforeValue = JSON.stringify(before || null);
+        const afterValue = JSON.stringify(after || null);
+        if (beforeValue === afterValue) return;
+        if (after) cells[targetCellId] = after;
+        else delete cells[targetCellId];
+        changed = true;
+        historyChanges.push({
+          cellId: targetCellId,
+          before: cloneHistoryCell(before),
+          after: cloneHistoryCell(after),
+        });
+      });
+      if (!changed) return current;
+
+      const history = historyRef.current;
+      const now = Date.now();
+      const coalesced = history.lastKey === historyKey && now - history.lastAt < 650;
+      const last = history.past.at(-1);
+      if (coalesced && last?.kind === "cells" && last.historyKey === historyKey && last.objectId === objectId) {
+        const byCell = new Map(last.changes.map((change) => [change.cellId, change]));
+        historyChanges.forEach((change) => {
+          const existing = byCell.get(change.cellId);
+          if (existing) existing.after = change.after;
+          else byCell.set(change.cellId, change);
+        });
+        last.changes = [...byCell.values()];
+      } else {
+        history.past.push({ kind: "cells", historyKey, objectId, changes: historyChanges });
+        if (history.past.length > 120) history.past.shift();
+      }
+      history.future = [];
+      history.lastKey = historyKey;
+      history.lastAt = now;
+      return touch({
+        ...current,
+        objects: { ...current.objects, [objectId]: { ...object, cells } },
+      }, { ...current.objects, [objectId]: { ...object, cells } }, changes.some(({ patch }) => Object.prototype.hasOwnProperty.call(patch || {}, "embed")));
     });
   }, []);
 
@@ -238,80 +319,37 @@ export function useLocalWorkspace() {
   }, [commitWorkspace]);
 
   const updateCell = useCallback((objectId, targetCellId, patch) => {
-    commitWorkspace((current) => {
-      const object = current.objects[objectId];
-      if (object?.type !== "sheet") return current;
-      const coordinates = coordinatesFromCellId(targetCellId);
-      if (!coordinates) return current;
-      const cell = createCellRecord(coordinates.row, coordinates.column, {
-        ...(object.cells[targetCellId] || {}),
-        ...patch,
-      });
-      const cells = { ...object.cells };
-      if (isCellUsed(cell)) cells[targetCellId] = cell;
-      else delete cells[targetCellId];
-      return touch(current, {
-        ...current.objects,
-        [objectId]: { ...object, cells },
-      }, Object.prototype.hasOwnProperty.call(patch, "embed"));
-    }, `cell:${objectId}:${targetCellId}`);
-  }, [commitWorkspace]);
+    commitCellChanges(objectId, [{ cellId: targetCellId, patch }], `cell:${objectId}:${targetCellId}`);
+  }, [commitCellChanges]);
 
   const updateCells = useCallback((objectId, changes, historyKey = "range") => {
-    if (!Array.isArray(changes) || !changes.length) return;
-    commitWorkspace((current) => {
-      const object = current.objects[objectId];
-      if (object?.type !== "sheet") return current;
-      const cells = { ...object.cells };
-      changes.forEach(({ cellId: targetCellId, patch }) => {
-        const coordinates = coordinatesFromCellId(targetCellId);
-        if (!coordinates) return;
-        const cell = createCellRecord(coordinates.row, coordinates.column, {
-          ...(cells[targetCellId] || {}),
-          ...(patch || {}),
-        });
-        if (isCellUsed(cell)) cells[targetCellId] = cell;
-        else delete cells[targetCellId];
-      });
-      return touch(current, {
-        ...current.objects,
-        [objectId]: { ...object, cells },
-      }, changes.some(({ patch }) => Object.prototype.hasOwnProperty.call(patch || {}, "embed")));
-    }, `${historyKey}:${objectId}`);
-  }, [commitWorkspace]);
+    commitCellChanges(objectId, changes, `${historyKey}:${objectId}`);
+  }, [commitCellChanges]);
 
   const clearCell = useCallback((objectId, targetCellId) => {
-    commitWorkspace((current) => {
-      const object = current.objects[objectId];
-      if (object?.type !== "sheet" || !object.cells[targetCellId]) return current;
-      const cells = { ...object.cells };
-      delete cells[targetCellId];
-      return touch(current, {
-        ...current.objects,
-        [objectId]: { ...object, cells },
-      }, Boolean(object.cells[targetCellId]?.embed));
-    }, `clear:${objectId}:${targetCellId}`);
-  }, [commitWorkspace]);
+    commitCellChanges(objectId, [{ cellId: targetCellId, patch: {
+      value: "",
+      formula: "",
+      embed: null,
+      note: null,
+      style: null,
+      validation: null,
+      role: null,
+    } }], `clear:${objectId}:${targetCellId}`);
+  }, [commitCellChanges]);
 
   const clearCells = useCallback((objectId, targetCellIds) => {
     if (!Array.isArray(targetCellIds) || !targetCellIds.length) return;
-    commitWorkspace((current) => {
-      const object = current.objects[objectId];
-      if (object?.type !== "sheet") return current;
-      const cells = { ...object.cells };
-      let changed = false;
-      targetCellIds.forEach((targetCellId) => {
-        if (!cells[targetCellId]) return;
-        delete cells[targetCellId];
-        changed = true;
-      });
-      if (!changed) return current;
-      return touch(current, {
-        ...current.objects,
-        [objectId]: { ...object, cells },
-      }, changed && targetCellIds.some((targetCellId) => Boolean(object.cells[targetCellId]?.embed)));
-    }, `clear-range:${objectId}`);
-  }, [commitWorkspace]);
+    commitCellChanges(objectId, targetCellIds.map((cellId) => ({ cellId, patch: {
+      value: "",
+      formula: "",
+      embed: null,
+      note: null,
+      style: null,
+      validation: null,
+      role: null,
+    } })), `clear-range:${objectId}`);
+  }, [commitCellChanges]);
 
   const createEmbeddedObject = useCallback((parentObjectId, parentCellId, type) => {
     const coordinates = coordinatesFromCellId(parentCellId);
@@ -593,10 +631,16 @@ export function useLocalWorkspace() {
       const history = historyRef.current;
       const previous = history.past.pop();
       if (!previous) return current;
-      history.future.push(current);
+      if (previous.kind === "cells") {
+        history.future.push(previous);
+        history.lastKey = null;
+        history.lastAt = 0;
+        return applyCellHistory(current, previous, "before");
+      }
+      history.future.push({ kind: "snapshot", value: cloneHistoryWorkspace(current) });
       history.lastKey = null;
       history.lastAt = 0;
-      return { ...previous, updatedAt: new Date().toISOString() };
+      return { ...previous.value, updatedAt: new Date().toISOString() };
     });
   }, []);
 
@@ -605,10 +649,16 @@ export function useLocalWorkspace() {
       const history = historyRef.current;
       const next = history.future.pop();
       if (!next) return current;
-      history.past.push(current);
+      if (next.kind === "cells") {
+        history.past.push(next);
+        history.lastKey = null;
+        history.lastAt = 0;
+        return applyCellHistory(current, next, "after");
+      }
+      history.past.push({ kind: "snapshot", value: cloneHistoryWorkspace(current) });
       history.lastKey = null;
       history.lastAt = 0;
-      return { ...next, updatedAt: new Date().toISOString() };
+      return { ...next.value, updatedAt: new Date().toISOString() };
     });
   }, []);
 

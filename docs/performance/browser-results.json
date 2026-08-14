@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-13T20:20:47.697Z",
+  "generatedAt": "2026-08-14T04:20:00.876Z",
   "status": "measured",
   "environment": {
     "node": "v24.13.0",
@@ -9,7 +9,7 @@
     "cpuCount": 12,
     "memoryBytes": 16477036544,
     "headless": true,
-    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-9684\\fixture.json",
+    "fixturePath": "C:\\Users\\ARYANW~1\\AppData\\Local\\Temp\\tactile-perf-4644\\fixture.json",
     "fixtureGeneratedOnRun": true,
     "fixtureFingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4"
   },
@@ -212,19 +212,19 @@
   "scenarios": {
     "fixture-import-and-render": {
       "label": "fixture-import-and-render",
-      "durationMs": 16394,
+      "durationMs": 17721.600000000035,
       "frameTimeMs": {
-        "samples": 101,
-        "average": 162.2049504950495,
-        "p95": 316.60000000000036,
-        "max": 5433.1,
-        "droppedFrameSamples": 44
+        "samples": 131,
+        "average": 135.23587786259543,
+        "p95": 316.6000000000022,
+        "max": 5682.999999999999,
+        "droppedFrameSamples": 58
       },
       "longTasks": {
         "observable": true,
         "count": 9,
-        "totalDurationMs": 14827,
-        "maxDurationMs": 5447,
+        "totalDurationMs": 15694,
+        "maxDurationMs": 5679,
         "over50Ms": 9
       },
       "inputLatencyMs": {
@@ -234,9 +234,9 @@
         "max": null
       },
       "react": {
-        "commitCount": 8,
+        "commitCount": 11,
         "commitCountObservable": true,
-        "domMutationBatches": 7
+        "domMutationBatches": 9
       },
       "mounted": {
         "cellsMax": 273,
@@ -250,12 +250,12 @@
         "resizeObservers": 0,
         "intersectionObservers": 0,
         "performanceObservers": 0,
-        "timers": 0,
+        "timers": 1,
         "intervals": 1,
         "animationFrames": 0
       },
       "runtimeCounts": {
-        "listeners": 191,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -265,12 +265,12 @@
         "animationFrames": 0
       },
       "runtimeDelta": {
-        "listeners": 48,
+        "listeners": 40,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
         "performanceObservers": 0,
-        "timers": 0,
+        "timers": -1,
         "intervals": 0,
         "animationFrames": 0
       },
@@ -281,7 +281,7 @@
           "leakedResources": [
             {
               "resource": "listeners",
-              "delta": 48
+              "delta": 40
             },
             {
               "resource": "mutationObservers",
@@ -318,19 +318,19 @@
     },
     "scroll": {
       "label": "scroll",
-      "durationMs": 4177.099999904633,
+      "durationMs": 4370.5,
       "frameTimeMs": {
         "samples": 72,
-        "average": 51.38750000000002,
-        "p95": 133.29999999999927,
-        "max": 500,
-        "droppedFrameSamples": 62
+        "average": 55.55416666666669,
+        "p95": 283.2999999999993,
+        "max": 533.2999999999993,
+        "droppedFrameSamples": 66
       },
       "longTasks": {
         "observable": true,
         "count": 8,
-        "totalDurationMs": 1588,
-        "maxDurationMs": 505,
+        "totalDurationMs": 1883,
+        "maxDurationMs": 538,
         "over50Ms": 8
       },
       "inputLatencyMs": {
@@ -351,7 +351,7 @@
       },
       "resources": null,
       "runtimeBaseline": {
-        "listeners": 191,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -361,7 +361,7 @@
         "animationFrames": 0
       },
       "runtimeCounts": {
-        "listeners": 191,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -411,26 +411,26 @@
     },
     "typing": {
       "label": "typing",
-      "durationMs": 9396.399999856949,
+      "durationMs": 9271.700000000012,
       "frameTimeMs": {
-        "samples": 30,
-        "average": 312.76333333333326,
-        "p95": 633.2999999999993,
-        "max": 7616.4000000000015,
-        "droppedFrameSamples": 18
+        "samples": 32,
+        "average": 289.571875,
+        "p95": 633.2000000000007,
+        "max": 7283.0999999999985,
+        "droppedFrameSamples": 22
       },
       "longTasks": {
         "observable": true,
-        "count": 4,
-        "totalDurationMs": 8866,
-        "maxDurationMs": 7631,
-        "over50Ms": 4
+        "count": 5,
+        "totalDurationMs": 8679,
+        "maxDurationMs": 7291,
+        "over50Ms": 5
       },
       "inputLatencyMs": {
         "observable": true,
         "samples": 10,
-        "p95": 7648,
-        "max": 7648
+        "p95": 7336,
+        "max": 7336
       },
       "react": {
         "commitCount": 9,
@@ -444,7 +444,7 @@
       },
       "resources": null,
       "runtimeBaseline": {
-        "listeners": 191,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -454,7 +454,7 @@
         "animationFrames": 0
       },
       "runtimeCounts": {
-        "listeners": 191,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -504,26 +504,26 @@
     },
     "in-out": {
       "label": "in-out",
-      "durationMs": 4997.199999809265,
+      "durationMs": 5206.099999999977,
       "frameTimeMs": {
-        "samples": 24,
-        "average": 176.3791666666666,
-        "p95": 766.5999999999985,
+        "samples": 25,
+        "average": 177.32399999999996,
+        "p95": 783.4000000000015,
         "max": 949.9000000000015,
-        "droppedFrameSamples": 17
+        "droppedFrameSamples": 19
       },
       "longTasks": {
         "observable": true,
         "count": 8,
-        "totalDurationMs": 3833,
-        "maxDurationMs": 932,
+        "totalDurationMs": 3991,
+        "maxDurationMs": 919,
         "over50Ms": 8
       },
       "inputLatencyMs": {
         "observable": true,
         "samples": 5,
-        "p95": 672,
-        "max": 672
+        "p95": 728,
+        "max": 728
       },
       "react": {
         "commitCount": 13,
@@ -537,7 +537,7 @@
       },
       "resources": null,
       "runtimeBaseline": {
-        "listeners": 191,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -547,7 +547,7 @@
         "animationFrames": 0
       },
       "runtimeCounts": {
-        "listeners": 338,
+        "listeners": 330,
         "mutationObservers": 1,
         "resizeObservers": 2,
         "intersectionObservers": 0,
@@ -610,31 +610,31 @@
     },
     "nested": {
       "label": "nested",
-      "durationMs": 32200.700000047684,
+      "durationMs": 35751.899999999965,
       "frameTimeMs": {
-        "samples": 278,
-        "average": 110.66676978417267,
-        "p95": 733.2999999999956,
-        "max": 2183.300000000003,
-        "droppedFrameSamples": 122
+        "samples": 330,
+        "average": 102.72291515151514,
+        "p95": 799.9000000000015,
+        "max": 2299.7999999999956,
+        "droppedFrameSamples": 142
       },
       "longTasks": {
         "observable": true,
-        "count": 38,
-        "totalDurationMs": 27113,
-        "maxDurationMs": 2165,
-        "over50Ms": 38
+        "count": 40,
+        "totalDurationMs": 29860,
+        "maxDurationMs": 2272,
+        "over50Ms": 40
       },
       "inputLatencyMs": {
         "observable": true,
         "samples": 20,
-        "p95": 1408,
-        "max": 1568
+        "p95": 1656,
+        "max": 1840
       },
       "react": {
         "commitCount": 58,
         "commitCountObservable": true,
-        "domMutationBatches": 40
+        "domMutationBatches": 44
       },
       "mounted": {
         "cellsMax": 749,
@@ -643,7 +643,7 @@
       },
       "resources": null,
       "runtimeBaseline": {
-        "listeners": 191,
+        "listeners": 183,
         "mutationObservers": 1,
         "resizeObservers": 1,
         "intersectionObservers": 0,
@@ -653,7 +653,7 @@
         "animationFrames": 0
       },
       "runtimeCounts": {
-        "listeners": 1058,
+        "listeners": 1050,
         "mutationObservers": 1,
         "resizeObservers": 2,
         "intersectionObservers": 0,
@@ -718,15 +718,15 @@
   "teardown": {
     "lastResult": {
       "label": "nested",
-      "durationMs": 32200.700000047684,
-      "frameSamples": 278,
-      "longTaskCount": 38,
+      "durationMs": 35751.899999999965,
+      "frameSamples": 330,
+      "longTaskCount": 40,
       "inputSamples": 20,
       "memoryDeltaBytes": 0
     },
     "referenceLabel": "post-fixture-import",
     "referenceRuntime": {
-      "listeners": 191,
+      "listeners": 183,
       "mutationObservers": 1,
       "resizeObservers": 1,
       "intersectionObservers": 0,
@@ -736,7 +736,7 @@
       "animationFrames": 0
     },
     "runtimeCounts": {
-      "listeners": 1057,
+      "listeners": 1049,
       "mutationObservers": 1,
       "resizeObservers": 1,
       "intersectionObservers": 0,
@@ -760,7 +760,7 @@
       "mountedCells": 476,
       "mountedSheetCells": 476
     },
-    "reactCommitCount": 111,
+    "reactCommitCount": 114,
     "reactCommitCountObservable": true,
     "memory": {
       "observable": true,
@@ -799,13 +799,13 @@
   },
   "resources": [
     {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=3ed46bb3",
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c5ffe16c",
       "transferSize": 12806,
       "encodedBodySize": 12506,
       "decodedBodySize": 12506
     },
     {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react.js?v=3ed46bb3",
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react.js?v=c5ffe16c",
       "transferSize": 1324,
       "encodedBodySize": 1024,
       "decodedBodySize": 1024
@@ -817,46 +817,40 @@
       "decodedBodySize": 4679
     },
     {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react-dom_client.js?v=3ed46bb3",
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react-dom_client.js?v=c5ffe16c",
       "transferSize": 1005907,
       "encodedBodySize": 1005607,
       "decodedBodySize": 1005607
     },
     {
-      "name": "http://127.0.0.1:5242/src/styles.css?t=1786650106486",
+      "name": "http://127.0.0.1:5242/src/styles.css",
       "transferSize": 157934,
       "encodedBodySize": 157634,
       "decodedBodySize": 157634
     },
     {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-6EXAMU6Q.js?v=dfd13786",
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-6EXAMU6Q.js?v=c5ffe16c",
       "transferSize": 45963,
       "encodedBodySize": 45663,
       "decodedBodySize": 45663
     },
     {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-PR4QN5HX.js?v=dfd13786",
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-PR4QN5HX.js?v=c5ffe16c",
       "transferSize": 10423,
       "encodedBodySize": 10123,
       "decodedBodySize": 10123
     },
     {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-GDZKV5FY.js?v=dfd13786",
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/chunk-GDZKV5FY.js?v=c5ffe16c",
       "transferSize": 16833,
       "encodedBodySize": 16533,
       "decodedBodySize": 16533
     },
     {
-      "name": "http://127.0.0.1:5242/src/hooks/useLocalWorkspace.js?t=1786648245884",
-      "transferSize": 138050,
-      "encodedBodySize": 137750,
-      "decodedBodySize": 137750
-    },
-    {
-      "name": "http://127.0.0.1:5242/src/shell/inOut.js?t=1786652413297",
-      "transferSize": 198654,
-      "encodedBodySize": 198354,
-      "decodedBodySize": 198354
+      "name": "http://127.0.0.1:5242/src/hooks/useLocalWorkspace.js",
+      "transferSize": 147253,
+      "encodedBodySize": 146953,
+      "decodedBodySize": 146953
     },
     {
       "name": "http://127.0.0.1:5242/src/shell/selectionCommands.js",
@@ -865,22 +859,28 @@
       "decodedBodySize": 84492
     },
     {
+      "name": "http://127.0.0.1:5242/src/shell/inOut.js",
+      "transferSize": 198654,
+      "encodedBodySize": 198354,
+      "decodedBodySize": 198354
+    },
+    {
       "name": "http://127.0.0.1:5242/src/shell/useShellState.js",
       "transferSize": 24031,
       "encodedBodySize": 23731,
       "decodedBodySize": 23731
     },
     {
-      "name": "http://127.0.0.1:5242/src/shell/filesIndex.js?t=1786647461836",
-      "transferSize": 62650,
-      "encodedBodySize": 62350,
-      "decodedBodySize": 62350
+      "name": "http://127.0.0.1:5242/src/shell/filesIndex.js",
+      "transferSize": 62586,
+      "encodedBodySize": 62286,
+      "decodedBodySize": 62286
     },
     {
-      "name": "http://127.0.0.1:5242/src/shell/workspaceCommands.js?t=1786645511793",
-      "transferSize": 22713,
-      "encodedBodySize": 22413,
-      "decodedBodySize": 22413
+      "name": "http://127.0.0.1:5242/src/shell/workspaceCommands.js",
+      "transferSize": 22649,
+      "encodedBodySize": 22349,
+      "decodedBodySize": 22349
     },
     {
       "name": "http://127.0.0.1:5242/src/core/reparenting.js",
@@ -889,16 +889,10 @@
       "decodedBodySize": 52787
     },
     {
-      "name": "http://127.0.0.1:5242/src/themes.js?t=1786645511793",
+      "name": "http://127.0.0.1:5242/src/themes.js",
       "transferSize": 98246,
       "encodedBodySize": 97946,
       "decodedBodySize": 97946
-    },
-    {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/@tabler_icons-react.js?v=5d4b415a",
-      "transferSize": 4276695,
-      "encodedBodySize": 4276395,
-      "decodedBodySize": 4276395
     },
     {
       "name": "http://127.0.0.1:5242/src/model.js",
@@ -907,10 +901,16 @@
       "decodedBodySize": 98541
     },
     {
-      "name": "http://127.0.0.1:5242/src/iconEmoji.js",
-      "transferSize": 6975,
-      "encodedBodySize": 6675,
-      "decodedBodySize": 6675
+      "name": "http://127.0.0.1:5242/src/sheet/coordinates.js",
+      "transferSize": 8437,
+      "encodedBodySize": 8137,
+      "decodedBodySize": 8137
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/sheet/ranges.js",
+      "transferSize": 56340,
+      "encodedBodySize": 56040,
+      "decodedBodySize": 56040
     },
     {
       "name": "http://127.0.0.1:5242/src/core/topology.js",
@@ -919,10 +919,10 @@
       "decodedBodySize": 87128
     },
     {
-      "name": "http://127.0.0.1:5242/src/sheet/coordinates.js",
-      "transferSize": 8437,
-      "encodedBodySize": 8137,
-      "decodedBodySize": 8137
+      "name": "http://127.0.0.1:5242/src/iconEmoji.js",
+      "transferSize": 6975,
+      "encodedBodySize": 6675,
+      "decodedBodySize": 6675
     },
     {
       "name": "http://127.0.0.1:5242/src/sheet/structure.js",
@@ -937,34 +937,28 @@
       "decodedBodySize": 13453
     },
     {
-      "name": "http://127.0.0.1:5242/src/core/engine/shadow.js?t=1786648245884",
-      "transferSize": 73231,
-      "encodedBodySize": 72931,
-      "decodedBodySize": 72931
+      "name": "http://127.0.0.1:5242/src/core/engine/shadow.js",
+      "transferSize": 73167,
+      "encodedBodySize": 72867,
+      "decodedBodySize": 72867
     },
     {
-      "name": "http://127.0.0.1:5242/src/sheet/ranges.js",
-      "transferSize": 56340,
-      "encodedBodySize": 56040,
-      "decodedBodySize": 56040
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/@tabler_icons-react.js?v=c5ffe16c",
+      "transferSize": 4276695,
+      "encodedBodySize": 4276395,
+      "decodedBodySize": 4276395
     },
     {
-      "name": "http://127.0.0.1:5242/src/objects/registry/index.js?t=1786647461836",
-      "transferSize": 12532,
-      "encodedBodySize": 12232,
-      "decodedBodySize": 12232
+      "name": "http://127.0.0.1:5242/src/objects/registry/index.js",
+      "transferSize": 12468,
+      "encodedBodySize": 12168,
+      "decodedBodySize": 12168
     },
     {
-      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react-dom.js?v=3ed46bb3",
-      "transferSize": 1652,
-      "encodedBodySize": 1352,
-      "decodedBodySize": 1352
-    },
-    {
-      "name": "http://127.0.0.1:5242/src/objects/registry/descriptors.js?t=1786647461836",
-      "transferSize": 19537,
-      "encodedBodySize": 19237,
-      "decodedBodySize": 19237
+      "name": "http://127.0.0.1:5242/src/platform/browser/persistence.js",
+      "transferSize": 104312,
+      "encodedBodySize": 104012,
+      "decodedBodySize": 104012
     },
     {
       "name": "http://127.0.0.1:5242/src/workers/formula/index.js",
@@ -973,37 +967,19 @@
       "decodedBodySize": 2656
     },
     {
-      "name": "http://127.0.0.1:5242/src/platform/browser/persistence.js?t=1786648245884",
-      "transferSize": 104440,
-      "encodedBodySize": 104140,
-      "decodedBodySize": 104140
+      "name": "http://127.0.0.1:5242/src/objects/registry/descriptors.js",
+      "transferSize": 19089,
+      "encodedBodySize": 18789,
+      "decodedBodySize": 18789
     },
     {
-      "name": "http://127.0.0.1:5242/src/objects/registry/compatibility.js",
-      "transferSize": 18371,
-      "encodedBodySize": 18071,
-      "decodedBodySize": 18071
+      "name": "http://127.0.0.1:5242/node_modules/.vite/deps/react-dom.js?v=c5ffe16c",
+      "transferSize": 1652,
+      "encodedBodySize": 1352,
+      "decodedBodySize": 1352
     },
     {
-      "name": "http://127.0.0.1:5242/src/workers/formula/protocol.js",
-      "transferSize": 17918,
-      "encodedBodySize": 17618,
-      "decodedBodySize": 17618
-    },
-    {
-      "name": "http://127.0.0.1:5242/src/workers/formula/runtime.js",
-      "transferSize": 21450,
-      "encodedBodySize": 21150,
-      "decodedBodySize": 21150
-    },
-    {
-      "name": "http://127.0.0.1:5242/src/workers/formula/client.js",
-      "transferSize": 23766,
-      "encodedBodySize": 23466,
-      "decodedBodySize": 23466
-    },
-    {
-      "name": "http://127.0.0.1:5242/src/compat/portable.js?t=1786648245884",
+      "name": "http://127.0.0.1:5242/src/compat/portable.js",
       "transferSize": 55283,
       "encodedBodySize": 54983,
       "decodedBodySize": 54983
@@ -1051,10 +1027,28 @@
       "decodedBodySize": 40493
     },
     {
-      "name": "http://127.0.0.1:5242/src/sheet/formulas.js",
-      "transferSize": 209185,
-      "encodedBodySize": 208885,
-      "decodedBodySize": 208885
+      "name": "http://127.0.0.1:5242/src/workers/formula/protocol.js",
+      "transferSize": 17918,
+      "encodedBodySize": 17618,
+      "decodedBodySize": 17618
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/workers/formula/runtime.js",
+      "transferSize": 21450,
+      "encodedBodySize": 21150,
+      "decodedBodySize": 21150
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/workers/formula/client.js",
+      "transferSize": 23766,
+      "encodedBodySize": 23466,
+      "decodedBodySize": 23466
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/registry/compatibility.js",
+      "transferSize": 18371,
+      "encodedBodySize": 18071,
+      "decodedBodySize": 18071
     },
     {
       "name": "http://127.0.0.1:5242/src/format/csv.js",
@@ -1081,6 +1075,12 @@
       "decodedBodySize": 50691
     },
     {
+      "name": "http://127.0.0.1:5242/src/sheet/formulas.js",
+      "transferSize": 209185,
+      "encodedBodySize": 208885,
+      "decodedBodySize": 208885
+    },
+    {
       "name": "http://127.0.0.1:5242/src/objects/sheet/grid/selectionGeometry.js",
       "transferSize": 14332,
       "encodedBodySize": 14032,
@@ -1105,34 +1105,34 @@
       "decodedBodySize": 17912
     },
     {
-      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/useSheetGridGestures.js?t=1786647461836",
-      "transferSize": 174048,
-      "encodedBodySize": 173748,
-      "decodedBodySize": 173748
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/useSheetGridGestures.js",
+      "transferSize": 173984,
+      "encodedBodySize": 173684,
+      "decodedBodySize": 173684
     },
     {
-      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/useSheetGridProjection.js?t=1786647461836",
-      "transferSize": 36008,
-      "encodedBodySize": 35708,
-      "decodedBodySize": 35708
+      "name": "http://127.0.0.1:5242/src/objects/sheet/grid/useSheetGridProjection.js",
+      "transferSize": 35944,
+      "encodedBodySize": 35644,
+      "decodedBodySize": 35644
     },
     {
-      "name": "http://127.0.0.1:5242/src/objects/objectTypes.js?t=1786647461836",
-      "transferSize": 2818,
-      "encodedBodySize": 2518,
-      "decodedBodySize": 2518
+      "name": "http://127.0.0.1:5242/src/objects/objectTypes.js",
+      "transferSize": 2754,
+      "encodedBodySize": 2454,
+      "decodedBodySize": 2454
+    },
+    {
+      "name": "http://127.0.0.1:5242/src/objects/sheet/useVirtualSheet.js",
+      "transferSize": 98631,
+      "encodedBodySize": 98331,
+      "decodedBodySize": 98331
     },
     {
       "name": "http://127.0.0.1:5242/src/components/controls/menuKeyboard.js",
       "transferSize": 9476,
       "encodedBodySize": 9176,
       "decodedBodySize": 9176
-    },
-    {
-      "name": "http://127.0.0.1:5242/src/sheet/sort.js",
-      "transferSize": 12197,
-      "encodedBodySize": 11897,
-      "decodedBodySize": 11897
     },
     {
       "name": "http://127.0.0.1:5242/src/sheet/formatting.js",
@@ -1153,10 +1153,10 @@
       "decodedBodySize": 3937
     },
     {
-      "name": "http://127.0.0.1:5242/src/objects/sheet/useVirtualSheet.js?t=1786647461836",
-      "transferSize": 98631,
-      "encodedBodySize": 98331,
-      "decodedBodySize": 98331
+      "name": "http://127.0.0.1:5242/src/sheet/sort.js",
+      "transferSize": 12197,
+      "encodedBodySize": 11897,
+      "decodedBodySize": 11897
     },
     {
       "name": "http://127.0.0.1:5242/src/objects/sheet/grid/embeddedCellOpen.js",
@@ -1180,10 +1180,10 @@
       {
         "name": "scroll.frameTimeMs.p95",
         "status": "fail",
-        "observed": 133.29999999999927,
+        "observed": 283.2999999999993,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 116.59999999999927
+        "delta": 266.5999999999993
       },
       {
         "name": "scroll.longTasks.over50Ms",
@@ -1203,26 +1203,26 @@
       {
         "name": "typing.frameTimeMs.p95",
         "status": "fail",
-        "observed": 633.2999999999993,
+        "observed": 633.2000000000007,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 616.5999999999992
+        "delta": 616.5000000000007
       },
       {
         "name": "typing.longTasks.over50Ms",
         "status": "fail",
-        "observed": 4,
+        "observed": 5,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 4
+        "delta": 5
       },
       {
         "name": "typing.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 7648,
+        "observed": 7336,
         "budget": 50,
         "unit": "ms",
-        "delta": 7598
+        "delta": 7286
       },
       {
         "name": "typing.runtimeLeaks",
@@ -1234,10 +1234,10 @@
       {
         "name": "in-out.frameTimeMs.p95",
         "status": "fail",
-        "observed": 766.5999999999985,
+        "observed": 783.4000000000015,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 749.8999999999985
+        "delta": 766.7000000000014
       },
       {
         "name": "in-out.longTasks.over50Ms",
@@ -1250,10 +1250,10 @@
       {
         "name": "in-out.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 672,
+        "observed": 728,
         "budget": 50,
         "unit": "ms",
-        "delta": 622
+        "delta": 678
       },
       {
         "name": "in-out.runtimeLeaks",
@@ -1278,26 +1278,26 @@
       {
         "name": "nested.frameTimeMs.p95",
         "status": "fail",
-        "observed": 733.2999999999956,
+        "observed": 799.9000000000015,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 716.5999999999956
+        "delta": 783.2000000000014
       },
       {
         "name": "nested.longTasks.over50Ms",
         "status": "fail",
-        "observed": 38,
+        "observed": 40,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 38
+        "delta": 40
       },
       {
         "name": "nested.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 1408,
+        "observed": 1656,
         "budget": 50,
         "unit": "ms",
-        "delta": 1358
+        "delta": 1606
       },
       {
         "name": "nested.runtimeLeaks",
@@ -1352,10 +1352,10 @@
       {
         "name": "scroll.frameTimeMs.p95",
         "status": "fail",
-        "observed": 133.29999999999927,
+        "observed": 283.2999999999993,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 116.59999999999927
+        "delta": 266.5999999999993
       },
       {
         "name": "scroll.longTasks.over50Ms",
@@ -1368,34 +1368,34 @@
       {
         "name": "typing.frameTimeMs.p95",
         "status": "fail",
-        "observed": 633.2999999999993,
+        "observed": 633.2000000000007,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 616.5999999999992
+        "delta": 616.5000000000007
       },
       {
         "name": "typing.longTasks.over50Ms",
         "status": "fail",
-        "observed": 4,
+        "observed": 5,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 4
+        "delta": 5
       },
       {
         "name": "typing.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 7648,
+        "observed": 7336,
         "budget": 50,
         "unit": "ms",
-        "delta": 7598
+        "delta": 7286
       },
       {
         "name": "in-out.frameTimeMs.p95",
         "status": "fail",
-        "observed": 766.5999999999985,
+        "observed": 783.4000000000015,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 749.8999999999985
+        "delta": 766.7000000000014
       },
       {
         "name": "in-out.longTasks.over50Ms",
@@ -1408,10 +1408,10 @@
       {
         "name": "in-out.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 672,
+        "observed": 728,
         "budget": 50,
         "unit": "ms",
-        "delta": 622
+        "delta": 678
       },
       {
         "name": "in-out.runtimeLeaks",
@@ -1436,26 +1436,26 @@
       {
         "name": "nested.frameTimeMs.p95",
         "status": "fail",
-        "observed": 733.2999999999956,
+        "observed": 799.9000000000015,
         "budget": 16.7,
         "unit": "ms",
-        "delta": 716.5999999999956
+        "delta": 783.2000000000014
       },
       {
         "name": "nested.longTasks.over50Ms",
         "status": "fail",
-        "observed": 38,
+        "observed": 40,
         "budget": 0,
         "unit": "count of tasks over 50 ms",
-        "delta": 38
+        "delta": 40
       },
       {
         "name": "nested.inputLatencyMs.p95",
         "status": "fail",
-        "observed": 1408,
+        "observed": 1656,
         "budget": 50,
         "unit": "ms",
-        "delta": 1358
+        "delta": 1606
       },
       {
         "name": "nested.runtimeLeaks",
