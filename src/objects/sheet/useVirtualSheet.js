@@ -429,10 +429,16 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       directionalOverscan(metrics, delta, renderOverscan),
     );
     // A direct scrollbar/native jump can move the viewport completely outside
-    // the committed React slice before the next animation frame. Commit just
-    // that disjoint handoff synchronously so the first painted frame owns the
-    // destination cells; ordinary movement remains RAF-coalesced.
-    if (immediate && !rangesOverlap(committedRangeRef.current, nextRange)) {
+    // the committed React slice before the next animation frame. Keep that
+    // disjoint handoff synchronous. A fast jump can also overlap the old
+    // slice through directional overscan while leaving the viewport only
+    // partially covered; use the native delta to distinguish that jump from
+    // ordinary movement, which remains RAF-coalesced.
+    const destinationIsDisjoint = !rangesOverlap(committedRangeRef.current, nextRange);
+    const visibleRangeEscaped = !rangeContains(committedRangeRef.current, visibleRange);
+    const largeNativeJump = Math.abs(delta.scrollTop) > next.height
+      || Math.abs(delta.scrollLeft) > next.width;
+    if (immediate && (destinationIsDisjoint || (visibleRangeEscaped && largeNativeJump))) {
       if (rangeFrameRef.current != null) {
         window.cancelAnimationFrame(rangeFrameRef.current);
         rangeFrameRef.current = null;
@@ -457,7 +463,10 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     }
 
     const handleNativeScroll = () => syncViewportRef.current?.(element, { immediate: true });
-    handleNativeScroll();
+    // The initial layout pass is already inside a lifecycle method. Let its
+    // normal layout reconciliation schedule work without nesting flushSync;
+    // only subsequent native scroll events need the immediate handoff.
+    syncViewportRef.current?.(element);
     element.addEventListener("scroll", handleNativeScroll, { passive: true });
 
     const observer = typeof ResizeObserver === "function"

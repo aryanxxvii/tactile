@@ -461,6 +461,54 @@ test("keeps active and hovered first-column cells behind the row rail after deep
   }
 });
 
+test("refreshes the virtual slice before a jump crosses its overscan edge", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+  await expect
+    .poll(() =>
+      sheet.evaluate((element) => {
+        const scrollerBox = element.getBoundingClientRect();
+        const headerHeight = element.querySelector(".column-header")?.getBoundingClientRect().height ?? 25;
+        const bodyTop = scrollerBox.top + headerHeight;
+        const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
+          .map((slot) => slot.getBoundingClientRect())
+          .filter((box) => box.bottom > bodyTop && box.top < scrollerBox.bottom);
+        return {
+          rowCoverage:
+            visibleSlots.length > 0 &&
+            Math.min(...visibleSlots.map((box) => box.top)) <= bodyTop + 4 &&
+            Math.max(...visibleSlots.map((box) => box.bottom)) >= scrollerBox.bottom - 1,
+        };
+      }),
+    )
+    .toMatchObject({ rowCoverage: true });
+
+  const state = await sheet.evaluate(async (element) => {
+    const scrollerBox = element.getBoundingClientRect();
+    const headerHeight = element.querySelector(".column-header")?.getBoundingClientRect().height ?? 25;
+    const bodyTop = scrollerBox.top + headerHeight;
+    element.scrollTo({ top: 800, left: 0, behavior: "auto" });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
+      .map((slot) => slot.getBoundingClientRect())
+      .filter((box) => box.bottom > bodyTop && box.top < scrollerBox.bottom);
+    return {
+      scrollTop: element.scrollTop,
+      visibleCells: visibleSlots.length,
+      rowCoverage:
+        visibleSlots.length > 0 &&
+        Math.min(...visibleSlots.map((box) => box.top)) <= bodyTop + 4 &&
+        Math.max(...visibleSlots.map((box) => box.bottom)) >= scrollerBox.bottom - 1,
+    };
+  });
+
+  expect(state).toMatchObject({ rowCoverage: true });
+  expect(state.scrollTop).toBeGreaterThan(0);
+  expect(state.visibleCells).toBeGreaterThan(0);
+});
+
 test("refreshes the virtual slice before the first frame after a direct large offset jump", async ({ page }) => {
   await page.goto("/");
 
