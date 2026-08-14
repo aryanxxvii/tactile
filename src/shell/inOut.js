@@ -238,6 +238,7 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
   ]);
   const timers = useRef(new Set());
   const layersRef = useRef(layers);
+  const workspaceRef = useRef(workspace);
   const workspaceIdRef = useRef(workspace.id);
   const hydrationRef = useRef(workspaceHydrated);
   const navigationInteractedRef = useRef(false);
@@ -246,6 +247,8 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
   const pendingOpenRef = useRef(0);
   const topologyRevision = workspace?.[TOPOLOGY_REVISION] || 0;
   const topologyRevisionRef = useRef(topologyRevision);
+
+  workspaceRef.current = workspace;
 
   useEffect(() => {
     layersRef.current = layers;
@@ -857,14 +860,15 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
 
   useEffect(() => {
     const handlePopState = (event) => {
+      const currentWorkspace = workspaceRef.current;
       syncHistoryStack(
-        historyStackFromState(event.state, workspace.objects, workspace.id),
-        navigationRootFromState(event.state, workspace.objects, workspaceRootId),
+        historyStackFromState(event.state, currentWorkspace.objects, currentWorkspace.id),
+        navigationRootFromState(event.state, currentWorkspace.objects, workspaceRootId),
       );
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [syncHistoryStack, workspace.id, workspace.objects, workspaceRootId]);
+  }, [syncHistoryStack, workspaceRootId]);
 
   useEffect(() => {
     const handleOutsideFloatingPointer = (event) => {

@@ -42,6 +42,14 @@ const PAPER_THEME_VARIABLES = [
   "--title-size",
 ];
 
+function documentLevelPortalTarget() {
+  if (typeof document === "undefined") return null;
+  // The app root is the stable React event boundary and is a direct child of
+  // the document body. Portal surfaces remain top-level siblings of the
+  // clipped app surface without creating a new delegated-listener boundary.
+  return document.getElementById("root") || document.body;
+}
+
 function themeVariablesFor(source) {
   if (typeof Element === "undefined" || !(source instanceof Element)) return {};
   const computed = getComputedStyle(source);
@@ -59,35 +67,21 @@ function themeVariablesFor(source) {
 }
 
 export function PaperPortal({ children, className = "", themeSource = null }) {
-  const [root, setRoot] = useState(null);
+  const [target, setTarget] = useState(null);
 
   useLayoutEffect(() => {
-    const element = document.createElement("div");
-    element.className = ["tactile-overlay-layer", className].filter(Boolean).join(" ");
-    element.dataset.overlayLayer = "true";
-    // Portaled controls still belong to the active object surface. In particular,
-    // a floating child must not be dismissed when its document-level menu is
-    // clicked, even though the menu cannot remain inside the clipped window.
-    element.dataset.floatingInteractive = "true";
-    if (className.includes("tactile-tooltip-layer")) element.dataset.tooltipLayer = "true";
-    document.body.appendChild(element);
-    setRoot(element);
-    return () => {
-      element.remove();
-      setRoot(null);
-    };
+    setTarget(documentLevelPortalTarget());
   }, [className]);
 
-  useLayoutEffect(() => {
-    if (!root) return;
-    for (let index = root.style.length - 1; index >= 0; index -= 1) {
-      const name = root.style.item(index);
-      if (name?.startsWith("--")) root.style.removeProperty(name);
-    }
-    Object.entries(themeVariablesFor(themeSource)).forEach(([name, value]) => {
-      root.style.setProperty(name, value);
-    });
-  });
+  if (!target) return null;
 
-  return root ? createPortal(children, root) : null;
+  const overlayProps = {
+    className: ["tactile-overlay-layer", className].filter(Boolean).join(" "),
+    style: themeVariablesFor(themeSource),
+    "data-overlay-layer": "true",
+    "data-floating-interactive": "true",
+    ...(className.includes("tactile-tooltip-layer") ? { "data-tooltip-layer": "true" } : {}),
+  };
+
+  return createPortal(<div {...overlayProps}>{children}</div>, target);
 }

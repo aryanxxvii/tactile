@@ -222,6 +222,83 @@ test("opens an embedded tile with Enter just like the In & Out shortcut", async 
   await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
 });
 
+test("does not retain listeners across 100 floating In & Out cycles", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.addInitScript(() => {
+    const originalAdd = EventTarget.prototype.addEventListener;
+    const originalRemove = EventTarget.prototype.removeEventListener;
+    const listenerRecords = new WeakMap();
+    const overlayTargets = new Set();
+    const captureFor = (options) => Boolean(options && typeof options === "object" ? options.capture : options);
+    const keyFor = (type, options) => `${String(type)}|${String(captureFor(options))}`;
+    const hasActiveListeners = (target) => {
+      const records = listenerRecords.get(target);
+      return Boolean(records && [...records.values()].some((listeners) => listeners.size));
+    };
+
+    EventTarget.prototype.addEventListener = function addEventListener(type, listener, options) {
+      if (this instanceof Element && this.matches(".tactile-overlay-layer")) overlayTargets.add(this);
+      let records = listenerRecords.get(this);
+      if (!records) {
+        records = new Map();
+        listenerRecords.set(this, records);
+      }
+      const key = keyFor(type, options);
+      let listeners = records.get(key);
+      if (!listeners) {
+        listeners = new Set();
+        records.set(key, listeners);
+      }
+      listeners.add(listener);
+      return originalAdd.call(this, type, listener, options);
+    };
+    EventTarget.prototype.removeEventListener = function removeEventListener(type, listener, options) {
+      const records = listenerRecords.get(this);
+      const key = keyFor(type, options);
+      const listeners = records?.get(key);
+      listeners?.delete(listener);
+      if (listeners?.size === 0) records.delete(key);
+      return originalRemove.call(this, type, listener, options);
+    };
+    window.__tactileDetachedOverlayListenerCount = () =>
+      [...overlayTargets].filter((target) => !target.isConnected && hasActiveListeners(target)).length;
+  });
+  await page.goto("/");
+  await importWorkspace(page);
+
+  await page.evaluate(async () => {
+    const waitFor = (predicate) =>
+      new Promise((resolve, reject) => {
+        const startedAt = performance.now();
+        const check = () => {
+          if (predicate()) {
+            resolve();
+            return;
+          }
+          if (performance.now() - startedAt >= 5_000) {
+            reject(new Error("Timed out waiting for an In & Out cycle to settle."));
+            return;
+          }
+          window.requestAnimationFrame(check);
+        };
+        window.requestAnimationFrame(check);
+      });
+
+    for (let cycle = 0; cycle < 100; cycle += 1) {
+      document.querySelector('[data-object-id="home"][data-cell-address="A1"]')?.click();
+      await waitFor(
+        () => document.querySelector('[data-layer-object="layer-two"]')?.dataset.spatialPhase === "floating",
+      );
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "[", code: "BracketLeft", bubbles: true, cancelable: true }),
+      );
+      await waitFor(() => !document.querySelector(".spatial-layer"));
+    }
+  });
+
+  expect(await page.evaluate(() => window.__tactileDetachedOverlayListenerCount())).toBe(0);
+});
+
 test("renders the opened tile sheet instead of an empty lazy surface", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);
