@@ -1,14 +1,11 @@
 //! Private native storage service for the E02 packet.
 //!
-//! E01 deliberately left the native manifest untouched, so this packet cannot
-//! add `rusqlite` to `Cargo.toml` without crossing its write boundary.  This is
-//! therefore a safe, dependency-free scaffold with the same durability
-//! contract: record-oriented tables, an acknowledged append-only WAL, atomic
-//! checkpoints, revision/transaction journal metadata, and portable-file
-//! cache rebuilds.  The file format is private to this module and is designed
-//! to be replaced behind this API by a rusqlite WAL backend when the owning
-//! integration packet can change native dependencies.  Portable v4 data is
-//! treated as opaque files and is never rewritten by the cache.
+//! The native cache is private to this module. It exposes record-oriented
+//! transactions, acknowledged WAL durability, atomic checkpoints,
+//! revision/transaction journal metadata, and portable-file cache rebuilds
+//! without exposing database paths, SQL, or the portable file format to the
+//! UI. [`SqliteStorage`] is the native rusqlite/WAL backend; [`Storage`] keeps
+//! the same recovery contract for the portable-file cache and recovery tests.
 #![allow(dead_code)]
 
 mod error;
@@ -317,7 +314,7 @@ impl Storage {
     }
 }
 
-fn validate_mutations(mutations: &[RecordMutation]) -> StorageResult<()> {
+pub(crate) fn validate_mutations(mutations: &[RecordMutation]) -> StorageResult<()> {
     let mut keys = BTreeSet::new();
     for mutation in mutations {
         if !keys.insert(mutation.key().clone()) {
@@ -327,7 +324,7 @@ fn validate_mutations(mutations: &[RecordMutation]) -> StorageResult<()> {
     Ok(())
 }
 
-fn diff_tables(before: &RecordTable, after: &RecordTable) -> Vec<RecordMutation> {
+pub(crate) fn diff_tables(before: &RecordTable, after: &RecordTable) -> Vec<RecordMutation> {
     let mut keys = BTreeSet::new();
     keys.extend(before.records.keys().cloned());
     keys.extend(after.records.keys().cloned());

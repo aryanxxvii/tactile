@@ -62,6 +62,45 @@ fn acknowledged_edit_is_recovered_from_wal_without_checkpoint() {
 }
 
 #[test]
+fn torn_wal_tail_is_discarded_after_the_last_acknowledged_edit() {
+    let root = TempDir::new("torn-wal");
+    let valid_wal_length;
+    {
+        let mut storage = Storage::open(root.path()).expect("storage should open");
+        let mut transaction = storage.begin_transaction();
+        transaction
+            .put("cell", "sheet-home:A1", b"durable".to_vec())
+            .expect("record should be valid");
+        storage.commit(transaction).expect("edit should be durable");
+        valid_wal_length = fs::metadata(root.path().join("journal.wal"))
+            .expect("WAL should exist")
+            .len();
+    }
+
+    let mut wal = fs::OpenOptions::new()
+        .append(true)
+        .open(root.path().join("journal.wal"))
+        .expect("WAL should be appendable");
+    use std::io::Write;
+    wal.write_all(b"TWL1\x04\x00")
+        .expect("torn WAL bytes should be writable");
+    wal.sync_all().expect("torn WAL should be synced");
+    drop(wal);
+
+    let reopened = Storage::open(root.path()).expect("recovery should discard torn tail");
+    assert_eq!(
+        reopened.table().get("cell", "sheet-home:A1"),
+        Some(b"durable".as_slice())
+    );
+    assert_eq!(
+        fs::metadata(root.path().join("journal.wal"))
+            .expect("repaired WAL should exist")
+            .len(),
+        valid_wal_length
+    );
+}
+
+#[test]
 fn failed_migration_rolls_back_memory_and_disk_state() {
     let root = TempDir::new("migration-rollback");
     {
