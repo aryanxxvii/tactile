@@ -1,5 +1,7 @@
 # Release policy
 
+The current packaged release candidate is `v0.1.3`, following the `v0.1.0` source tag, the `v0.1.1` native-icon correction, and the `v0.1.2` macOS signing correction.
+
 Tactile `v0.1.2` is the first public packaged release candidate, following the `v0.1.0` source tag and the `v0.1.1` native-icon correction. The repository also contains a tag-triggered packaging workflow for Windows MSI, macOS DMG, and Linux AppImage/DEB artifacts. This policy does not declare a project license, signing identity, notarization status, or a supported-platform promise beyond the artifacts and evidence attached to a specific release.
 
 ## Required release inputs

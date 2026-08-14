@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 — 2026-08-15
+
+macOS packaging correction: clean runners use ad-hoc signing when Developer ID credentials are absent, so the DMG can be built and clearly labeled without pretending to be notarized.
+
 ## 0.1.2 — 2026-08-15
 
 Release workflow correction: clean macOS runners now produce an explicitly unsigned DMG when Apple signing credentials are not configured, while retaining the signed/notarized path when the release owner supplies them.

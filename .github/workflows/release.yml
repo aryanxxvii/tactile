@@ -119,7 +119,7 @@ jobs:
           elif [[ "$signing_ready" == true ]]; then
             echo 'Apple signing is configured; notarization credentials are absent, so the signed DMG will remain unnotarized.' >> "$GITHUB_STEP_SUMMARY"
           else
-            echo 'Apple signing/notarization credentials are absent; the universal DMG will be uploaded as unsigned.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Apple signing/notarization credentials are absent; the universal DMG will use ad-hoc signing and remain unnotarized.' >> "$GITHUB_STEP_SUMMARY"
           fi
 
       # OWNER ACTION: configure the six APPLE_* repository/environment secrets above when
@@ -142,12 +142,12 @@ jobs:
           set -euo pipefail
           if [[ '${{ matrix.platform }}' == 'macos-universal' && '${{ steps.apple-prereqs.outputs.signing_ready }}' != 'true' ]]; then
             # Tauri otherwise attempts to sign with the empty identity on a
-            # clean hosted runner. An unsigned DMG is intentional until the
-            # release owner supplies Developer ID credentials.
+            # clean hosted runner. Ad-hoc signing avoids the keychain while
+            # the release owner supplies Developer ID credentials.
             npx --yes @tauri-apps/cli@2.11.4 build \
               --target '${{ matrix.rust-target }}' \
               --bundles '${{ matrix.bundles }}' \
-              --config '{"bundle":{"macOS":{"signingIdentity":null}}}'
+              --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}'
           else
             npx --yes @tauri-apps/cli@2.11.4 build \
               --target '${{ matrix.rust-target }}' \
@@ -206,7 +206,7 @@ jobs:
           NOTARIZED: ${{ steps.mac-notarize.outputs.notarized }}
         run: |
           set -euo pipefail
-          suffix=unsigned
+          suffix=ad-hoc
           if [[ "${SIGNING_READY:-false}" == true ]]; then
             suffix=signed-unnotarized
           fi
