@@ -465,6 +465,20 @@ fn collection<'a>(
     }
 }
 
+fn required_collection<'a>(
+    value: Option<&'a JsonValue>,
+    label: &str,
+) -> PortableResult<Vec<(String, &'a JsonValue)>> {
+    value
+        .ok_or_else(|| {
+            PortableError::new(
+                PortableErrorCode::MalformedObjects,
+                format!("{label} is missing"),
+            )
+        })
+        .and_then(|value| collection(Some(value), label))
+}
+
 fn validate_id_set<'a>(
     records: &[(String, &'a JsonValue)],
     kind: &str,
@@ -493,11 +507,20 @@ fn validate_id_set<'a>(
     Ok(by_id)
 }
 
-fn declared_size(value: &JsonValue) -> Option<u64> {
-    value
+fn declared_size(value: &JsonValue) -> PortableResult<Option<u64>> {
+    let raw = value
         .get("size")
-        .or_else(|| value.get("byteLength"))
-        .and_then(JsonValue::as_u64)
+        .filter(|value| !value.is_null())
+        .or_else(|| value.get("byteLength").filter(|value| !value.is_null()));
+    let Some(raw) = raw else {
+        return Ok(None);
+    };
+    raw.as_u64().map(Some).ok_or_else(|| {
+        PortableError::new(
+            PortableErrorCode::MalformedAsset,
+            "asset size must be a non-negative integer",
+        )
+    })
 }
 
 fn validate_reference(
@@ -536,15 +559,15 @@ pub fn validate_portable_workspace(
     options: &ValidationOptions,
 ) -> PortableResult<PortableValidationReport> {
     let version = assert_supported_version(workspace)?;
-    if let Some(format) = workspace.get("format").and_then(JsonValue::as_str) {
-        if format != PORTABLE_FORMAT {
+    if let Some(format) = workspace.get("format") {
+        if format.as_str() != Some(PORTABLE_FORMAT) {
             return Err(PortableError::new(
                 PortableErrorCode::MalformedFormat,
                 format!("expected a {PORTABLE_FORMAT} workspace"),
             ));
         }
     }
-    let object_records = collection(workspace.get("objects"), "objects")?;
+    let object_records = required_collection(workspace.get("objects"), "objects")?;
     if object_records.len() as u64 > options.limits.max_objects {
         return Err(PortableError::new(
             PortableErrorCode::OversizedWorkspace,
@@ -565,7 +588,7 @@ pub fn validate_portable_workspace(
     let assets = validate_id_set(&asset_records, "asset")?;
     let mut total_asset_bytes = 0u64;
     for (key, asset) in &assets {
-        if let Some(size) = declared_size(asset) {
+        if let Some(size) = declared_size(asset)? {
             if size > options.limits.max_asset_bytes {
                 return Err(PortableError::new(
                     PortableErrorCode::OversizedAsset,
@@ -633,13 +656,30 @@ pub fn validate_portable_workspace(
                     if !assets.contains_key(asset_id) {
                         // v4 ZIP packages carry asset metadata on the object record,
                         // while JSON snapshots carry a top-level assets collection.
-                        let has_inline_asset = object.get("asset").is_some();
+                        let has_inline_asset =
+                            matches!(object.get("asset"), Some(JsonValue::Object(_)));
                         if !has_inline_asset {
                             return Err(PortableError::new(
                                 PortableErrorCode::DanglingReference,
                                 format!("object {key} references missing asset {asset_id}"),
                             ));
                         }
+                    }
+                }
+            }
+            if let Some(asset) = object.get("asset") {
+                if !matches!(asset, JsonValue::Object(_)) {
+                    return Err(PortableError::new(
+                        PortableErrorCode::MalformedAsset,
+                        format!("object {key} has invalid asset metadata"),
+                    ));
+                }
+                if let Some(size) = declared_size(asset)? {
+                    if size > options.limits.max_asset_bytes {
+                        return Err(PortableError::new(
+                            PortableErrorCode::OversizedAsset,
+                            format!("asset on object {key} exceeds the asset-size limit"),
+                        ));
                     }
                 }
             }
@@ -656,10 +696,16 @@ pub fn validate_portable_workspace(
                 "portable workspace contains too many cell records",
             ));
         }
-        if !options.check_references {
-            continue;
-        }
         for (cell_key, cell) in cells {
+            if !matches!(cell, JsonValue::Object(_)) {
+                return Err(PortableError::new(
+                    PortableErrorCode::MalformedCell,
+                    format!("cell {cell_key} in object {key} must be an object"),
+                ));
+            }
+            if !options.check_references {
+                continue;
+            }
             let Some(embed) = cell.get("embed") else {
                 if let Some(reference) = cell_reference(cell) {
                     validate_reference(
@@ -671,15 +717,27 @@ pub fn validate_portable_workspace(
                 continue;
             };
             if embed.is_null() {
+                if let Some(reference) = cell_reference(cell) {
+                    validate_reference(
+                        &reference,
+                        &object_ids,
+                        &format!("cell {cell_key} in object {key}"),
+                    )?;
+                }
                 continue;
             }
             if let Some(embed_string) = embed.as_str() {
-                if parse_tactile_link(embed_string).is_none() {
-                    return Err(PortableError::new(
+                let link = parse_tactile_link(embed_string).ok_or_else(|| {
+                    PortableError::new(
                         PortableErrorCode::MalformedReference,
                         format!("cell {cell_key} in object {key} has an invalid embed"),
-                    ));
-                }
+                    )
+                })?;
+                validate_reference(
+                    &link.object_id,
+                    &object_ids,
+                    &format!("cell {cell_key} in object {key}"),
+                )?;
             } else if let Some(embed_object_id) = embed.get("objectId").and_then(JsonValue::as_str)
             {
                 if let Some(link_id) = embed.get("linkId") {
@@ -870,9 +928,10 @@ pub struct SheetMetadataIndex {
 
 impl SheetMetadataIndex {
     pub fn cell(&self, address: &str) -> Option<&JsonValue> {
-        self.cells
-            .get(address)
-            .or_else(|| self.cells.get(&address.to_ascii_uppercase()))
+        let key = coordinates_from_address(address)
+            .map(|(row, column)| cell_address(row, column))
+            .unwrap_or_else(|| address.trim().to_ascii_uppercase());
+        self.cells.get(&key)
     }
 
     pub fn cell_count(&self) -> usize {
@@ -942,9 +1001,18 @@ fn archive_file_path(
     field: &str,
     limits: &PortableLimits,
 ) -> PortableResult<Option<String>> {
-    let Some(path) = value.get(field).and_then(JsonValue::as_str) else {
+    let Some(raw) = value.get(field) else {
         return Ok(None);
     };
+    if raw.is_null() {
+        return Ok(None);
+    }
+    let path = raw.as_str().ok_or_else(|| {
+        PortableError::new(
+            PortableErrorCode::MalformedPackage,
+            format!("{field} must be an archive path string"),
+        )
+    })?;
     Ok(Some(safe_archive_path(path, limits.max_path_bytes)?))
 }
 
@@ -978,10 +1046,27 @@ fn metadata_index(
 ) -> PortableResult<SheetMetadataIndex> {
     let cells = match raw.get("cells") {
         None => BTreeMap::new(),
-        Some(JsonValue::Object(values)) => values
-            .iter()
-            .map(|(address, value)| (address.clone(), value.clone()))
-            .collect(),
+        Some(JsonValue::Object(values)) => {
+            let mut cells = BTreeMap::new();
+            for (address, value) in values {
+                if !matches!(value, JsonValue::Object(_)) {
+                    return Err(PortableError::new(
+                        PortableErrorCode::MalformedCell,
+                        format!("metadata cell {address} in {object_id} must be an object"),
+                    ));
+                }
+                let key = coordinates_from_address(address)
+                    .map(|(row, column)| cell_address(row, column))
+                    .unwrap_or_else(|| address.trim().to_ascii_uppercase());
+                if cells.insert(key.clone(), value.clone()).is_some() {
+                    return Err(PortableError::new(
+                        PortableErrorCode::MalformedPackage,
+                        format!("metadata contains duplicate cell address {key}"),
+                    ));
+                }
+            }
+            cells
+        }
         Some(_) => {
             return Err(PortableError::new(
                 PortableErrorCode::MalformedPackage,
@@ -1013,7 +1098,7 @@ fn validate_package_resources<R: Read + Seek>(
     workspace: &JsonValue,
     limits: &PortableLimits,
 ) -> PortableResult<BTreeMap<String, (JsonValue, String)>> {
-    let object_records = collection(workspace.get("objects"), "objects")?;
+    let object_records = required_collection(workspace.get("objects"), "objects")?;
     let mut assets = BTreeMap::new();
     for (key, record) in &object_records {
         let object_id = record
@@ -1051,14 +1136,15 @@ fn validate_package_resources<R: Read + Seek>(
             .and_then(JsonValue::as_str)
             .unwrap_or(&key)
             .to_owned();
-        let path = archive_file_path(record, "file", limits)?
-            .or_else(|| archive_file_path(record, "path", limits).ok().flatten())
-            .ok_or_else(|| {
+        let path = match archive_file_path(record, "file", limits)? {
+            Some(path) => path,
+            None => archive_file_path(record, "path", limits)?.ok_or_else(|| {
                 PortableError::new(
                     PortableErrorCode::MissingEntry,
                     format!("asset {asset_id} has no archive path"),
                 )
-            })?;
+            })?,
+        };
         ensure_referenced_file(archive, Some(&path), &format!("asset {asset_id}"))?;
         add_asset_record(&mut assets, &asset_id, record, &path);
     }
@@ -1076,7 +1162,7 @@ fn validate_package_resources<R: Read + Seek>(
                 format!("asset {asset_id} exceeds the asset-size limit"),
             ));
         }
-        if let Some(size) = declared_size(record) {
+        if let Some(size) = declared_size(record)? {
             if size > limits.max_asset_bytes || size != entry.uncompressed_size {
                 return Err(PortableError::new(
                     PortableErrorCode::MalformedAsset,
@@ -1117,19 +1203,18 @@ pub fn import_portable<R: Read + Seek>(
         ));
     }
 
+    let mut staging_path = None;
     let result = (|| {
         control.check()?;
         let mut archive = ZipArchive::open(&mut reader, options.limits.clone())?;
         let manifest = archive.read_json("manifest.json", control)?;
-        let manifest_format = manifest
-            .get("format")
-            .and_then(JsonValue::as_str)
-            .unwrap_or(PORTABLE_FORMAT);
-        if manifest_format != PORTABLE_FORMAT {
-            return Err(PortableError::new(
-                PortableErrorCode::MalformedFormat,
-                "portable bundle manifest is not a Tactile package",
-            ));
+        if let Some(format) = manifest.get("format") {
+            if format.as_str() != Some(PORTABLE_FORMAT) {
+                return Err(PortableError::new(
+                    PortableErrorCode::MalformedFormat,
+                    "portable bundle manifest is not a Tactile package",
+                ));
+            }
         }
         let manifest_version = assert_supported_version(&manifest).map_err(|error| {
             PortableError::new(
@@ -1143,11 +1228,8 @@ pub fn import_portable<R: Read + Seek>(
                 format!("expected a v{CURRENT_PORTABLE_VERSION} portable manifest"),
             ));
         }
-        let entry_path = manifest
-            .get("entry")
-            .and_then(JsonValue::as_str)
-            .unwrap_or("workspace.json");
-        let entry_path = safe_archive_path(entry_path, options.limits.max_path_bytes)?;
+        let entry_path = archive_file_path(&manifest, "entry", &options.limits)?
+            .unwrap_or_else(|| "workspace.json".to_owned());
         if entry_path != "workspace.json" {
             return Err(PortableError::new(
                 PortableErrorCode::MalformedPackage,
@@ -1206,6 +1288,7 @@ pub fn import_portable<R: Read + Seek>(
         }
 
         let staging = temporary_directory_for(destination)?;
+        staging_path = Some(staging.clone());
         let extraction = (|| {
             let mut files = BTreeMap::new();
             let entries = archive.entries().to_vec();
@@ -1254,16 +1337,12 @@ pub fn import_portable<R: Read + Seek>(
         })();
         let files = match extraction {
             Ok(files) => files,
-            Err(error) => {
-                let _ = fs::remove_dir_all(&staging);
-                return Err(error);
-            }
+            Err(error) => return Err(error),
         };
 
         let mut assets = BTreeMap::new();
         for (asset_id, (record, path)) in asset_records {
             let Some(file) = files.get(&path) else {
-                let _ = fs::remove_dir_all(&staging);
                 return Err(PortableError::new(
                     PortableErrorCode::MissingEntry,
                     format!("asset {asset_id} was not extracted"),
@@ -1289,6 +1368,7 @@ pub fn import_portable<R: Read + Seek>(
         }
 
         finish_staging_directory(&staging, destination)?;
+        staging_path = None;
         Ok(PortableImportResult {
             root: destination.to_path_buf(),
             manifest,
@@ -1300,25 +1380,10 @@ pub fn import_portable<R: Read + Seek>(
         })
     })();
 
-    if let Err(error) = &result {
-        // Staging directories are removed at the point where extraction is
-        // interrupted.  This final guard covers errors after staging setup.
-        if let Some(parent) = destination.parent() {
-            if let Ok(entries) = fs::read_dir(parent) {
-                let prefix = destination
-                    .file_name()
-                    .and_then(|name| name.to_str())
-                    .map(|name| format!(".{name}.tactile-import-"));
-                if let Some(prefix) = prefix {
-                    for entry in entries.flatten() {
-                        if entry.file_name().to_string_lossy().starts_with(&prefix) {
-                            let _ = fs::remove_dir_all(entry.path());
-                        }
-                    }
-                }
-            }
+    if result.is_err() {
+        if let Some(staging) = staging_path.take() {
+            let _ = fs::remove_dir_all(staging);
         }
-        let _ = error;
     }
     result
 }

@@ -259,6 +259,231 @@ fn csv_links_and_addresses_are_preserved_without_scanning_metadata() {
 }
 
 #[test]
+fn workspace_validation_rejects_malformed_cells_and_dangling_embeds() {
+    let malformed = parse_json(
+        br#"{
+  "version": 4,
+  "objects": [
+    {
+      "id": "sheet-home",
+      "type": "sheet",
+      "cells": { "A1": true }
+    }
+  ]
+}"#,
+    )
+    .expect("malformed cell fixture");
+    let error = portable::validate_portable_workspace(
+        &malformed,
+        &ValidationOptions {
+            check_references: false,
+            ..ValidationOptions::default()
+        },
+    )
+    .expect_err("scalar cell metadata must be rejected even without reference checks");
+    assert_eq!(error.code_kind(), PortableErrorCode::MalformedCell);
+
+    for (embed, expected_code) in [
+        (
+            r#""[[tactile:markdown:missing|Missing]]""#,
+            PortableErrorCode::DanglingReference,
+        ),
+        (
+            r#""not-a-tactile-link""#,
+            PortableErrorCode::MalformedReference,
+        ),
+    ] {
+        let workspace = format!(
+            r#"{{
+  "version": 4,
+  "objects": [{{
+    "id": "sheet-home",
+    "type": "sheet",
+    "cells": {{ "A1": {{ "embed": {embed} }} }}
+  }}]
+}}"#
+        );
+        let workspace = parse_json(workspace.as_bytes()).expect("dangling embed fixture");
+        let error =
+            portable::validate_portable_workspace(&workspace, &ValidationOptions::default())
+                .expect_err("invalid embedded links must be rejected");
+        assert_eq!(error.code_kind(), expected_code);
+    }
+
+    let value_link = parse_json(
+        br#"{
+  "version": 4,
+  "objects": [
+    {
+      "id": "sheet-home",
+      "type": "sheet",
+      "cells": {
+        "A1": {
+          "embed": null,
+          "value": "[[tactile:markdown:missing|Missing]]"
+        }
+      }
+    }
+  ]
+}"#,
+    )
+    .expect("value-link fixture");
+    let error = portable::validate_portable_workspace(&value_link, &ValidationOptions::default())
+        .expect_err("dangling value links must be rejected");
+    assert_eq!(error.code_kind(), PortableErrorCode::DanglingReference);
+}
+
+fn metadata_fixture_package(metadata: &[u8]) -> PortablePackage {
+    let manifest = parse_json(
+        br#"{
+  "format": "tactile",
+  "formatVersion": 4,
+  "entry": "workspace.json"
+}"#,
+    )
+    .expect("metadata manifest");
+    let workspace = parse_json(
+        br#"{
+  "format": "tactile",
+  "version": 4,
+  "objects": [{
+    "id": "sheet-home",
+    "type": "sheet",
+    "file": "objects/sheet-home/sheet.csv",
+    "metadata": "objects/sheet-home/sheet.meta.json"
+  }]
+}"#,
+    )
+    .expect("metadata workspace");
+    let mut package = PortablePackage::new(manifest, workspace);
+    package.push_resource(ExportEntry::bytes(
+        "objects/sheet-home/sheet.csv",
+        b"Name\r\n",
+    ));
+    package.push_resource(ExportEntry::bytes(
+        "objects/sheet-home/sheet.meta.json",
+        metadata,
+    ));
+    package
+}
+
+#[test]
+fn metadata_import_indexes_addresses_without_scanning_and_rejects_scalar_cells() {
+    let package = metadata_fixture_package(
+        br#"{
+  "rows": 256,
+  "columns": 64,
+  "cells": {
+    "a1": { "role": "heading", "x-plugin": { "keep": true } }
+  }
+}"#,
+    );
+    let token = CancellationToken::new();
+    let mut control = OperationControl::new(&token);
+    let writer = export_portable(Vec::new(), &package, &Default::default(), &mut control)
+        .expect("metadata export starts");
+    let bytes = writer.finish().expect("metadata export finishes");
+    let destination = temp_path("metadata-index");
+    let mut control = OperationControl::new(&token);
+    let imported = import_portable(
+        Cursor::new(bytes),
+        &destination,
+        &Default::default(),
+        &mut control,
+    )
+    .expect("metadata import");
+    let metadata = imported
+        .sheet_metadata("sheet-home")
+        .expect("metadata index");
+    assert_eq!(
+        metadata
+            .cell("A1")
+            .and_then(|cell| cell.get("role"))
+            .and_then(JsonValue::as_str),
+        Some("heading")
+    );
+    assert_eq!(metadata.cell("a1"), metadata.cell(" A01 "));
+    assert_eq!(metadata.cell_count(), 1);
+    clean(&destination);
+
+    let malformed_package = metadata_fixture_package(br#"{"cells":{"A1":null}}"#);
+    let token = CancellationToken::new();
+    let mut control = OperationControl::new(&token);
+    let writer = export_portable(
+        Vec::new(),
+        &malformed_package,
+        &Default::default(),
+        &mut control,
+    )
+    .expect("malformed metadata export starts");
+    let bytes = writer.finish().expect("malformed metadata export finishes");
+    let destination = temp_path("metadata-malformed");
+    let mut control = OperationControl::new(&token);
+    let error = import_portable(
+        Cursor::new(bytes),
+        &destination,
+        &Default::default(),
+        &mut control,
+    )
+    .expect_err("scalar metadata cells must be rejected");
+    assert_eq!(error.code_kind(), PortableErrorCode::MalformedCell);
+    assert!(!destination.exists());
+}
+
+#[test]
+fn resource_validation_rejects_invalid_asset_sizes_and_archive_paths() {
+    let workspace = parse_json(
+        br#"{
+  "version": 4,
+  "objects": [{ "id": "sheet-home", "type": "sheet" }],
+  "assets": [{ "id": "asset-ref", "size": "four" }]
+}"#,
+    )
+    .expect("invalid asset fixture");
+    let error = portable::validate_portable_workspace(&workspace, &ValidationOptions::default())
+        .expect_err("invalid asset sizes must be rejected");
+    assert_eq!(error.code_kind(), PortableErrorCode::MalformedAsset);
+
+    let manifest = parse_json(
+        br#"{
+  "format": "tactile",
+  "formatVersion": 4,
+  "entry": "workspace.json"
+}"#,
+    )
+    .expect("path manifest");
+    let workspace = parse_json(
+        br#"{
+  "version": 4,
+  "objects": [{
+    "id": "doc",
+    "type": "markdown",
+    "file": "../escape"
+  }]
+}"#,
+    )
+    .expect("path workspace");
+    let mut package = PortablePackage::new(manifest, workspace);
+    package.push_resource(ExportEntry::bytes("safe.txt", b"safe"));
+    let token = CancellationToken::new();
+    let mut control = OperationControl::new(&token);
+    let writer = export_portable(Vec::new(), &package, &Default::default(), &mut control)
+        .expect("unsafe reference export starts");
+    let bytes = writer.finish().expect("unsafe reference export finishes");
+    let destination = temp_path("unsafe-resource");
+    let mut control = OperationControl::new(&token);
+    let error = import_portable(
+        Cursor::new(bytes),
+        &destination,
+        &Default::default(),
+        &mut control,
+    )
+    .expect_err("unsafe referenced paths must be rejected");
+    assert_eq!(error.code_kind(), PortableErrorCode::ZipPathTraversal);
+    assert!(!destination.exists());
+}
+
+#[test]
 fn malformed_and_oversized_packages_fail_before_destination_creation() {
     let bytes = export_fixture();
     let limits = portable::PortableLimits {
@@ -286,6 +511,44 @@ fn malformed_and_oversized_packages_fail_before_destination_creation() {
         .expect_err("malformed object collection");
     assert_eq!(error.code_kind(), PortableErrorCode::MalformedObjects);
     assert!(!destination.exists());
+}
+
+#[test]
+fn cancelled_import_removes_only_its_own_staging_directory() {
+    let bytes = export_fixture();
+    let destination = temp_path("cancelled-import");
+    let parent = destination.parent().expect("destination parent");
+    fs::create_dir_all(parent).expect("import parent");
+    let foreign_staging = parent.join(format!(
+        ".{}.tactile-import-foreign",
+        destination
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("destination name")
+    ));
+    fs::create_dir_all(&foreign_staging).expect("foreign staging");
+    fs::write(foreign_staging.join("keep.txt"), b"keep").expect("foreign marker");
+
+    let token = CancellationToken::new();
+    let callback_token = token.clone();
+    let mut sink = move |event: ProgressEvent| {
+        if event.phase == portable::ProgressPhase::Extract {
+            callback_token.cancel();
+        }
+    };
+    let mut control = OperationControl::with_progress(&token, &mut sink);
+    let error = import_portable(
+        Cursor::new(bytes),
+        &destination,
+        &Default::default(),
+        &mut control,
+    )
+    .expect_err("cancelled import");
+    assert_eq!(error.code_kind(), PortableErrorCode::Cancelled);
+    assert!(!destination.exists());
+    assert!(foreign_staging.join("keep.txt").exists());
+
+    fs::remove_dir_all(&foreign_staging).expect("foreign staging cleanup");
 }
 
 fn decode_base64(value: &str) -> Vec<u8> {
@@ -394,6 +657,7 @@ fn asset_store_streams_native_handles_and_cleans_cancelled_writes() {
         .expect_err("cancelled asset write");
     assert_eq!(error.code_kind(), PortableErrorCode::Cancelled);
     assert!(!cancelled_root.join("assets/cancelled/payload.bin").exists());
+    assert!(!cancelled_root.join("assets/cancelled").exists());
 
     clean(&root);
     clean(&cancelled_root);

@@ -82,6 +82,7 @@ impl AssetStore {
         mut reader: R,
         control: &mut OperationControl<'_>,
     ) -> PortableResult<AssetHandle> {
+        control.check()?;
         if request.expected_size.unwrap_or(0) > self.limits.max_asset_bytes {
             return Err(PortableError::new(
                 PortableErrorCode::OversizedAsset,
@@ -153,6 +154,12 @@ impl AssetStore {
         })();
         if result.is_err() {
             let _ = fs::remove_file(&temporary_path);
+            if fs::read_dir(parent)
+                .map(|mut entries| entries.next().is_none())
+                .unwrap_or(false)
+            {
+                let _ = fs::remove_dir(parent);
+            }
         }
         result
     }
