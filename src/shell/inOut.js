@@ -237,8 +237,6 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
     { key: "root", objectId: initialRootId, phase: "base", closing: false },
   ]);
   const timers = useRef(new Set());
-  const transitionTimers = useRef(new Set());
-  const layerKeySequenceRef = useRef(0);
   const layersRef = useRef(layers);
   const workspaceRef = useRef(workspace);
   const workspaceIdRef = useRef(workspace.id);
@@ -265,48 +263,10 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
     return timer;
   }, []);
 
-  const cancelTransitionTimers = useCallback(() => {
-    transitionTimers.current.forEach((timer) => window.clearTimeout(timer));
-    transitionTimers.current.clear();
-  }, []);
-
-  const scheduleTransition = useCallback((callback, delay) => {
-    const timer = window.setTimeout(() => {
-      transitionTimers.current.delete(timer);
-      callback();
-    }, delay);
-    transitionTimers.current.add(timer);
-    return timer;
-  }, []);
-
-  const nextLayerKey = useCallback((prefix) => {
-    layerKeySequenceRef.current += 1;
-    return `${prefix}-${Date.now()}-${layerKeySequenceRef.current}`;
-  }, []);
-
-  const removeTopLayerAndPromoteSlot = useCallback((items, key) => {
-    const top = items[items.length - 1];
-    if (!top || top.key !== key) return items;
-    const retained = items.slice(0, -1);
-    if (retained.length <= 1) return retained;
-    const parent = retained[retained.length - 1];
-    retained[retained.length - 1] = { ...parent, key };
-    return retained;
-  }, []);
-
-  const trimLayersAndPromoteSlot = useCallback((items, length, key) => {
-    const retained = items.slice(0, length);
-    if (retained.length <= 1) return retained;
-    const parent = retained[retained.length - 1];
-    retained[retained.length - 1] = { ...parent, key };
-    return retained;
-  }, []);
-
   useEffect(() => () => {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current.clear();
-    cancelTransitionTimers();
-  }, [cancelTransitionTimers]);
+  }, []);
 
   useEffect(() => {
     const workspaceChanged = workspaceIdRef.current !== workspace.id;
@@ -448,16 +408,13 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
             : layer
         )));
         const elapsed = Date.now() - (currentTop.openedAt || Date.now());
-        cancelTransitionTimers();
-        scheduleTransition(
+        schedule(
           () => setLayerPhase(currentTop.key, "full"),
           Math.max(0, IN_OUT_TIMING.floatingToFull - elapsed),
         );
       }
       return;
     }
-
-    cancelTransitionTimers();
 
     const entry = {
       ...pathEntryForEdge(edge),
@@ -495,41 +452,24 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
         || parent.phase !== "full"
       )) return;
       const nextSourceElement = sourceElementForEntry(entry) || sourceElement;
-      const reusesSpatialSlot = currentTop?.phase !== "base";
-      if (reusesSpatialSlot && (
-        !parent
-        || parent.key !== currentTop.key
-        || parent.closing
-      )) return;
-      const key = reusesSpatialSlot ? currentTop.key : nextLayerKey("layer");
-      const promotedParentKey = reusesSpatialSlot ? nextLayerKey("parent") : null;
+      const key = `layer-${payload.objectId}-${Date.now()}`;
       const layer = makeLayerFromEntry(entry, key, nextSourceElement);
       if (payload.sourceRect) layer.sourceRect = payload.sourceRect;
-      setLayers((items) => {
-        if (!promotedParentKey) return [...items, layer];
-        const activeParent = items[items.length - 1];
-        if (!activeParent || activeParent.key !== currentTop.key) return items;
-        return [
-          ...items.slice(0, -1),
-          { ...activeParent, key: promotedParentKey },
-          layer,
-        ];
-      });
-      scheduleTransition(() => setLayerPhase(key, "floating"), IN_OUT_TIMING.toFloating);
+      setLayers((items) => [...items, layer]);
+      schedule(() => setLayerPhase(key, "floating"), IN_OUT_TIMING.toFloating);
       if (layer.requestedMode === "full") {
-        scheduleTransition(() => setLayerPhase(key, "full"), IN_OUT_TIMING.floatingToFull);
+        schedule(() => setLayerPhase(key, "full"), IN_OUT_TIMING.floatingToFull);
       }
     };
 
-    if (parentNeedsExpansion) scheduleTransition(appendLayer, IN_OUT_TIMING.nestedAdvance);
+    if (parentNeedsExpansion) schedule(appendLayer, IN_OUT_TIMING.nestedAdvance);
     else appendLayer();
-  }, [cancelTransitionTimers, currentHistoryStack, makeLayerFromEntry, nextLayerKey, scheduleTransition, setLayerPhase, sourceElementForEntry, workspace.objects, writeHistoryStack]);
+  }, [currentHistoryStack, makeLayerFromEntry, schedule, setLayerPhase, sourceElementForEntry, workspace.objects, writeHistoryStack]);
 
   const expandLayer = useCallback((key) => {
     const current = layersRef.current;
     const top = current[current.length - 1];
     if (!top || top.key !== key || top.phase !== "floating" || top.closing) return false;
-    cancelTransitionTimers();
     setLayers((items) => items.map((layer) => (
       layer.key === top.key
         ? { ...layer, phase: "full", closing: false, fullHistoryStep: true }
@@ -541,7 +481,7 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
       writeHistoryStack(stack);
     }
     return true;
-  }, [cancelTransitionTimers, currentHistoryStack, writeHistoryStack]);
+  }, [currentHistoryStack, writeHistoryStack]);
 
   const expandTopLayer = useCallback(() => {
     const top = layersRef.current[layersRef.current.length - 1];
@@ -550,20 +490,19 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
 
   const closeLayerWithoutHistory = useCallback((layer) => {
     if (!layer || layer.phase === "base" || layer.closing) return;
-    cancelTransitionTimers();
     pendingOpenRef.current += 1;
     const closingFromFloating = layer.phase === "floating";
     if (!closingFromFloating) setLayerPhase(layer.key, "floating", true);
-    scheduleTransition(
+    schedule(
       () => setLayerPhase(layer.key, "origin", true),
       closingFromFloating ? IN_OUT_TIMING.floatingCloseToOrigin : IN_OUT_TIMING.closeToOrigin,
     );
-    scheduleTransition(() => {
-      setLayers((current) => removeTopLayerAndPromoteSlot(current, layer.key));
+    schedule(() => {
+      setLayers((current) => current.filter((item) => item.key !== layer.key));
       const selector = `[data-object-id="${layer.sourceObjectId}"][data-cell-address="${layer.sourceAddress}"]`;
       document.querySelector(selector)?.focus({ preventScroll: true });
     }, closingFromFloating ? IN_OUT_TIMING.floatingCloseComplete : IN_OUT_TIMING.closeComplete);
-  }, [cancelTransitionTimers, removeTopLayerAndPromoteSlot, scheduleTransition, setLayerPhase]);
+  }, [schedule, setLayerPhase]);
 
   const syncHistoryStack = useCallback((targetStack, targetRootId = null, { immediate = false } = {}) => {
     pendingOpenRef.current += 1;
@@ -645,27 +584,15 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
         return;
       }
       const sourceElement = sourceElementForEntry(entry);
-      const activeParent = currentItems[currentItems.length - 1];
-      const reusesSpatialSlot = activeParent?.phase !== "base";
-      const key = reusesSpatialSlot ? activeParent.key : nextLayerKey("history");
-      const promotedParentKey = reusesSpatialSlot ? nextLayerKey("history-parent") : null;
+      const key = `history-${entry.objectId}-${Date.now()}-${nextIndex}`;
       const layer = makeLayerFromEntry(entry, key, sourceElement);
-      setLayers((items) => {
-        if (!promotedParentKey) return [...items, layer];
-        const currentParent = items[items.length - 1];
-        if (!currentParent || currentParent.key !== activeParent.key) return items;
-        return [
-          ...items.slice(0, -1),
-          { ...currentParent, key: promotedParentKey },
-          layer,
-        ];
-      });
-      scheduleTransition(() => setLayerPhase(key, "floating"), IN_OUT_TIMING.toFloating);
+      setLayers((items) => [...items, layer]);
+      schedule(() => setLayerPhase(key, "floating"), IN_OUT_TIMING.toFloating);
       const settleDelay = entry.mode === "full" ? IN_OUT_TIMING.floatingToFull : IN_OUT_TIMING.toFloating;
       if (entry.mode === "full") {
-        scheduleTransition(() => setLayerPhase(key, "full"), IN_OUT_TIMING.floatingToFull);
+        schedule(() => setLayerPhase(key, "full"), IN_OUT_TIMING.floatingToFull);
       }
-      scheduleTransition(appendNext, settleDelay + 30);
+      schedule(appendNext, settleDelay + 30);
     };
 
     const closeUntil = () => {
@@ -678,18 +605,18 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
       }
       const top = currentItems[currentItems.length - 1];
       if (top.closing) {
-        scheduleTransition(closeUntil, 24);
+        schedule(closeUntil, 24);
         return;
       }
       const closingFromFloating = top.phase === "floating";
       if (!closingFromFloating) setLayerPhase(top.key, "floating", true);
-      scheduleTransition(
+      schedule(
         () => setLayerPhase(top.key, "origin", true),
         closingFromFloating ? IN_OUT_TIMING.floatingCloseToOrigin : IN_OUT_TIMING.closeToOrigin,
       );
-      scheduleTransition(() => {
+      schedule(() => {
         if (historySyncRef.current !== syncId) return;
-        setLayers((items) => removeTopLayerAndPromoteSlot(items, top.key));
+        setLayers((items) => items.filter((item) => item.key !== top.key));
         window.requestAnimationFrame(closeUntil);
       }, closingFromFloating ? IN_OUT_TIMING.floatingCloseComplete : IN_OUT_TIMING.closeComplete);
     };
@@ -700,21 +627,18 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
       const top = current[current.length - 1];
       const closingFromFloating = top.phase === "floating";
       if (!closingFromFloating) setLayerPhase(top.key, "floating", true);
-      scheduleTransition(
+      schedule(
         () => setLayerPhase(top.key, "origin", true),
         closingFromFloating ? IN_OUT_TIMING.floatingCloseToOrigin : IN_OUT_TIMING.closeToOrigin,
       );
-      scheduleTransition(() => {
+      schedule(() => {
         if (historySyncRef.current !== syncId) return;
-        setLayers((items) => {
-          const retained = trimLayersAndPromoteSlot(items, targetStack.length + 1, top.key);
-          return setTargetStackState(retained);
-        });
+        setLayers((items) => setTargetStackState(items, { trim: true }));
       }, closingFromFloating ? IN_OUT_TIMING.floatingCloseComplete : IN_OUT_TIMING.closeComplete);
     } else if (current.length - 1 > commonDepth) closeUntil();
     else if (current.length - 1 < targetStack.length) appendNext();
     else applyModes();
-  }, [makeLayerFromEntry, nextLayerKey, removeTopLayerAndPromoteSlot, scheduleTransition, setLayerPhase, sourceElementForEntry, trimLayersAndPromoteSlot, workspaceRootId]);
+  }, [makeLayerFromEntry, schedule, setLayerPhase, sourceElementForEntry, workspaceRootId]);
 
   const navigateToRoute = useCallback((route, { history = "push", mode = "full", immediate = false } = {}) => {
     const segments = Array.isArray(route?.segments) ? route.segments : [];
