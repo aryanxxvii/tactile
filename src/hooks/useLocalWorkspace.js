@@ -197,7 +197,11 @@ export function useLocalWorkspace() {
       setHydrated(true);
       setSaveState("saved");
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      wave2ShadowRef.current?.dispose?.();
+      wave2ShadowRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
