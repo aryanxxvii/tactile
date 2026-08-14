@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 export const SHEET_METRICS = {
   rowHeight: 31,
@@ -168,6 +169,14 @@ export function rangeContains(range, visibleRange) {
     && visibleRange.rowEnd <= range.rowEnd
     && visibleRange.columnStart >= range.columnStart
     && visibleRange.columnEnd <= range.columnEnd;
+}
+
+function rangesOverlap(left, right) {
+  return Boolean(left && right)
+    && left.rowStart <= right.rowEnd
+    && left.rowEnd >= right.rowStart
+    && left.columnStart <= right.columnEnd
+    && left.columnEnd >= right.columnStart;
 }
 
 export function expandedRange(range, rowCount, columnCount, padding) {
@@ -369,7 +378,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     });
   }, [viewStateKey]);
 
-  const syncViewport = useCallback((element, { forceRange = false } = {}) => {
+  const syncViewport = useCallback((element, { forceRange = false, immediate = false } = {}) => {
     if (!element) return;
     const previousPosition = scrollPositionRef.current;
     const position = nativeScrollPosition(element);
@@ -415,10 +424,25 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     // Directional look-ahead reduces rebases during ordinary movement but is
     // strictly capped. A scrollbar thumb may jump to any offset, so the cheap
     // sticky fallback owns that handoff while this latest range commits.
-    scheduleRange(buildRenderRange(
+    const nextRange = buildRenderRange(
       next,
       directionalOverscan(metrics, delta, renderOverscan),
-    ));
+    );
+    // A direct scrollbar/native jump can move the viewport completely outside
+    // the committed React slice before the next animation frame. Commit just
+    // that disjoint handoff synchronously so the first painted frame owns the
+    // destination cells; ordinary movement remains RAF-coalesced.
+    if (immediate && !rangesOverlap(committedRangeRef.current, nextRange)) {
+      if (rangeFrameRef.current != null) {
+        window.cancelAnimationFrame(rangeFrameRef.current);
+        rangeFrameRef.current = null;
+      }
+      pendingRangeRef.current = null;
+      requestedRangeRef.current = nextRange;
+      flushSync(() => setRange(nextRange));
+      return;
+    }
+    scheduleRange(nextRange);
   }, [buildRenderRange, buildVisibleRange, columnIndexMap.length, metrics, renderOverscan, rowIndexMap.length, scheduleRange, scheduleViewportMemory, syncScrollPosition]);
 
   syncViewportRef.current = syncViewport;
@@ -432,7 +456,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       element.scrollTop = Math.max(0, finiteCoordinate(saved.scrollTop));
     }
 
-    const handleNativeScroll = () => syncViewportRef.current?.(element);
+    const handleNativeScroll = () => syncViewportRef.current?.(element, { immediate: true });
     handleNativeScroll();
     element.addEventListener("scroll", handleNativeScroll, { passive: true });
 

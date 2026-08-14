@@ -5229,7 +5229,7 @@ kbd {
   display: none;
 }
 
-.app-dock > button.app-dock-settings:last-child {
+.app-dock > button.app-dock-settings {
   margin-left: 0;
   padding-left: 10px;
 }
