@@ -135,6 +135,7 @@ export function SheetGrid({
         selectedCoordinates={projection.selectedCoordinates}
         formulaEditingCellId={formulaEditingCellId}
         formulaReferenceRange={gestures.formulaReferenceRange}
+        selectionInteractionActive={gestures.selectionInteractionActive}
         onSelect={onSelect}
         onSelectRange={onSelectRange}
         onSelectionStart={gestures.startSelection}

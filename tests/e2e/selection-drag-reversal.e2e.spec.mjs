@@ -113,6 +113,31 @@ test("registers a range drag even when the pointer jumps between cells", async (
     });
 });
 
+test("holds cell paint transitions stable while a range drag is live", async ({ page }) => {
+  await page.goto("/");
+
+  const start = await cellCenter(page, "D7");
+  const end = await cellCenter(page, "C5");
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        active: getComputedStyle(document.querySelector('[data-cell-address="D7"]')).transition,
+        endpoint: getComputedStyle(document.querySelector('[data-cell-address="C5"]')).transition,
+      })),
+    )
+    .toEqual({ active: "none", endpoint: "none" });
+
+  await page.mouse.move(end.x, end.y, { steps: 3 });
+  await page.mouse.up();
+
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.querySelector('[data-cell-address="C5"]')).transition))
+    .toContain("0.13s");
+});
+
 test("applies the pointer-up endpoint when no intermediate move is delivered", async ({ page }) => {
   await page.goto("/");
 

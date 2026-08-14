@@ -95,6 +95,7 @@ export function useSheetGridGestures({
   onResizePreview,
 }) {
   const [formulaReferenceRange, setFormulaReferenceRange] = useState(null);
+  const [selectionInteractionActive, setSelectionInteractionActive] = useState(false);
   const selectionDragRef = useRef(null);
   const formulaReferenceDragRef = useRef(null);
   const fillDragRef = useRef(null);
@@ -108,6 +109,7 @@ export function useSheetGridGestures({
   const selectionPointerRef = useRef(null);
   const selectionScrollFrameRef = useRef(null);
   const selectionViewportLockRef = useRef(false);
+  const selectionInteractionFrameRef = useRef(null);
   const focusFrameRef = useRef(null);
   const resizeFrameRef = useRef(null);
   const axisDragFrameRef = useRef(null);
@@ -419,6 +421,19 @@ export function useSheetGridGestures({
       const callbacks = gestureCallbacksRef.current;
       callbacks?.setFillTarget(null);
       if (formulaReference) callbacks?.setFormulaReferenceRange?.({ anchor: formulaReference.anchor, focus: formulaReference.focus });
+      if (selectionDrag) {
+        // Let the final range paint once with transitions suppressed, then
+        // return the cells to their normal hover/idle motion on the next
+        // frame. This prevents stale per-cell paint animations from piling
+        // up while a pointer drag crosses a rectangular range.
+        if (selectionInteractionFrameRef.current != null) {
+          window.cancelAnimationFrame(selectionInteractionFrameRef.current);
+        }
+        selectionInteractionFrameRef.current = window.requestAnimationFrame(() => {
+          selectionInteractionFrameRef.current = null;
+          setSelectionInteractionActive(false);
+        });
+      }
       if (fill && target && target !== fill.sourceAddress) {
         const changes = fillChanges(callbacks.object, fill.sourceAddress, target, fill.sourceRange);
         callbacks.onCellsChange?.(changes, "fill");
@@ -439,6 +454,9 @@ export function useSheetGridGestures({
 
   useEffect(() => () => {
     stopSelectionAutoScroll();
+    if (selectionInteractionFrameRef.current != null) {
+      window.cancelAnimationFrame(selectionInteractionFrameRef.current);
+    }
   }, [stopSelectionAutoScroll]);
 
   const startSelection = useCallback((event, cell) => {
@@ -459,6 +477,13 @@ export function useSheetGridGestures({
     if (event.shiftKey) onSelectRange?.(anchor, cell.address);
     else onSelect(cell.address);
     if (selectingText) return;
+    if (!cell.embed) {
+      if (selectionInteractionFrameRef.current != null) {
+        window.cancelAnimationFrame(selectionInteractionFrameRef.current);
+        selectionInteractionFrameRef.current = null;
+      }
+      setSelectionInteractionActive(true);
+    }
     focusSelectedGestureCell(object.id, cell.address);
     if (!cell.embed) {
       const captureTarget = scrollRef.current || event.currentTarget;
@@ -754,5 +779,6 @@ export function useSheetGridGestures({
     restoreSelectionScroll,
     toggleRowGroup,
     toggleColumnGroup,
+    selectionInteractionActive,
   };
 }

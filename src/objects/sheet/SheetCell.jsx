@@ -68,6 +68,7 @@ export const SheetCell = memo(function SheetCell({
   onSelectionStart,
   onSelectionMove,
   formulaEditingCellId,
+  selectionInteractionActive,
   onFormulaReferenceStart,
   onFormulaReferenceMove,
   onFillStart,
@@ -86,8 +87,12 @@ export const SheetCell = memo(function SheetCell({
   const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
   const shownFormula = localDraft?.formula || formula;
   const formulaError = Boolean(shownFormula && String(shownValue).startsWith("#"));
-  const cellStyle = Number.isFinite(styleFontSize)
-    ? { "--cell-font-size": `${styleFontSize}px` }
+  const hasFontSize = Number.isFinite(styleFontSize);
+  const cellStyle = hasFontSize || selectionInteractionActive
+    ? {
+      ...(hasFontSize ? { "--cell-font-size": `${styleFontSize}px` } : {}),
+      ...(selectionInteractionActive ? { transition: "none" } : {}),
+    }
     : undefined;
 
   const eventCell = () => cellEventData({
