@@ -67,10 +67,22 @@ export function SheetGridCanvas({
     [formulaReferenceRange?.anchor, formulaReferenceRange?.focus],
   );
 
+  const embeddedTypes = useMemo(
+    () => [...new Set(
+      Object.values(object.cells || {})
+        .map((cell) => cell?.embed?.type)
+        .filter(Boolean),
+    )],
+    [object.cells],
+  );
+
   useEffect(() => {
-    const embedType = object.cells?.[cellId(selectedCoordinates.row, selectedCoordinates.column)]?.embed?.type;
-    if (embedType) preloadObjectRenderer(embedType);
-  }, [object.cells, selectedCoordinates.column, selectedCoordinates.row]);
+    // An embedded cell is intentionally cheap to paint, but opening it can
+    // cross the registry's lazy renderer boundary. Warm each type referenced
+    // by this sheet ahead of the click so a tile never opens to a transient
+    // empty Suspense surface while its renderer chunk is still loading.
+    embeddedTypes.forEach((embedType) => preloadObjectRenderer(embedType));
+  }, [embeddedTypes]);
 
   return (
     <div className="sheet-scroll" data-sheet-scroll ref={scrollRef} onScroll={onScroll}>

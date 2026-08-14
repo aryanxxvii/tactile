@@ -225,6 +225,17 @@ test("opens an embedded tile with Enter just like the In & Out shortcut", async 
   await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
 });
 
+test("renders the opened tile sheet instead of an empty lazy surface", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  await cellLocator(page, "home", "A1").click();
+  const child = page.locator('[data-layer-object="layer-two"]');
+  await expect(child).toHaveAttribute("data-spatial-phase", "floating");
+  await expect(child.locator('[data-cell-address="A1"]')).toBeVisible();
+  await expect(child.locator(".sheet-cell")).not.toHaveCount(0);
+});
+
 test("keeps the bottom dock available while a child floats", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);

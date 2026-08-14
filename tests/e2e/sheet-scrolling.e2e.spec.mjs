@@ -1,5 +1,28 @@
 import { expect, test } from "@playwright/test";
 
+test("mounts tiles through the initial viewport instead of leaving a lower blank band", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+  await expect
+    .poll(() => sheet.evaluate((element) => {
+      const columnHeader = element.querySelector(".column-header");
+      const scrollerBox = element.getBoundingClientRect();
+      const bodyTop = scrollerBox.top + (columnHeader?.getBoundingClientRect().height || 25);
+      const bodyBottom = scrollerBox.bottom;
+      const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
+        .map((slot) => slot.getBoundingClientRect())
+        .filter((box) => box.bottom > bodyTop && box.top < bodyBottom);
+      return {
+        mountedCells: element.querySelectorAll(".virtual-cell-slot").length,
+        coversViewport: visibleSlots.length > 0
+          && Math.max(...visibleSlots.map((box) => box.bottom)) >= bodyBottom - 1,
+      };
+    }))
+    .toMatchObject({ coversViewport: true });
+});
+
 test("keeps the column label lane intact on the first few scroll pixels", async ({ page }) => {
   await page.goto("/");
 

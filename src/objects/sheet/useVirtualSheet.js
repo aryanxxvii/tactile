@@ -325,6 +325,8 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   );
   const [range, setRange] = useState(initialRange);
   const rangeRef = useRef(range);
+  const renderedRangeRef = useRef(range);
+  renderedRangeRef.current = range;
   const commitRange = useCallback((nextRange, immediate = false) => {
     if (rangesEqual(rangeRef.current, nextRange)) return false;
     rangeRef.current = nextRange;
@@ -425,7 +427,15 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       ? new ResizeObserver(() => syncViewportRef.current?.(element))
       : null;
     observer?.observe(element);
+    // The first layout can settle after the observer is attached (notably
+    // when the object shell and bottom dock finish sizing together). Refresh
+    // once on the next frame so the initial fallback viewport cannot leave a
+    // permanently undersized render window and blank lower rows.
+    let layoutFrame = window.requestAnimationFrame(() => {
+      syncViewportRef.current?.(element);
+    });
     return () => {
+      window.cancelAnimationFrame(layoutFrame);
       observer?.disconnect();
       element.removeEventListener("scroll", handleNativeScroll);
     };
@@ -439,8 +449,18 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   }, [range]);
 
   useEffect(() => () => {
-    if (memoryFrameRef.current != null) window.cancelAnimationFrame(memoryFrameRef.current);
-    if (rangeFrameRef.current != null) window.cancelAnimationFrame(rangeFrameRef.current);
+    if (memoryFrameRef.current != null) {
+      window.cancelAnimationFrame(memoryFrameRef.current);
+      memoryFrameRef.current = null;
+    }
+    if (rangeFrameRef.current != null) {
+      window.cancelAnimationFrame(rangeFrameRef.current);
+      rangeFrameRef.current = null;
+    }
+    // StrictMode replays effect cleanup during development. Keep the refs in
+    // sync with the range that is actually mounted so a cancelled frame does
+    // not make later resize/scroll updates look already committed.
+    rangeRef.current = renderedRangeRef.current;
     pendingViewportRef.current = null;
     pendingRangeRef.current = null;
   }, []);
