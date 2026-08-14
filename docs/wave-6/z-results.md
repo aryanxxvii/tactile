@@ -11,13 +11,13 @@ has an opaque portaled Paper surface, and plain square brackets remain In & Out
 shortcuts unless the formula editor is active.
 
 Z01 is not complete. The production app still enters through
-`src/hooks/useLocalWorkspace.js`, which exposes the legacy React snapshot hook
-and the Wave 2 shadow controller. The opt-in
-`__TACTILE_LEGACY_ROLLBACK__` flag and `src/core/engine/shadow.js` remain in
-place for rollback coverage. There are currently 89 JavaScript/JSX source
-files and 32 TypeScript/TSX source files under `src/`; removing the legacy
-path and converting the remaining production surface requires a dedicated
-engine-to-React integration pass, not a safe cleanup-only deletion.
+`src/hooks/useLocalWorkspace.js`, which still exposes a React compatibility
+snapshot boundary around the normalized engine. The rollback flag has been
+removed; `src/core/engine/shadow.js` remains as a compatibility bridge while
+the UI snapshot is migrated. There are currently 89 JavaScript/JSX source
+files and 32 TypeScript/TSX source files under `src/`; converting the remaining
+production surface requires a dedicated engine-to-React integration pass, not a
+safe cleanup-only deletion.
 
 ## Z02 release-candidate audit
 

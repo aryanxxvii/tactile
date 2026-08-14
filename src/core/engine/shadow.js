@@ -219,13 +219,12 @@ function disposeFormulaClients(clients) {
 export function createWave2Shadow(initialWorkspace, options = {}) {
   let engine = createTransactionEngine(normalizeWorkspace(initialWorkspace), { initialRevision: "0" });
   const persistence = options.persistence || createBrowserPersistence();
-  const legacyRollback = options.legacyRollback === true;
   const useInitialSnapshot = options.useInitialSnapshot === true;
   const formulaClients = new Map();
   const state = {
     enabled: true,
-    engine: legacyRollback ? "legacy-rollback" : "transaction",
-    mode: legacyRollback ? "rollback" : "default",
+    engine: "transaction",
+    mode: "default",
     persistence: "initializing",
     formulaWorker: "idle",
     revision: "0",
@@ -242,7 +241,7 @@ export function createWave2Shadow(initialWorkspace, options = {}) {
 
   const ready = (async () => {
     try {
-      const stored = legacyRollback || useInitialSnapshot
+      const stored = useInitialSnapshot
         ? null
         : await persistence.open({ workspaceId: previous.id });
       if (stored) {

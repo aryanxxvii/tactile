@@ -14,7 +14,7 @@ Run date: 2026-08-13
 ## Engine and startup acceptance
 
 - The normalized transaction engine reports `engine: transaction` and `mode: default` by default.
-- The temporary legacy path is opt-in through `globalThis.__TACTILE_LEGACY_ROLLBACK__` and reports `engine: legacy-rollback` and `mode: rollback`.
+- The temporary legacy rollback flag has been removed. The normalized transaction engine is the only runtime mode; the bridge remains only as the compatibility boundary while the UI snapshot is migrated.
 - Imported workspaces are protected from boot-time persistence races.
 - Deferred Files loading keeps the workspace lane and bottom-dock geometry present before the panel chunk resolves.
 - Production build passes with entry JS at 61,523 gzip bytes and entry CSS at 18,313 gzip bytes, both within the enforced budgets.

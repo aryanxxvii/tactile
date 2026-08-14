@@ -30,12 +30,6 @@ function initialWorkspace() {
   return normalizeWorkspace(loadWorkspaceCache() || createBlankWorkspace());
 }
 
-function legacyRollbackEnabled() {
-  return typeof globalThis !== "undefined"
-    && (globalThis.__TACTILE_LEGACY_ROLLBACK__ === true
-      || globalThis.__TACTILE_LEGACY_ROLLBACK__ === "true");
-}
-
 function touch(workspace, objects, repairTopology = false) {
   const next = {
     ...workspace,
@@ -175,7 +169,6 @@ export function useLocalWorkspace() {
   const saveTimer = useRef(null);
   const historyRef = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
   const wave2ShadowRef = useRef(null);
-  const legacyRollbackRef = useRef(legacyRollbackEnabled());
   const workspaceMutationRef = useRef(false);
 
   useEffect(() => {
@@ -184,7 +177,6 @@ export function useLocalWorkspace() {
       if (cancelled) return;
       const initial = normalizeWorkspace(stored || initialWorkspace());
       const controller = createWave2Shadow(initial, {
-        legacyRollback: legacyRollbackRef.current,
         useInitialSnapshot: true,
       });
       wave2ShadowRef.current = controller;
@@ -194,7 +186,13 @@ export function useLocalWorkspace() {
         wave2ShadowRef.current = null;
         return;
       }
-      if (!workspaceMutationRef.current) setWorkspace(normalizeWorkspace(resolved || initial));
+      // Keep the render snapshot independent from the bridge's normalized
+      // snapshot. Cell edits intentionally update only the affected sparse
+      // records in place, so sharing this object would let a render update
+      // mutate the bridge's previous-state baseline before reconciliation.
+      if (!workspaceMutationRef.current) {
+        setWorkspace(normalizeWorkspace(cloneHistoryWorkspace(resolved || initial)));
+      }
       historyRef.current = { past: [], future: [], lastKey: null, lastAt: 0 };
       setHydrated(true);
       setSaveState("saved");
