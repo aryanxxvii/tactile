@@ -171,6 +171,14 @@ export function rangeContains(range, visibleRange) {
     && visibleRange.columnEnd <= range.columnEnd;
 }
 
+function rangesOverlap(left, right) {
+  return Boolean(left && right)
+    && left.rowStart <= right.rowEnd
+    && left.rowEnd >= right.rowStart
+    && left.columnStart <= right.columnEnd
+    && left.columnEnd >= right.columnStart;
+}
+
 export function expandedRange(range, rowCount, columnCount, padding) {
   const rowMax = axisMax(rowCount);
   const columnMax = axisMax(columnCount);
@@ -279,6 +287,9 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   const pendingRangeRef = useRef(null);
   const pendingViewportRef = useRef(null);
   const syncViewportRef = useRef(null);
+  const primeWheelViewportRef = useRef(null);
+  const wheelPrimeRangeRef = useRef(null);
+  const wheelPrimeFrameRef = useRef(null);
   const initialViewport = useMemo(() => initialViewportFor(viewStateKey), [viewStateKey]);
   const scrollPositionRef = useRef({
     scrollLeft: initialViewport.scrollLeft,
@@ -324,12 +335,17 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     [buildRenderRange, viewportSize],
   );
   const [range, setRange] = useState(initialRange);
-  const rangeRef = useRef(range);
-  const renderedRangeRef = useRef(range);
-  renderedRangeRef.current = range;
+  // Requested and committed ranges are deliberately separate. During a fast
+  // scroll burst, React may defer an update requested from requestAnimationFrame.
+  // Treating that requested slice as painted lets later scroll events skip the
+  // synchronous handoff and exposes the old DOM far outside the viewport.
+  const requestedRangeRef = useRef(range);
+  const committedRangeRef = useRef(range);
   const commitRange = useCallback((nextRange, immediate = false) => {
-    if (rangesEqual(rangeRef.current, nextRange)) return false;
-    rangeRef.current = nextRange;
+    const requestUnchanged = rangesEqual(requestedRangeRef.current, nextRange);
+    const committedUnchanged = rangesEqual(committedRangeRef.current, nextRange);
+    if (requestUnchanged && (!immediate || committedUnchanged)) return false;
+    requestedRangeRef.current = nextRange;
     if (immediate) {
       if (rangeFrameRef.current != null) window.cancelAnimationFrame(rangeFrameRef.current);
       rangeFrameRef.current = null;
@@ -399,15 +415,16 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     // to the native scroll. A symmetric band remains bounded while ensuring
     // every committed slice belongs to the current scroll scope.
     const nextRange = buildRenderRange(next, renderOverscan);
+    const committedCoversViewport = rangeContains(committedRangeRef.current, visibleRange);
     if (!forceRange
-      && rangeContains(rangeRef.current, visibleRange)
-      && rangeContains(rangeRef.current, nextRange)) return;
+      && committedCoversViewport
+      && rangeContains(requestedRangeRef.current, nextRange)) return;
     // Native scrolling and sticky-header CSS stay immediate. Ordinary wheel
     // movement commits on the next frame so a burst of events cannot force one
     // React commit per event. A jump larger than one viewport is flushed now,
     // so the first paint after a trackpad/wheel jump cannot expose a stale
     // virtual slice.
-    const newlyExposed = !rangeContains(rangeRef.current, visibleRange);
+    const newlyExposed = !committedCoversViewport;
     const largeJump = newlyExposed
       || Math.abs(delta.scrollTop) > next.height
       || Math.abs(delta.scrollLeft) > next.width;
@@ -415,6 +432,61 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   }, [buildRenderRange, buildVisibleRange, commitRange, metrics, renderOverscan, scheduleViewportMemory, syncScrollStyles]);
 
   syncViewportRef.current = syncViewport;
+
+  const primeWheelViewport = useCallback((element, event) => {
+    if (!element || !event) return;
+    const current = nativeScrollPosition(element);
+    const pageWidth = Math.max(1, element.clientWidth || viewportSizeRef.current.width || 900);
+    const pageHeight = Math.max(1, element.clientHeight || viewportSizeRef.current.height || 500);
+    const deltaScaleX = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? pageWidth : 1;
+    const deltaScaleY = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? pageHeight : 1;
+    const shiftToHorizontal = event.shiftKey && !event.deltaX;
+    const deltaLeft = (shiftToHorizontal ? event.deltaY : event.deltaX) * deltaScaleX;
+    const deltaTop = (shiftToHorizontal ? 0 : event.deltaY) * deltaScaleY;
+    const projected = {
+      width: pageWidth,
+      height: pageHeight,
+      scrollLeft: clamp(
+        current.scrollLeft + finiteCoordinate(deltaLeft),
+        0,
+        Math.max(0, element.scrollWidth - pageWidth),
+      ),
+      scrollTop: clamp(
+        current.scrollTop + finiteCoordinate(deltaTop),
+        0,
+        Math.max(0, element.scrollHeight - pageHeight),
+      ),
+    };
+    const currentVisibleRange = buildVisibleRange({
+      width: pageWidth,
+      height: pageHeight,
+      ...current,
+    });
+    const projectedVisibleRange = buildVisibleRange(projected);
+    if (rangeContains(committedRangeRef.current, projectedVisibleRange)) return;
+    const projectedRenderRange = buildRenderRange(projected, renderOverscan);
+    // Replacing the entire range during the wheel event can remove the node
+    // beneath the pointer before the browser performs its default scroll,
+    // which cancels very large synthetic/native wheel jumps. Those disjoint
+    // jumps are handled synchronously by the ensuing scroll event instead.
+    if (!rangesOverlap(currentVisibleRange, projectedRenderRange)) return;
+
+    // Wheel/trackpad input arrives before the browser applies its native
+    // scroll offset. Paint the destination slice during that event so the
+    // compositor never gets a frame in which only the old slice has moved
+    // away. The scroll handler reconciles the exact clamped position after
+    // the browser performs the default action.
+    wheelPrimeRangeRef.current = projectedRenderRange;
+    if (wheelPrimeFrameRef.current != null) window.cancelAnimationFrame(wheelPrimeFrameRef.current);
+    commitRange(projectedRenderRange, true);
+    wheelPrimeFrameRef.current = window.requestAnimationFrame(() => {
+      wheelPrimeFrameRef.current = null;
+      wheelPrimeRangeRef.current = null;
+      syncViewportRef.current?.(element);
+    });
+  }, [buildRenderRange, buildVisibleRange, commitRange, renderOverscan]);
+
+  primeWheelViewportRef.current = primeWheelViewport;
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
@@ -426,9 +498,18 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     }
 
     const handleNativeScroll = () => {
+      if (wheelPrimeFrameRef.current != null) {
+        window.cancelAnimationFrame(wheelPrimeFrameRef.current);
+        wheelPrimeFrameRef.current = null;
+      }
+      wheelPrimeRangeRef.current = null;
       syncViewportRef.current?.(element);
     };
+    const handleNativeWheel = (event) => {
+      primeWheelViewportRef.current?.(element, event);
+    };
     handleNativeScroll();
+    element.addEventListener("wheel", handleNativeWheel, { passive: true });
     element.addEventListener("scroll", handleNativeScroll, { passive: true });
 
     const observer = typeof ResizeObserver === "function"
@@ -445,6 +526,7 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     return () => {
       window.cancelAnimationFrame(layoutFrame);
       observer?.disconnect();
+      element.removeEventListener("wheel", handleNativeWheel);
       element.removeEventListener("scroll", handleNativeScroll);
     };
   }, [viewStateKey]);
@@ -452,6 +534,8 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
   useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element) return undefined;
+    committedRangeRef.current = range;
+    if (rangesEqual(wheelPrimeRangeRef.current, range)) return undefined;
     syncViewportRef.current?.(element);
     return undefined;
   }, [range]);
@@ -465,10 +549,15 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       window.cancelAnimationFrame(rangeFrameRef.current);
       rangeFrameRef.current = null;
     }
-    // StrictMode replays effect cleanup during development. Keep the refs in
-    // sync with the range that is actually mounted so a cancelled frame does
-    // not make later resize/scroll updates look already committed.
-    rangeRef.current = renderedRangeRef.current;
+    if (wheelPrimeFrameRef.current != null) {
+      window.cancelAnimationFrame(wheelPrimeFrameRef.current);
+      wheelPrimeFrameRef.current = null;
+    }
+    // StrictMode replays effect cleanup during development. Discard any
+    // requested-but-uncommitted slice so later scroll events compare against
+    // the range that is actually mounted.
+    requestedRangeRef.current = committedRangeRef.current;
+    wheelPrimeRangeRef.current = null;
     pendingViewportRef.current = null;
     pendingRangeRef.current = null;
   }, []);

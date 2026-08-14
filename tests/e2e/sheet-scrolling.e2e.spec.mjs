@@ -213,6 +213,119 @@ test("keeps the bounded window and both sticky rails aligned on the first frame 
   expect(state.mountedCells).toBeLessThan(1000);
 });
 
+test("keeps the painted range current through a synchronous rapid-scroll burst", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+
+  const state = await sheet.evaluate((element) => {
+    const maxTop = Math.max(0, element.scrollHeight - element.clientHeight);
+    const maxLeft = Math.max(0, element.scrollWidth - element.clientWidth);
+    const steps = 140;
+    for (let index = 1; index <= steps; index += 1) {
+      element.scrollTop = Math.min(maxTop, index * 31);
+      element.scrollLeft = Math.min(maxLeft, index * 24);
+      // A trackpad burst can deliver many scroll positions before React's
+      // scheduled range update commits. Dispatch synchronously to preserve
+      // that ordering and catch requested-vs-painted range races.
+      element.dispatchEvent(new Event("scroll"));
+    }
+
+    const scrollerBox = element.getBoundingClientRect();
+    const columnHeader = element.querySelector(".column-header");
+    const corner = element.querySelector(".sheet-corner");
+    const bodyTop = scrollerBox.top + (columnHeader?.getBoundingClientRect().height ?? 25);
+    const bodyLeft = scrollerBox.left + (corner?.getBoundingClientRect().width ?? 34);
+    const visibleSlots = [...element.querySelectorAll(".virtual-cell-slot")]
+      .map((slot) => slot.getBoundingClientRect())
+      .filter((box) => (
+        box.bottom > bodyTop
+        && box.top < scrollerBox.bottom
+        && box.right > bodyLeft
+        && box.left < scrollerBox.right
+      ));
+    return {
+      scrollTop: element.scrollTop,
+      scrollLeft: element.scrollLeft,
+      visibleCells: visibleSlots.length,
+      rowCoverage: visibleSlots.length > 0
+        && Math.min(...visibleSlots.map((box) => box.top)) <= bodyTop + 1
+        && Math.max(...visibleSlots.map((box) => box.bottom)) >= scrollerBox.bottom - 1,
+      columnCoverage: visibleSlots.length > 0
+        && Math.min(...visibleSlots.map((box) => box.left)) <= bodyLeft + 1
+        && Math.max(...visibleSlots.map((box) => box.right)) >= scrollerBox.right - 1,
+    };
+  });
+
+  expect(state).toMatchObject({
+    rowCoverage: true,
+    columnCoverage: true,
+  });
+  expect(state.scrollTop).toBeGreaterThan(3000);
+  expect(state.scrollLeft).toBeGreaterThan(2000);
+  expect(state.visibleCells).toBeGreaterThan(0);
+});
+
+test("prepaints an overlapping wheel destination before native scrolling moves the viewport", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+  const scrollBox = await sheet.boundingBox();
+  if (!scrollBox) throw new Error("The sheet scroll surface has no layout box.");
+
+  await sheet.evaluate((element) => {
+    window.__tactileWheelPrimeProbe = null;
+    element.addEventListener("wheel", (event) => {
+      const projectedTop = Math.max(0, Math.min(
+        element.scrollTop + event.deltaY,
+        element.scrollHeight - element.clientHeight,
+      ));
+      const projectedLeft = Math.max(0, Math.min(
+        element.scrollLeft + event.deltaX,
+        element.scrollWidth - element.clientWidth,
+      ));
+      const bodyTop = projectedTop + 25;
+      const bodyLeft = projectedLeft + 34;
+      const bodyBottom = projectedTop + element.clientHeight;
+      const bodyRight = projectedLeft + element.clientWidth;
+      const projectedSlots = [...element.querySelectorAll(".virtual-cell-slot")]
+        .map((slot) => ({
+          top: slot.offsetTop,
+          bottom: slot.offsetTop + slot.offsetHeight,
+          left: slot.offsetLeft,
+          right: slot.offsetLeft + slot.offsetWidth,
+        }))
+        .filter((box) => (
+          box.bottom > bodyTop
+          && box.top < bodyBottom
+          && box.right > bodyLeft
+          && box.left < bodyRight
+        ));
+      window.__tactileWheelPrimeProbe = {
+        visibleCells: projectedSlots.length,
+        rowCoverage: projectedSlots.length > 0
+          && Math.min(...projectedSlots.map((box) => box.top)) <= bodyTop + 1
+          && Math.max(...projectedSlots.map((box) => box.bottom)) >= bodyBottom - 1,
+        columnCoverage: projectedSlots.length > 0
+          && Math.min(...projectedSlots.map((box) => box.left)) <= bodyLeft + 1
+          && Math.max(...projectedSlots.map((box) => box.right)) >= bodyRight - 1,
+      };
+    }, { once: true });
+  });
+
+  await page.mouse.move(scrollBox.x + scrollBox.width / 2, scrollBox.y + scrollBox.height / 2);
+  await page.mouse.wheel(900, 420);
+  const probe = await page.evaluate(() => window.__tactileWheelPrimeProbe);
+
+  expect(probe).toMatchObject({
+    rowCoverage: true,
+    columnCoverage: true,
+  });
+  expect(probe.visibleCells).toBeGreaterThan(0);
+});
+
 test("keeps active and hovered first-column cells behind the row rail after deep jumps", async ({ page }) => {
   await page.goto("/");
 
