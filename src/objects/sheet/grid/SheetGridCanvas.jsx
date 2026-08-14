@@ -105,9 +105,10 @@ export function SheetGridCanvas({
             zIndex: 0,
             left: rowHeaderWidth + bodyLeftInset,
             top: columnHeaderHeight + bodyTopInset,
-            right: 0,
-            bottom: 0,
+            width: "100vw",
+            height: "100vh",
             pointerEvents: "none",
+            transform: "translate3d(var(--sheet-scroll-x, 0px), var(--sheet-scroll-y, 0px), 0)",
             background: "repeating-linear-gradient(to right, transparent 0 125px, var(--tray) 125px 126px), repeating-linear-gradient(to bottom, var(--cell) 0 30px, var(--tray) 30px 31px)",
           }}
         />
