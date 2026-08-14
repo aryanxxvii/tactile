@@ -406,8 +406,9 @@ function FilesContextMenu({ menu, menuRef, themeSource, onClose, onOpen, onRenam
         <IconCopy size={14} stroke={1.7} />
         <span>Copy path</span>
       </button>
-      <div className="files-context-menu-divider" />
-      <div className="files-context-menu-label">Create new</div>
+      <div className="files-context-menu-heading">
+        <span>Create new</span>
+      </div>
       <button className="files-context-menu-item" type="button" role="menuitem" aria-label="Create Tiles" onClick={() => onCreateObject?.("sheet")} data-context-action="create-tiles">
         <IconTable size={14} stroke={1.7} />
         <span>Tiles</span>
