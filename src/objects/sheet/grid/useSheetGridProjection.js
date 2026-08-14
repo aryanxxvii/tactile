@@ -9,7 +9,14 @@ export function rangeValues(start, end) {
   return Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
 }
 
-export function useSheetGridProjection({ object, selectedAddress, selectionRange, fillTarget, sheetMetrics }) {
+export function useSheetGridProjection({
+  object,
+  selectedAddress,
+  selectionRange,
+  fillTarget,
+  sheetMetrics,
+  resizePreview,
+}) {
   const canonicalSelection = useMemo(
     () => canonicalSheetSelection({
       selectionRange,
@@ -76,15 +83,25 @@ export function useSheetGridProjection({ object, selectedAddress, selectionRange
     const columns = Array.from({ length: object.columns }, (_, column) => column).filter((column) => !hidden.has(column));
     return columns.length ? columns : [0];
   }, [columnGroups, object.columns]);
+  const effectiveSheetMetrics = useMemo(() => {
+    if (!resizePreview?.axis || !resizePreview.sizes) return sheetMetrics;
+    const next = { ...(sheetMetrics || {}) };
+    if (resizePreview.axis === "row") {
+      next.rowHeights = { ...(object.rowHeights || {}), ...resizePreview.sizes };
+    } else {
+      next.columnWidths = { ...(object.columnWidths || {}), ...resizePreview.sizes };
+    }
+    return next;
+  }, [object.columnWidths, object.rowHeights, resizePreview, sheetMetrics]);
   const virtualSheet = useVirtualSheet(
     object.rows,
     object.columns,
     {
-      ...(sheetMetrics || {}),
-      rowHeight: object.rowHeight || sheetMetrics?.rowHeight,
-      columnWidth: object.columnWidth || sheetMetrics?.columnWidth,
-      rowHeights: object.rowHeights,
-      columnWidths: object.columnWidths,
+      ...(effectiveSheetMetrics || {}),
+      rowHeight: object.rowHeight || effectiveSheetMetrics?.rowHeight,
+      columnWidth: object.columnWidth || effectiveSheetMetrics?.columnWidth,
+      rowHeights: effectiveSheetMetrics?.rowHeights || object.rowHeights,
+      columnWidths: effectiveSheetMetrics?.columnWidths || object.columnWidths,
       viewStateKey: object.id,
     },
     visibleRowIndexMap,

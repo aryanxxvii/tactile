@@ -92,6 +92,7 @@ export function useSheetGridGestures({
   onMoveAxis,
   fillTarget,
   setFillTarget,
+  onResizePreview,
 }) {
   const [formulaReferenceRange, setFormulaReferenceRange] = useState(null);
   const selectionDragRef = useRef(null);
@@ -579,6 +580,7 @@ export function useSheetGridGestures({
       preview: null,
     };
     resizeRef.current = active;
+    onResizePreview?.({ axis, sizes: values });
     if (event.pointerId != null) captureTarget.setPointerCapture?.(event.pointerId);
 
     const moveResize = (moveEvent) => {
@@ -596,8 +598,8 @@ export function useSheetGridGestures({
       if (resizeFrameRef.current != null) return;
       resizeFrameRef.current = window.requestAnimationFrame(() => {
         resizeFrameRef.current = null;
-        if (!resizeRef.current?.preview || !active.captureTarget) return;
-        active.captureTarget.dataset.resizePreview = JSON.stringify(active.preview);
+        if (!resizeRef.current?.preview) return;
+        onResizePreview?.({ axis: active.axis, sizes: active.preview });
       });
     };
     const endResize = (endEvent) => {
@@ -606,12 +608,13 @@ export function useSheetGridGestures({
         window.cancelAnimationFrame(resizeFrameRef.current);
         resizeFrameRef.current = null;
       }
-      delete active.captureTarget.dataset.resizePreview;
+      if (active.preview) onResizePreview?.({ axis: active.axis, sizes: active.preview });
       if (endEvent.type === "pointerup" && active.preview) {
         onUpdateObject?.(active.axis === "column"
           ? { columnWidths: active.preview }
           : { rowHeights: active.preview });
       }
+      onResizePreview?.(null);
       try { active.captureTarget.releasePointerCapture?.(active.pointerId); } catch { /* already released */ }
       window.removeEventListener("pointermove", moveResize, true);
       window.removeEventListener("pointerup", endResize, true);
@@ -621,7 +624,7 @@ export function useSheetGridGestures({
     window.addEventListener("pointermove", moveResize, true);
     window.addEventListener("pointerup", endResize, true);
     window.addEventListener("pointercancel", endResize, true);
-  }, [axisResizeTargets, columnSizeForIndex, object.columnWidths, object.rowHeights, onUpdateObject, rowSizeForIndex]);
+  }, [axisResizeTargets, columnSizeForIndex, object.columnWidths, object.rowHeights, onResizePreview, onUpdateObject, rowSizeForIndex]);
 
   const resizeAxisWithKeyboard = useCallback((axis, index, delta) => {
     const targets = axisResizeTargets(axis, index);

@@ -32,6 +32,7 @@ export function SheetGrid({
 }) {
   const [fillTarget, setFillTarget] = useState(null);
   const [dropTargetAddress, setDropTargetAddress] = useState("");
+  const [resizePreview, setResizePreview] = useState(null);
   const handleObjectDragOver = (event, address) => {
     if (!isObjectDragEvent(event)) return;
     event.preventDefault();
@@ -57,6 +58,7 @@ export function SheetGrid({
     formulaEditingCellId,
     fillTarget,
     sheetMetrics,
+    resizePreview,
   });
   const gestures = useSheetGridGestures({
     object,
@@ -85,6 +87,7 @@ export function SheetGrid({
     onMoveAxis,
     fillTarget,
     setFillTarget,
+    onResizePreview: setResizePreview,
   });
   const contextMenu = useSheetGridContextMenu({
     object,

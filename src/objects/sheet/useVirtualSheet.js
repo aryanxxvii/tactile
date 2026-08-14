@@ -402,7 +402,10 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     // React commit per event. A jump larger than one viewport is flushed now,
     // so the first paint after a trackpad/wheel jump cannot expose a stale
     // virtual slice.
-    const largeJump = Math.abs(delta.scrollTop) > next.height || Math.abs(delta.scrollLeft) > next.width;
+    const newlyExposed = !rangeContains(rangeRef.current, visibleRange);
+    const largeJump = newlyExposed
+      || Math.abs(delta.scrollTop) > next.height
+      || Math.abs(delta.scrollLeft) > next.width;
     commitRange(nextRange, largeJump);
   }, [buildRenderRange, buildVisibleRange, commitRange, metrics, renderOverscan, scheduleViewportMemory, syncScrollStyles]);
 

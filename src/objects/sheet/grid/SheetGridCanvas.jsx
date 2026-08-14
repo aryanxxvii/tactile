@@ -160,6 +160,10 @@ export function SheetGridCanvas({
                 top: 0,
                 width: columnSizeForPosition(position),
                 height: columnHeaderHeight,
+                // Keep the resize hit area above the following header at the seam.
+                // Headers are absolutely positioned and the handle intentionally
+                // straddles that seam by a few pixels.
+                zIndex: object.columns - column + 25,
                 transform: "none",
               }}
             >
@@ -223,6 +227,10 @@ export function SheetGridCanvas({
                 top: columnHeaderHeight + bodyTopInset + rowOffsetForPosition(position),
                 width: rowHeaderWidth,
                 height: rowSizeForPosition(position),
+                // The bottom resize handle straddles the next row header. Paint
+                // earlier rows above later rows so the active seam remains a
+                // real pointer target instead of being covered by its neighbor.
+                zIndex: object.rows - row + 60,
                 transform: "translate3d(var(--sheet-scroll-x, 0px), 0, 0)",
               }}
             >
