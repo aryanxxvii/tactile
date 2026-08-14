@@ -56,12 +56,17 @@ export class TauriProtocolError extends TauriPersistenceError {
 
 export class StaleAcknowledgementError extends TauriPersistenceError {
   readonly revision: RevisionId;
-  readonly latestRevision: RevisionId;
+  readonly latestRevision: RevisionId | null;
 
-  constructor(revision: RevisionId, latestRevision: RevisionId) {
-    super(`Acknowledgement for revision ${String(revision)} arrived after ${String(latestRevision)} was accepted.`, {
-      code: "stale-acknowledgement",
-    });
+  constructor(revision: RevisionId, latestRevision: RevisionId | null) {
+    super(
+      latestRevision
+        ? `Acknowledgement for revision ${String(revision)} arrived after ${String(latestRevision)} was accepted.`
+        : `Acknowledgement for revision ${String(revision)} arrived after its workspace session was replaced.`,
+      {
+        code: "stale-acknowledgement",
+      },
+    );
     this.name = "StaleAcknowledgementError";
     this.revision = revision;
     this.latestRevision = latestRevision;
@@ -86,6 +91,12 @@ function recordOf(value: unknown): Record<string, unknown> | null {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function revisionValue(value: unknown): string | undefined {
+  if (typeof value === "string") return value.length > 0 ? value : undefined;
+  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) return String(value);
+  return undefined;
 }
 
 function compact<T extends Record<string, unknown>>(value: T): Partial<T> {
@@ -147,7 +158,13 @@ function workspaceFromResponse(value: unknown, command: string): WorkspaceSnapsh
   const source = recordOf(value);
   const candidate = source?.workspace ?? source?.snapshot ?? value;
   const workspace = recordOf(candidate);
-  if (!workspace || typeof workspace.id !== "string" || !workspace.objects || typeof workspace.objects !== "object") {
+  if (
+    !workspace
+    || typeof workspace.id !== "string"
+    || !workspace.objects
+    || typeof workspace.objects !== "object"
+    || Array.isArray(workspace.objects)
+  ) {
     throw new TauriProtocolError(`The ${command} command did not return a workspace snapshot.`, command);
   }
   return candidate as WorkspaceSnapshot;
@@ -167,7 +184,7 @@ function normalizeAcknowledgement(
   command: string,
 ): TauriRevisionAcknowledgement {
   const source = acknowledgementSource(value);
-  const revision = stringValue(source?.revision ?? source?.acknowledgedRevision);
+  const revision = revisionValue(source?.revision ?? source?.acknowledgedRevision);
   if (!revision) throw new TauriProtocolError(`The ${command} command did not acknowledge a revision.`, command);
   if (source?.accepted === false || source?.stale === true) {
     throw new TauriProtocolError(`The ${command} command rejected revision ${String(requestedRevision)}.`, command);
@@ -205,7 +222,12 @@ function normalizeExport(value: unknown, requestedFormat: ExportRequest["format"
   if (!fileName || !mime || source.data === undefined) {
     throw new TauriProtocolError(`The ${command} command returned an incomplete export.`, command);
   }
-  const data = format === "zip" ? toUint8Array(source.data, "portable export bytes") : String(source.data);
+  if (format === "json" && typeof source.data !== "string") {
+    throw new TauriProtocolError(`The ${command} command returned non-text JSON data.`, command);
+  }
+  const data: string | Uint8Array = format === "zip"
+    ? toUint8Array(source.data, "portable export bytes")
+    : source.data as string;
   return { format, fileName, mime, data };
 }
 
@@ -247,6 +269,7 @@ export class TauriPersistencePort implements PersistencePort {
   private nextSequence = 0;
   private latestAcknowledgedSequence = 0;
   private latestAcknowledgement: PersistenceAck | null = null;
+  private workspaceSession = 0;
 
   constructor(options: TauriPersistenceOptions = {}) {
     this.invoke = requireTauriInvoke(options.runtime, options.invoke);
@@ -271,16 +294,7 @@ export class TauriPersistencePort implements PersistencePort {
     const response = await this.invoke(this.commands.openWorkspace, payload);
     const workspace = workspaceFromResponse(response, this.commands.openWorkspace);
     this.resetWorkspace(asWorkspaceId(String(workspace.id)));
-
-    const source = acknowledgementSource(response);
-    const acknowledgedRevision = stringValue(source?.acknowledgedRevision ?? source?.revision);
-    if (acknowledgedRevision) {
-      this.latestAcknowledgement = {
-        revision: asRevisionId(acknowledgedRevision),
-        persistedAt: stringValue(source?.persistedAt) || this.now(),
-        dirtyRecordIds: uniqueStrings(Array.isArray(source?.dirtyRecordIds) ? source.dirtyRecordIds : []),
-      };
-    }
+    this.applyResponseAcknowledgement(response);
     return workspace;
   }
 
@@ -288,6 +302,7 @@ export class TauriPersistencePort implements PersistencePort {
     const workspaceId = this.requireWorkspaceId();
     const payload = toTauriDeltaPayload(workspaceId, persisted);
     const sequence = ++this.nextSequence;
+    const session = this.workspaceSession;
     const response = await this.invoke(this.commands.applyDelta, payload);
     const acknowledgement = normalizeAcknowledgement(
       response,
@@ -296,7 +311,7 @@ export class TauriPersistencePort implements PersistencePort {
       this.now,
       this.commands.applyDelta,
     );
-    return this.acceptAcknowledgement(acknowledgement, sequence);
+    return this.acceptAcknowledgement(acknowledgement, sequence, session);
   }
 
   async checkpoint(revision: RevisionId): Promise<void> {
@@ -307,14 +322,19 @@ export class TauriPersistencePort implements PersistencePort {
       throw new StaleAcknowledgementError(targetRevision, current);
     }
     const sequence = ++this.nextSequence;
+    const session = this.workspaceSession;
     const payload = { workspaceId, revision: targetRevision };
     const response = await this.invoke(this.commands.checkpoint, payload);
     if (response === undefined || response === null) {
-      this.acceptAcknowledgement({ revision: targetRevision, persistedAt: this.now(), dirtyRecordIds: [] }, sequence);
+      this.acceptAcknowledgement(
+        { revision: targetRevision, persistedAt: this.now(), dirtyRecordIds: [] },
+        sequence,
+        session,
+      );
       return;
     }
     const acknowledgement = normalizeAcknowledgement(response, targetRevision, [], this.now, this.commands.checkpoint);
-    this.acceptAcknowledgement(acknowledgement, sequence);
+    this.acceptAcknowledgement(acknowledgement, sequence, session);
   }
 
   async importPortable(source: ImportSource): Promise<WorkspaceSnapshot> {
@@ -326,6 +346,7 @@ export class TauriPersistencePort implements PersistencePort {
     const response = await this.invoke(this.commands.importPortable, payload);
     const workspace = workspaceFromResponse(response, this.commands.importPortable);
     this.resetWorkspace(asWorkspaceId(String(workspace.id)));
+    this.applyResponseAcknowledgement(response);
     return workspace;
   }
 
@@ -393,6 +414,7 @@ export class TauriPersistencePort implements PersistencePort {
     const workspaceId = this.workspaceId;
     await this.invoke(this.commands.closeWorkspace, { workspaceId });
     this.workspaceId = null;
+    this.workspaceSession += 1;
     this.latestAcknowledgement = null;
     this.latestAcknowledgedSequence = 0;
     this.nextSequence = 0;
@@ -408,12 +430,31 @@ export class TauriPersistencePort implements PersistencePort {
 
   private resetWorkspace(workspaceId: WorkspaceId): void {
     this.workspaceId = workspaceId;
+    this.workspaceSession += 1;
     this.nextSequence = 0;
     this.latestAcknowledgedSequence = 0;
     this.latestAcknowledgement = null;
   }
 
-  private acceptAcknowledgement(acknowledgement: TauriRevisionAcknowledgement, sequence: number): PersistenceAck {
+  private applyResponseAcknowledgement(response: unknown): void {
+    const source = acknowledgementSource(response);
+    const acknowledgedRevision = revisionValue(source?.acknowledgedRevision ?? source?.revision);
+    if (!acknowledgedRevision) return;
+    this.latestAcknowledgement = {
+      revision: asRevisionId(acknowledgedRevision),
+      persistedAt: stringValue(source?.persistedAt) || this.now(),
+      dirtyRecordIds: uniqueStrings(Array.isArray(source?.dirtyRecordIds) ? source.dirtyRecordIds : []),
+    };
+  }
+
+  private acceptAcknowledgement(
+    acknowledgement: TauriRevisionAcknowledgement,
+    sequence: number,
+    session: number,
+  ): PersistenceAck {
+    if (session !== this.workspaceSession) {
+      throw new StaleAcknowledgementError(acknowledgement.revision, this.latestAcknowledgement?.revision || null);
+    }
     if (this.latestAcknowledgement && sequence < this.latestAcknowledgedSequence) {
       throw new StaleAcknowledgementError(acknowledgement.revision, this.latestAcknowledgement.revision);
     }

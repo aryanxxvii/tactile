@@ -57,6 +57,25 @@ test("native runtime detection and factory selection stay at the platform bounda
   assert.equal(createPersistencePort({ runtime: browserRuntime, browserPort }), browserPort);
 });
 
+test("native numeric revisions are normalized without losing acknowledgement state", async () => {
+  const workspace = createBlankWorkspace({ id: "e04-numeric-revision" });
+  const invoke = async (command, payload) => {
+    if (command === TAURI_COMMANDS.openWorkspace) return { workspace, acknowledgedRevision: 0 };
+    if (command === TAURI_COMMANDS.applyDelta) {
+      return { revision: Number(payload.revision), persistedAt: "2026-08-14T00:00:01.000Z", dirtyRecordIds: [] };
+    }
+    throw new Error(`Unexpected command ${command}`);
+  };
+  const port = new TauriPersistencePort({ invoke });
+
+  await port.open();
+  assert.equal(port.acknowledgedRevision, "0");
+  const acknowledgement = await port.commit({ revision: "1", transaction: transaction("1") });
+
+  assert.equal(acknowledgement.revision, "1");
+  assert.equal(port.acknowledgedRevision, "1");
+});
+
 test("Tauri commit sends a forward-only compact delta and returns its acknowledgement", async () => {
   const calls = [];
   const workspace = createBlankWorkspace({ id: "e04-workspace" });
@@ -143,6 +162,51 @@ test("an acknowledgement from an older in-flight revision is rejected without re
   assert.deepEqual(acknowledgements, ["r2"]);
 });
 
+test("an in-flight acknowledgement from a replaced workspace session is ignored", async () => {
+  const pending = deferred();
+  const firstWorkspace = createBlankWorkspace({ id: "e04-session-first" });
+  const secondWorkspace = createBlankWorkspace({ id: "e04-session-second" });
+  let opened = 0;
+  const invoke = async (command) => {
+    if (command === TAURI_COMMANDS.openWorkspace) return { workspace: opened++ === 0 ? firstWorkspace : secondWorkspace };
+    if (command === TAURI_COMMANDS.applyDelta) return pending.promise;
+    if (command === TAURI_COMMANDS.closeWorkspace) return null;
+    throw new Error(`Unexpected command ${command}`);
+  };
+  const port = new TauriPersistencePort({ invoke });
+
+  await port.open({ workspaceId: firstWorkspace.id });
+  const oldCommit = port.commit({ revision: "r1", transaction: transaction("r1") });
+  await port.close();
+  await port.open({ workspaceId: secondWorkspace.id });
+  pending.resolve({ revision: "r1", persistedAt: "t1", dirtyRecordIds: [] });
+
+  await assert.rejects(oldCommit, (error) => {
+    assert.ok(error instanceof StaleAcknowledgementError);
+    assert.equal(error.revision, "r1");
+    assert.equal(error.latestRevision, null);
+    return true;
+  });
+  assert.equal(port.activeWorkspaceId, secondWorkspace.id);
+  assert.equal(port.acknowledgedRevision, null);
+});
+
+test("import responses retain the native acknowledgement for the imported workspace", async () => {
+  const workspace = createBlankWorkspace({ id: "e04-imported" });
+  const invoke = async (command) => {
+    if (command === TAURI_COMMANDS.openWorkspace) return { workspace };
+    if (command === TAURI_COMMANDS.importPortable) return { workspace, acknowledgedRevision: 7 };
+    throw new Error(`Unexpected command ${command}`);
+  };
+  const port = new TauriPersistencePort({ invoke });
+
+  await port.open();
+  await port.importPortable({ kind: "json", data: "{}" });
+
+  assert.equal(port.activeWorkspaceId, workspace.id);
+  assert.equal(port.acknowledgedRevision, "7");
+});
+
 test("native assets cross IPC as bytes and opaque handles, never data URLs", async () => {
   const calls = [];
   const workspace = createBlankWorkspace({ id: "e04-assets" });
@@ -212,6 +276,8 @@ test("browser and Tauri adapters expose the same persistence surface for preview
     "exportPortable",
     "readAsset",
     "writeAsset",
+    "acquireAssetHandle",
+    "releaseAssetHandle",
     "close",
   ];
   const browserPrototype = BrowserPersistenceAdapter.prototype;
@@ -225,4 +291,15 @@ test("browser and Tauri adapters expose the same persistence surface for preview
 test("dialog adapter rejects malformed native paths at the boundary", async () => {
   const dialogs = new TauriFileDialogAdapter({ invoke: async () => ({ paths: [42] }) });
   await assert.rejects(dialogs.openFile(), TauriDialogProtocolError);
+});
+
+test("dialog adapter rejects malformed filters and accepts explicit cancellation", async () => {
+  const malformed = new TauriFileDialogAdapter({ invoke: async () => ({ paths: [""] }) });
+  await assert.rejects(
+    malformed.openFile({ filters: [{ name: "Markdown", extensions: [""] }] }),
+    TauriDialogProtocolError,
+  );
+
+  const cancelled = new TauriFileDialogAdapter({ invoke: async () => ({ canceled: true }) });
+  assert.deepEqual(await cancelled.openFile(), { cancelled: true, paths: [] });
 });
