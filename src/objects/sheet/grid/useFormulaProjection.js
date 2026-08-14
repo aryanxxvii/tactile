@@ -1,9 +1,14 @@
 import { useMemo, useRef } from "react";
 import { createFormulaEngine } from "../../../sheet/formulas.js";
 import { cellAddress, coordinatesFromCellId } from "../../../sheet/coordinates.js";
+import { cellChangeVersion, cellChangesSince } from "./cellChangeJournal.js";
 
 function formulaRelevant(cell) {
   return Boolean(cell?.formula || cell?.value);
+}
+
+function formulaInputChanged(previous, cell) {
+  return previous?.formula !== cell?.formula || previous?.value !== cell?.value;
 }
 
 function addressForCell(id, cell) {
@@ -23,15 +28,35 @@ function engineSheet(object) {
 
 function createProjectionState(object) {
   const engine = createFormulaEngine(engineSheet(object));
+  const cells = object.cells || {};
   return {
     objectId: object.id,
-    cellRefs: new Map(Object.entries(object.cells || {})),
+    cells,
+    cellRefs: new Map(Object.entries(cells)),
+    journalVersion: cellChangeVersion(cells),
     engine,
     values: engine.getFormulaValues(),
   };
 }
 
-function changesSinceLastProjection(state, object) {
+function changeForCell(state, cells, id) {
+  const previous = state.cellRefs.get(id);
+  const cell = cells[id];
+  if (previous === cell) return null;
+  if (cell) state.cellRefs.set(id, cell);
+  else state.cellRefs.delete(id);
+  if (!formulaRelevant(previous) && !formulaRelevant(cell)) return null;
+  if (!formulaInputChanged(previous, cell)) return null;
+  const address = addressForCell(id, cell || previous);
+  if (!address) return null;
+  return cell ? { address, cell } : { address, delete: true };
+}
+
+function changesForCellIds(state, cells, ids) {
+  return ids.map((id) => changeForCell(state, cells, id)).filter(Boolean);
+}
+
+function fullChangesSinceLastProjection(state, object) {
   const cells = object.cells || {};
   const changes = [];
 
@@ -40,6 +65,7 @@ function changesSinceLastProjection(state, object) {
     if (previous === cell) continue;
     state.cellRefs.set(id, cell);
     if (!formulaRelevant(previous) && !formulaRelevant(cell)) continue;
+    if (!formulaInputChanged(previous, cell)) continue;
     const address = addressForCell(id, cell || previous);
     if (address) changes.push({ address, cell: cell || null });
   }
@@ -53,6 +79,21 @@ function changesSinceLastProjection(state, object) {
   }
 
   return changes;
+}
+
+function changesSinceLastProjection(state, object) {
+  const cells = object.cells || {};
+  if (state.cells === cells) {
+    const journal = cellChangesSince(cells, state.journalVersion);
+    if (journal) {
+      state.journalVersion = journal.version;
+      return changesForCellIds(state, cells, journal.ids);
+    }
+  }
+
+  state.cells = cells;
+  state.journalVersion = cellChangeVersion(cells);
+  return fullChangesSinceLastProjection(state, object);
 }
 
 function updateProjectionState(state, object, changes) {

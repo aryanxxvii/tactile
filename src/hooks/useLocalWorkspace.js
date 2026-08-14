@@ -25,6 +25,7 @@ import {
 } from "../sheet/structure.js";
 import { loadWorkspace, loadWorkspaceCache, saveWorkspace } from "../storage.js";
 import { createWave2Shadow } from "../core/engine/shadow.js";
+import { recordCellChanges } from "../objects/sheet/grid/cellChangeJournal.js";
 
 function initialWorkspace() {
   return normalizeWorkspace(loadWorkspaceCache() || createBlankWorkspace());
@@ -57,6 +58,7 @@ function applyCellHistory(workspace, entry, direction) {
     if (cell) cells[change.cellId] = { ...cell };
     else delete cells[change.cellId];
   });
+  recordCellChanges(cells, entry.changes.map((change) => change.cellId));
   return touch({
     ...workspace,
     objects: { ...workspace.objects, [entry.objectId]: { ...object, cells } },
@@ -167,6 +169,7 @@ export function useLocalWorkspace() {
   const [saveState, setSaveState] = useState("loading local copy");
   const [hydrated, setHydrated] = useState(false);
   const saveTimer = useRef(null);
+  const saveSequenceRef = useRef(0);
   const historyRef = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
   const wave2ShadowRef = useRef(null);
   const workspaceMutationRef = useRef(false);
@@ -206,23 +209,39 @@ export function useLocalWorkspace() {
 
   useEffect(() => {
     if (!hydrated) return undefined;
-    setSaveState("saving");
+    const shadow = wave2ShadowRef.current;
+    const sequence = ++saveSequenceRef.current;
+    // The Wave 2 record adapter persists dirty cells and metadata as patches.
+    // Falling back to the legacy snapshot writer here during normal edits
+    // serializes the entire workspace on the input path, including large
+    // fixtures and binary metadata. Keep the snapshot writer for environments
+    // where the record adapter is unavailable.
     window.clearTimeout(saveTimer.current);
+    if (shadow?.state?.persistence === "active") return undefined;
+    setSaveState("saving");
     saveTimer.current = window.setTimeout(async () => {
       const persisted = await saveWorkspace(workspace);
+      if (sequence !== saveSequenceRef.current) return;
       setSaveState(persisted ? "saved" : "saved in local cache");
     }, 120);
     return () => window.clearTimeout(saveTimer.current);
   }, [hydrated, workspace]);
 
   useEffect(() => {
-    if (!hydrated || !wave2ShadowRef.current) return undefined;
-    return () => undefined;
-  }, [hydrated]);
-
-  useEffect(() => {
-    if (!hydrated || !wave2ShadowRef.current) return;
-    wave2ShadowRef.current.reconcile(workspace, { normalized: true });
+    const shadow = wave2ShadowRef.current;
+    if (!hydrated || !shadow) return undefined;
+    let current = true;
+    setSaveState("saving");
+    Promise.resolve(shadow.reconcile(workspace, { normalized: true })).then(
+      () => {
+        if (!current) return;
+        setSaveState(shadow.state.persistence === "active" ? "saved" : "saved in local cache");
+      },
+      () => {
+        if (current) setSaveState("saved in local cache");
+      },
+    );
+    return () => { current = false; };
   }, [hydrated, workspace]);
 
   const commitWorkspace = useCallback((updater, historyKey = "workspace") => {
@@ -273,6 +292,8 @@ export function useLocalWorkspace() {
         });
       });
       if (!changed) return current;
+
+      recordCellChanges(cells, historyChanges.map((change) => change.cellId));
 
       const history = historyRef.current;
       const now = Date.now();
