@@ -59,22 +59,32 @@ export function useLocalCellDraft(cellRef, cellId) {
   return draft;
 }
 
-export function useLocalDraft(canonicalValue, onCommit) {
+export function useLocalDraft(canonicalValue, onCommit, draftKey) {
   const [draft, setDraft] = useState(canonicalValue);
   const draftRef = useRef(canonicalValue);
   const baselineRef = useRef(canonicalValue);
   const canonicalRef = useRef(canonicalValue);
+  const draftKeyRef = useRef(draftKey);
   const activeRef = useRef(false);
   const onCommitRef = useRef(onCommit);
   canonicalRef.current = canonicalValue;
   onCommitRef.current = onCommit;
 
   useEffect(() => {
+    const keyChanged = !Object.is(draftKeyRef.current, draftKey);
+    draftKeyRef.current = draftKey;
+    if (keyChanged) {
+      activeRef.current = false;
+      draftRef.current = canonicalValue;
+      baselineRef.current = canonicalValue;
+      setDraft(canonicalValue);
+      return;
+    }
     if (activeRef.current) return;
     draftRef.current = canonicalValue;
     baselineRef.current = canonicalValue;
     setDraft(canonicalValue);
-  }, [canonicalValue]);
+  }, [canonicalValue, draftKey]);
 
   const updateDraft = useCallback((next) => {
     if (!activeRef.current) baselineRef.current = canonicalRef.current;
@@ -90,13 +100,13 @@ export function useLocalDraft(canonicalValue, onCommit) {
     setDraft(next);
   }, []);
 
-  const commitDraft = useCallback((next = draftRef.current) => {
+  const commitDraft = useCallback((next = draftRef.current, options) => {
     const changed = !Object.is(next, baselineRef.current);
     draftRef.current = next;
     baselineRef.current = next;
     activeRef.current = false;
     setDraft(next);
-    if (changed) onCommitRef.current(next);
+    if (changed) onCommitRef.current(next, options);
     return changed;
   }, []);
 

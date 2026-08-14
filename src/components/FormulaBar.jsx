@@ -169,25 +169,34 @@ function useFormulaWorkerPreview({ value, address, cell, formulaSheet }) {
 function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, onChange, onFormulaModeChange, onCommit }) {
   const localInputRef = useRef(null);
   const editorRef = inputRef || localInputRef;
+  const editorCellIdRef = useRef(cellId);
+  editorCellIdRef.current = cellId;
   const pendingCommitRef = useRef(0);
-  const scheduleCommit = useCallback((next) => {
+  const scheduleCommit = useCallback((next, options = {}) => {
     const input = editorRef.current;
     const surface = input?.closest?.(".object-surface");
     const commitId = pendingCommitRef.current + 1;
     pendingCommitRef.current = commitId;
+    const publishCommit = () => {
+      onChange(next);
+      window.requestAnimationFrame(() => {
+        if (pendingCommitRef.current !== commitId) return;
+        if (editorCellIdRef.current !== cellId || editorRef.current?.value === next) {
+          setLocalCellDraft(surface, cellId, null);
+        }
+      });
+    };
+    if (options.immediate) {
+      publishCommit();
+      return;
+    }
     // Let the editor event paint its local draft before the canonical
     // workspace update can recalculate the active sheet. The draft remains
     // published until this queued transaction finishes, so the cell never
     // flashes back to its old value while the commit is pending.
-    window.setTimeout(() => {
-      onChange(next);
-      window.requestAnimationFrame(() => {
-        if (pendingCommitRef.current !== commitId) return;
-        if (editorRef.current?.value === next) setLocalCellDraft(surface, cellId, null);
-      });
-    }, 0);
+    window.setTimeout(publishCommit, 0);
   }, [cellId, editorRef, onChange]);
-  const session = useLocalDraft(value, scheduleCommit);
+  const session = useLocalDraft(value, scheduleCommit, cellId);
   const [query, setQuery] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const formulaPreview = useFormulaWorkerPreview({
@@ -215,9 +224,9 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
     });
   }, [cellId, editorRef]);
 
-  const commitDraft = useCallback(() => {
+  const commitDraft = useCallback((options) => {
     const next = session.draftRef.current;
-    const changed = session.commitDraft(next);
+    const changed = session.commitDraft(next, options);
     if (!changed) {
       const input = editorRef.current;
       const surface = input?.closest?.(".object-surface");
@@ -327,7 +336,7 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
           }
           if (!listOpen && (event.key === "Enter" || event.key === "Escape")) {
             event.preventDefault();
-            commitDraft();
+            commitDraft(event.key === "Enter" ? { immediate: true } : undefined);
             onFormulaModeChange?.(false);
             editorRef.current?.blur();
             if (event.key === "Enter") onCommit?.();

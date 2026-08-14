@@ -87,7 +87,10 @@ test("keeps cell values out of the bottom status dock", async ({ page }) => {
   await editor.fill("Visible value");
   await editor.press("Enter");
 
-  await expect(page.locator(".active-cell-status code")).toHaveText("A1");
+  await expect(cell.locator(".cell-value")).toHaveText("Visible value");
+  await expect(page.locator(".active-cell-status code")).toHaveText("A2");
+  await expect(page.locator('.sheet-cell[data-cell-address="A2"]')).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".formula-editor")).not.toBeFocused();
   await expect(page.locator(".active-cell-status")).not.toContainText("Visible value");
   await expect(page.locator(".active-cell-value")).toHaveCount(0);
 });
