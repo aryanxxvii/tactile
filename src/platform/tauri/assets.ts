@@ -43,7 +43,9 @@ export function stripAssetBinary(record: Record<string, unknown> = {}): TauriAss
 }
 
 function recordOf(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -63,6 +65,9 @@ export function normalizeAssetHandle(value: unknown, assetId: AssetId): TauriAss
   const handle = stringValue(candidate);
   if (!handle) throw new AssetHandleProtocolError(`Asset ${String(assetId)} did not return a native handle.`);
   const size = source?.size === undefined ? undefined : Number(source.size);
+  if (size !== undefined && (!Number.isSafeInteger(size) || size < 0)) {
+    throw new AssetHandleProtocolError(`Asset ${String(assetId)} returned an invalid handle size.`);
+  }
   return {
     assetId,
     handle: rejectDataUrl(handle),

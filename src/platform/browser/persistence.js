@@ -303,7 +303,16 @@ export class BrowserPersistenceAdapter {
     this.database = null;
     this.databasePromise = null;
     this.workspaceId = options.workspaceId || null;
+    this.latestAcknowledgedRevision = null;
     this.migrationError = null;
+  }
+
+  get activeWorkspaceId() {
+    return this.workspaceId;
+  }
+
+  get acknowledgedRevision() {
+    return this.latestAcknowledgedRevision;
   }
 
   async databaseHandle() {
@@ -322,6 +331,9 @@ export class BrowserPersistenceAdapter {
 
   async open(request = {}) {
     const boot = readBootMetadata(this.localStorage, this.bootMetadataKey);
+    this.latestAcknowledgedRevision = boot?.acknowledgedRevision === null || boot?.acknowledgedRevision === undefined
+      ? null
+      : String(boot.acknowledgedRevision);
     let workspaceId = request.workspaceId || boot?.activeWorkspaceId || this.workspaceId;
     let snapshot = workspaceId && this.indexedDB
       ? await this.readSnapshot(workspaceId, { includeStaged: false })
@@ -408,6 +420,7 @@ export class BrowserPersistenceAdapter {
       acknowledgedRevision: revision,
       databaseName: this.databaseName,
     }, this.localStorage, this.bootMetadataKey);
+    this.latestAcknowledgedRevision = revision === null || revision === undefined ? null : String(revision);
   }
 
   async commit(persisted) {
@@ -426,11 +439,13 @@ export class BrowserPersistenceAdapter {
       acknowledgedRevision: revision,
       databaseName: this.databaseName,
     }, this.localStorage, this.bootMetadataKey);
-    return {
+    this.latestAcknowledgedRevision = String(revision);
+    const acknowledgement = {
       revision,
       persistedAt: now(),
       dirtyRecordIds: [...new Set((transactionResult?.dirtyRecords || []).map((record) => String(record.recordId)))],
     };
+    return acknowledgement;
   }
 
   async checkpoint(revision) {
@@ -440,6 +455,7 @@ export class BrowserPersistenceAdapter {
       acknowledgedRevision: String(revision),
       databaseName: this.databaseName,
     }, this.localStorage, this.bootMetadataKey);
+    this.latestAcknowledgedRevision = String(revision);
   }
 
   async readAssetBlob(assetId, workspaceId = this.workspaceId) {
@@ -487,6 +503,24 @@ export class BrowserPersistenceAdapter {
     return this.assetUrls.release(assetId, url);
   }
 
+  async acquireAssetHandle(assetId) {
+    const lease = await this.acquireAssetUrl(assetId);
+    const blob = await this.readAssetBlob(assetId);
+    return {
+      assetId: String(assetId),
+      handle: lease.url,
+      ...(blob?.type ? { mime: blob.type } : {}),
+      ...(blob?.size === undefined ? {} : { size: blob.size }),
+      release: async () => {
+        lease.release();
+      },
+    };
+  }
+
+  releaseAssetHandle(handle) {
+    return this.releaseAssetUrl(handle.assetId, handle.handle);
+  }
+
   async importPortable(source) {
     let workspace;
     if (source?.kind === "json") workspace = normalizeWorkspace(JSON.parse(source.data));
@@ -525,6 +559,8 @@ export class BrowserPersistenceAdapter {
     this.database?.close();
     this.database = null;
     this.databasePromise = null;
+    this.workspaceId = null;
+    this.latestAcknowledgedRevision = null;
   }
 }
 

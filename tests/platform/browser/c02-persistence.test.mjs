@@ -363,6 +363,39 @@ test("asset URLs are reference-counted and revoked after the final release", () 
   assert.deepEqual(revoked, [first.url]);
 });
 
+test("browser persistence exposes session metadata and asset handles for native-compatible previews", async () => {
+  const indexedDB = new MemoryIndexedDB();
+  const localStorage = new MemoryStorage();
+  const revoked = [];
+  const workspace = createBlankWorkspace({ id: "workspace-browser-handle" });
+  const adapter = new BrowserPersistenceAdapter({
+    indexedDB,
+    localStorage,
+    databaseName: "c02-browser-handle",
+    autoMigrate: false,
+    assetUrlRegistry: new AssetUrlRegistry({
+      createObjectURL: () => "blob:c02-browser-handle",
+      revokeObjectURL: (url) => revoked.push(url),
+    }),
+  });
+
+  await adapter.writeSnapshot(workspace, { revision: "r0", activate: true });
+  await adapter.writeAsset({ record: { id: "asset-1", mime: "image/png" }, data: new Uint8Array([5, 6]) });
+  assert.equal(adapter.activeWorkspaceId, workspace.id);
+  assert.equal(adapter.acknowledgedRevision, "r0");
+
+  const handle = await adapter.acquireAssetHandle("asset-1");
+  assert.equal(handle.handle, "blob:c02-browser-handle");
+  assert.equal(handle.mime, "image/png");
+  assert.equal(handle.size, 2);
+  await handle.release();
+  assert.deepEqual(revoked, ["blob:c02-browser-handle"]);
+
+  await adapter.close();
+  assert.equal(adapter.activeWorkspaceId, null);
+  assert.equal(adapter.acknowledgedRevision, null);
+});
+
 test("legacy migration copies, verifies, switches, and retains the old store", async () => {
   const indexedDB = new MemoryIndexedDB();
   const localStorage = new MemoryStorage();

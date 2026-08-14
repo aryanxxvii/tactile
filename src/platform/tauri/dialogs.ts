@@ -23,15 +23,30 @@ export class TauriDialogProtocolError extends Error {
 }
 
 function recordOf(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function filters(filters: readonly TauriFileFilter[] | undefined): readonly TauriFileFilter[] | undefined {
   if (!filters) return undefined;
-  return filters.map((filter) => ({
-    name: String(filter.name),
-    extensions: filter.extensions.map((extension) => String(extension)),
-  }));
+  if (!Array.isArray(filters)) throw new TauriDialogProtocolError("Native file dialog filters must be an array.");
+  return filters.map((filter, index) => {
+    const source = recordOf(filter);
+    if (
+      !source
+      || typeof source.name !== "string"
+      || source.name.length === 0
+      || !Array.isArray(source.extensions)
+      || source.extensions.some((extension) => typeof extension !== "string" || extension.length === 0)
+    ) {
+      throw new TauriDialogProtocolError(`File dialog filter ${index} is malformed.`);
+    }
+    return {
+      name: source.name,
+      extensions: source.extensions as string[],
+    };
+  });
 }
 
 function compact<T extends Record<string, unknown>>(value: T): Partial<T> {
@@ -40,12 +55,13 @@ function compact<T extends Record<string, unknown>>(value: T): Partial<T> {
 
 function normalizeDialogSelection(value: unknown, multiple = false): TauriFileDialogSelection {
   const source = recordOf(value);
+  if (source?.cancelled === true || source?.canceled === true) return { cancelled: true, paths: [] };
   const candidate = source?.paths ?? source?.path ?? source?.selected ?? value;
   if (candidate === null || candidate === undefined || candidate === false) {
     return { cancelled: true, paths: [] };
   }
   const paths = Array.isArray(candidate) ? candidate : [candidate];
-  if (paths.some((path) => typeof path !== "string")) {
+  if (paths.some((path) => typeof path !== "string" || path.length === 0)) {
     throw new TauriDialogProtocolError("Native file dialog returned a non-string path.");
   }
   return {

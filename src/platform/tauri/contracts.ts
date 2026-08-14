@@ -23,6 +23,13 @@ export const TAURI_COMMANDS = Object.freeze({
 
 export type TauriCommandName = (typeof TAURI_COMMANDS)[keyof typeof TAURI_COMMANDS];
 
+/**
+ * Native storage revisions are u64 values in the Rust service and therefore
+ * may arrive through JSON as numbers. The frontend keeps them as strings so
+ * revision identity never depends on JavaScript number precision.
+ */
+export type TauriRevisionValue = RevisionId | number;
+
 export interface TauriOpenWorkspacePayload {
   workspaceId?: WorkspaceId;
   location?: string;
@@ -30,7 +37,7 @@ export interface TauriOpenWorkspacePayload {
 
 export interface TauriOpenWorkspaceResponse {
   workspace: WorkspaceSnapshot;
-  acknowledgedRevision?: RevisionId | null;
+  acknowledgedRevision?: TauriRevisionValue | null;
 }
 
 export interface TauriReplaceWorkspaceMetaDelta {
@@ -101,9 +108,9 @@ export interface TauriRevisionAcknowledgement {
 }
 
 export interface TauriAcknowledgementResponse {
-  acknowledgement?: TauriRevisionAcknowledgement;
-  acknowledgedRevision?: RevisionId;
-  revision?: RevisionId;
+  acknowledgement?: Omit<TauriRevisionAcknowledgement, "revision"> & { revision: TauriRevisionValue };
+  acknowledgedRevision?: TauriRevisionValue;
+  revision?: TauriRevisionValue;
   persistedAt?: string;
   dirtyRecordIds?: readonly string[];
   accepted?: boolean;
