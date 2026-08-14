@@ -539,6 +539,41 @@ test("refreshes the virtual slice before the first frame after a direct large of
   expect(state.scrollTop).toBeGreaterThan(0);
 });
 
+test("keeps an overlapping first-frame handoff close to the visible band", async ({ page }) => {
+  await page.goto("/");
+
+  const sheet = page.locator("[data-sheet-scroll]").last();
+  await expect(sheet).toBeVisible();
+  await expect.poll(() => sheet.locator(".virtual-cell-slot").count()).toBeGreaterThan(0);
+
+  const state = await sheet.evaluate(async (element) => {
+    const scrollerBox = element.getBoundingClientRect();
+    const headerHeight = element.querySelector(".column-header")?.getBoundingClientRect().height ?? 25;
+    const rowHeaderWidth = element.querySelector(".sheet-corner")?.getBoundingClientRect().width ?? 34;
+    const bodyTop = scrollerBox.top + headerHeight;
+    const bodyLeft = scrollerBox.left + rowHeaderWidth;
+    element.scrollTo({ top: 800, left: 0, behavior: "auto" });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const slots = [...element.querySelectorAll(".virtual-cell-slot")].map((slot) => slot.getBoundingClientRect());
+    const visibleSlots = slots.filter(
+      (box) =>
+        box.bottom > bodyTop && box.top < scrollerBox.bottom && box.right > bodyLeft && box.left < scrollerBox.right,
+    );
+    return {
+      mountedCells: slots.length,
+      visibleCells: visibleSlots.length,
+      rowCoverage:
+        visibleSlots.length > 0 &&
+        Math.min(...visibleSlots.map((box) => box.top)) <= bodyTop + 1 &&
+        Math.max(...visibleSlots.map((box) => box.bottom)) >= scrollerBox.bottom - 1,
+    };
+  });
+
+  expect(state).toMatchObject({ rowCoverage: true });
+  expect(state.mountedCells).toBeLessThan(500);
+  expect(state.mountedCells).toBeGreaterThanOrEqual(state.visibleCells);
+});
+
 test("keeps the bounded tile window aligned at the horizontal sheet edge", async ({ page }) => {
   await page.goto("/");
 

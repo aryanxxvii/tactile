@@ -424,20 +424,25 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     // Directional look-ahead reduces rebases during ordinary movement but is
     // strictly capped. A scrollbar thumb may jump to any offset, so the cheap
     // sticky fallback owns that handoff while this latest range commits.
-    const nextRange = buildRenderRange(
-      next,
-      directionalOverscan(metrics, delta, renderOverscan),
-    );
-    // A direct scrollbar/native jump can move the viewport completely outside
-    // the committed React slice before the next animation frame. Keep that
-    // disjoint handoff synchronous. A fast jump can also overlap the old
-    // slice through directional overscan while leaving the viewport only
-    // partially covered; use the native delta to distinguish that jump from
-    // ordinary movement, which remains RAF-coalesced.
-    const destinationIsDisjoint = !rangesOverlap(committedRangeRef.current, nextRange);
     const visibleRangeEscaped = !rangeContains(committedRangeRef.current, visibleRange);
     const largeNativeJump = Math.abs(delta.scrollTop) > next.height
       || Math.abs(delta.scrollLeft) > next.width;
+    const directionalRange = buildRenderRange(
+      next,
+      directionalOverscan(metrics, delta, renderOverscan),
+    );
+    const directionalDestinationIsDisjoint = !rangesOverlap(
+      committedRangeRef.current,
+      directionalRange,
+    );
+    // A partial first-frame escape still needs a synchronous destination, but
+    // it does not need directional look-ahead: the visible range is already
+    // connected to the committed band. Keep that handoff smaller than a full
+    // fast-scroll window so it does not pay for cells outside the viewport.
+    const nextRange = immediate && visibleRangeEscaped && !directionalDestinationIsDisjoint
+      ? visibleRange
+      : directionalRange;
+    const destinationIsDisjoint = !rangesOverlap(committedRangeRef.current, nextRange);
     if (immediate && (destinationIsDisjoint || (visibleRangeEscaped && largeNativeJump))) {
       if (rangeFrameRef.current != null) {
         window.cancelAnimationFrame(rangeFrameRef.current);
