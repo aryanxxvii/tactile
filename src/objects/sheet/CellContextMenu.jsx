@@ -201,8 +201,8 @@ export function CellContextMenu({
     const focusMenu = () => {
       if (cancelled) return;
       if (menuRef.current) {
-        focusFirstMenuItem(menuRef.current);
-        if (menuRef.current.contains(document.activeElement) || focusAttempts >= 8) return;
+        menuRef.current.focus({ preventScroll: true });
+        if (document.activeElement === menuRef.current || focusAttempts >= 8) return;
       }
       focusAttempts += 1;
       focusFrame = window.requestAnimationFrame(focusMenu);
@@ -269,9 +269,10 @@ export function CellContextMenu({
   return (
     <PaperPortal className="tactile-context-menu-layer" themeSource={menu.sourceElement}>
       <div
-      ref={menuRef}
+        ref={menuRef}
         className="cell-context-menu"
         role="menu"
+        tabIndex={-1}
         aria-label={`Commands for ${menu.cell.address}`}
         style={{
           left: position?.left ?? fallbackLeft,
