@@ -69,3 +69,6 @@ Then ask the user to choose or create the home workspace directory:
 - Allow the guide to be skipped and reopened later from Settings.
 - Make the selected folder and first-run completion durable and recoverable.
 
+
+4. when i right click or press Ctrl + ] on selected text... please show a context menu with options like Clear content, copy, paste, add image, insert table, add separator, bullet points, add link, text color, bg color etc etc... basically almost all top format options.
+then, if possible, can you make preview mode directly editable? first commit the top thing. then do this so i can revert it also if i dont like it.

@@ -2,6 +2,13 @@
 
 Run date: 2026-08-13
 
+## Current integration evidence (2026-08-14)
+
+- `main` includes the reviewed fast-scroll handoff fix at `1e4763ff0f74`.
+- Focused sheet scrolling and dock separator acceptance passes 12/12 after the integration.
+- The strict browser harness was rerun against the local preview. It measured scroll frame p95 at 33.4 ms with 3 tasks over 50 ms; typing frame p95 at 533.3 ms with 6,728 ms input latency; In & Out and nested navigation remained above budget; and all-output client JavaScript measured 223,408 gzip bytes. Runtime scroll leaks were zero in this run, but the remaining performance checks still fail.
+- These results improve the stale-slice behavior and provide first-frame coverage, but they do not close G3. The gate remains open until all release performance and functional criteria are measured within budget.
+
 ## Functional acceptance
 
 - 72/72 repository unit tests pass.

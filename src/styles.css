@@ -4790,14 +4790,15 @@ kbd {
   height: 32px;
   display: flex;
   align-items: center;
+  transform: translate3d(0, 0, 0);
   pointer-events: none;
+  background: var(--paper);
 }
 
 .tactile-app.has-floating-layer .app-bottom-bar {
   /* The dock remains an active navigation surface while a child is
      floating; only the parent worksheet surface is inert. */
   pointer-events: auto;
-  background: var(--paper);
 }
 
 .tactile-app.settings-open .app-bottom-bar {
@@ -4809,7 +4810,6 @@ kbd {
   z-index: 240;
   opacity: 1;
   filter: none;
-  background: var(--paper);
 }
 
 .app-bottom-bar[data-interaction-blocked="true"] .app-dock {
@@ -4897,10 +4897,24 @@ kbd {
 
 .app-dock-path {
   position: relative;
-  min-width: 0;
   overflow: visible;
   align-self: stretch;
-  background: var(--paper);
+  display: inline-grid;
+}
+
+.app-dock-path-panel {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.app-dock-path-panel.is-entering,
+.app-dock-path-panel.is-leaving {
+  animation: files-panel-in 180ms ease-out both;
+}
+
+.app-dock-path-panel.is-leaving {
+  animation-direction: reverse;
 }
 
 .app-dock-path-part {
@@ -5257,7 +5271,6 @@ kbd {
   z-index: 240;
   opacity: 1;
   filter: none;
-  background: var(--paper);
 }
 
 .files-scrim {
