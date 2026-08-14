@@ -23,6 +23,7 @@ import {
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { PaperPortal } from "../../components/PaperPortal.jsx";
 import { useLocalDraft } from "../../components/localEditSession.js";
+import { MarkdownContextMenu } from "./MarkdownContextMenu.jsx";
 import { renderMarkdownBlocks } from "./markdownRender.jsx";
 
 const TEXT_COLORS = [
@@ -199,6 +200,10 @@ function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
 export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
   const [mode, setMode] = useState("write");
   const editorRef = useRef(null);
+  const activeEditorRef = useRef(null);
+  const selectionRef = useRef({ start: 0, end: 0 });
+  const contextMenuOpenRef = useRef(false);
+  const [contextMenu, setContextMenu] = useState(null);
   const surfaceRef = useRef(null);
   const canonicalContent = object.content || "";
   const contentSession = useLocalDraft(canonicalContent, (next) => onUpdateObject({ content: next }));
@@ -221,51 +226,153 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   const currentContent = () => contentSession.draftRef.current;
   const updateContent = (next) => contentSession.updateDraft(next);
 
+  const editorForSelection = () => activeEditorRef.current || editorRef.current;
+
+  const rememberSelection = (editor = editorForSelection()) => {
+    if (!editor || typeof editor.selectionStart !== "number") return selectionRef.current;
+    selectionRef.current = { start: editor.selectionStart, end: editor.selectionEnd };
+    return selectionRef.current;
+  };
+
+  const selectionForEdit = () => {
+    const editor = editorForSelection();
+    if (editor && document.activeElement === editor && !contextMenuOpenRef.current) rememberSelection(editor);
+    return { editor, ...selectionRef.current };
+  };
+
+  const restoreEditorSelection = (editor, start, end = start) => {
+    if (!editor) return;
+    activeEditorRef.current = editor;
+    selectionRef.current = { start, end };
+    window.requestAnimationFrame(() => {
+      editor.focus();
+      editor.setSelectionRange(start, end);
+    });
+  };
+
   const replaceSelection = (before, after = before, placeholder = "text") => {
-    const editor = editorRef.current;
+    const { editor, start, end } = selectionForEdit();
     if (!editor) return;
     const current = currentContent();
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
     const selected = current.slice(start, end) || placeholder;
     const next = `${current.slice(0, start)}${before}${selected}${after}${current.slice(end)}`;
     updateContent(next);
-    window.requestAnimationFrame(() => {
-      editor.focus();
-      editor.setSelectionRange(start + before.length, start + before.length + selected.length);
-    });
+    restoreEditorSelection(editor, start + before.length, start + before.length + selected.length);
   };
 
   const insertAtSelection = (value) => {
-    const editor = editorRef.current;
+    const { editor, start, end } = selectionForEdit();
     if (!editor) return;
     const current = currentContent();
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
     const next = `${current.slice(0, start)}${value}${current.slice(end)}`;
     updateContent(next);
-    window.requestAnimationFrame(() => {
-      editor.focus();
-      editor.setSelectionRange(start + value.length, start + value.length);
-    });
+    restoreEditorSelection(editor, start + value.length, start + value.length);
   };
 
   const insertBlock = (prefix, placeholder = "") => {
-    const editor = editorRef.current;
+    const { editor, start } = selectionForEdit();
     if (!editor) return;
     const current = currentContent();
-    const start = editor.selectionStart;
     const lineStart = current.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
     const next = `${current.slice(0, lineStart)}${prefix}${current.slice(lineStart)}`;
     updateContent(next || `${prefix}${placeholder}`);
-    window.requestAnimationFrame(() => {
-      editor.focus();
-      editor.setSelectionRange(lineStart + prefix.length, lineStart + prefix.length);
+    restoreEditorSelection(editor, lineStart + prefix.length, lineStart + prefix.length);
+  };
+
+  const clearSelection = () => {
+    const { editor, start, end } = selectionForEdit();
+    if (!editor || start === end) return;
+    const current = currentContent();
+    updateContent(`${current.slice(0, start)}${current.slice(end)}`);
+    restoreEditorSelection(editor, start, start);
+  };
+
+  const selectedText = () => {
+    const { start, end } = selectionRef.current;
+    return currentContent().slice(start, end);
+  };
+
+  const copySelection = async () => {
+    const text = selectedText();
+    if (!text) return;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+    } catch {
+      // Fall through to the browser's synchronous copy command.
+    }
+    const editor = editorForSelection();
+    const { start, end } = selectionRef.current;
+    if (!editor) return;
+    restoreEditorSelection(editor, start, end);
+    window.requestAnimationFrame(() => document.execCommand?.("copy"));
+  };
+
+  const pasteText = async () => {
+    if (typeof navigator === "undefined" || !navigator.clipboard?.readText) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) insertAtSelection(text);
+    } catch {
+      // The browser may deny asynchronous clipboard reads; native paste remains available in Write mode.
+    }
+  };
+
+  const handleMarkdownContextAction = async (action, value) => {
+    if (action === "clear") clearSelection();
+    else if (action === "copy") await copySelection();
+    else if (action === "paste") await pasteText();
+    else if (action === "bold") replaceSelection("**");
+    else if (action === "italic") replaceSelection("_");
+    else if (action === "underline") replaceSelection("<u>", "</u>");
+    else if (action === "strike") replaceSelection("~~");
+    else if (action === "inline-code") replaceSelection("`");
+    else if (action === "text-color") replaceSelection(`<span style="color: ${value}">`, "</span>", "colored text");
+    else if (action === "highlight-color") replaceSelection(`<mark style="background-color: ${value}">`, "</mark>", "highlighted text");
+    else if (action === "link") replaceSelection("[", "]()", "link");
+    else if (action === "bullet") replaceSelection("- ", "", "List item");
+    else if (action === "numbered") replaceSelection("1. ", "", "List item");
+    else if (action === "quote") replaceSelection("> ", "", "Quote");
+    else if (action === "table") insertAtSelection("| Column | Column |\n| --- | --- |\n| Value | Value |\n");
+    else if (action === "image") insertAtSelection("![Alt text](https://)");
+    else if (action === "separator") insertBlock("---\n");
+    else if (action === "code-block") insertBlock("```\n", "code\n```");
+  };
+
+  const closeMarkdownContextMenu = () => {
+    contextMenuOpenRef.current = false;
+    setContextMenu(null);
+    const editor = editorForSelection();
+    const { start, end } = selectionRef.current;
+    window.requestAnimationFrame(() => restoreEditorSelection(editor, start, end));
+  };
+
+  const openMarkdownContextMenu = (event, editor = event.currentTarget, fromKeyboard = false) => {
+    event.preventDefault();
+    event.stopPropagation();
+    activeEditorRef.current = editor;
+    const { start, end } = rememberSelection(editor);
+    const rect = editor.getBoundingClientRect();
+    contextMenuOpenRef.current = true;
+    setContextMenu({
+      x: fromKeyboard ? rect.left + Math.min(180, rect.width / 2) : event.clientX,
+      y: fromKeyboard ? rect.top + 34 : event.clientY,
+      anchorRect: fromKeyboard
+        ? { left: rect.left + Math.min(180, rect.width / 2), top: rect.top + 30, bottom: rect.top + 48 }
+        : { left: event.clientX, top: event.clientY, bottom: event.clientY },
+      sourceElement: editor,
+      hasSelection: start !== end,
     });
   };
 
   const handleKeyDown = (event) => {
     const command = event.ctrlKey || event.metaKey;
+    if (command && (event.key === "]" || event.code === "BracketRight")) {
+      openMarkdownContextMenu(event, event.currentTarget, true);
+      return;
+    }
     if (event.key === "Enter" && !event.shiftKey && !event.altKey && !command && !event.isComposing) {
       const current = currentContent();
       const continuation = markdownLineContinuation(current, event.currentTarget.selectionStart, event.currentTarget.selectionEnd);
@@ -324,13 +431,22 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
 
   const editor = (suffix = "") => (
     <textarea
-      ref={editorRef}
+      ref={(element) => {
+        if (element) editorRef.current = element;
+      }}
       className="markdown-editor"
       value={content}
       onChange={(event) => updateContent(event.target.value)}
+      onFocus={(event) => {
+        activeEditorRef.current = event.currentTarget;
+        rememberSelection(event.currentTarget);
+      }}
+      onSelect={(event) => rememberSelection(event.currentTarget)}
+      onMouseUp={(event) => rememberSelection(event.currentTarget)}
       onKeyDown={handleKeyDown}
       onBlur={handleEditorBlur}
       onPaste={handlePaste}
+      onContextMenu={(event) => openMarkdownContextMenu(event, event.currentTarget)}
       placeholder={editorPlaceholder}
       spellCheck="true"
       aria-label={`${object.title} Markdown editor${suffix}`}
@@ -416,6 +532,13 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         <span className="status-spacer" />
         <span className="status-item">{words} words · {lines} lines</span>
       </footer>
+      <MarkdownContextMenu
+        menu={contextMenu}
+        onClose={closeMarkdownContextMenu}
+        onAction={handleMarkdownContextAction}
+        textColors={TEXT_COLORS}
+        highlightColors={HIGHLIGHT_COLORS}
+      />
     </article>
   );
 }

@@ -185,3 +185,38 @@ test("continues Markdown lists intelligently when Enter is pressed", async ({ pa
   await editor.press("Enter");
   await expect(editor).toHaveValue("- [ ] First task\n\n");
 });
+
+test("opens a Paper command menu for selected Markdown text", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownObject(page);
+  const editor = layer.getByRole("textbox", { name: "Meeting notes Markdown editor" });
+  await editor.fill("Draft text");
+  await editor.evaluate((element) => {
+    element.focus();
+    element.setSelectionRange(0, 5);
+    element.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: 280, clientY: 280 }));
+  });
+
+  const menu = page.getByRole("menu", { name: "Markdown selection commands" });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Clear content" })).toBeEnabled();
+  await expect(menu.getByRole("menuitem", { name: "Insert table" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Background color: Straw" })).toBeVisible();
+
+  await menu.getByRole("menuitem", { name: "Bold" }).click();
+  await expect(editor).toHaveValue("**Draft** text");
+
+  await editor.evaluate((element) => {
+    element.focus();
+    element.setSelectionRange(0, 9);
+  });
+  await page.keyboard.down("Control");
+  await page.keyboard.press("]");
+  await page.keyboard.up("Control");
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Clear content" })).toBeEnabled();
+  await menu.getByRole("menuitem", { name: "Clear content" }).click();
+  await expect(editor).toHaveValue(" text");
+});
