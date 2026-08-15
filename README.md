@@ -6,6 +6,12 @@ Tactile is a local workspace for arranging notes, data, and files on a grid.
 
 Your workspace stays on your computer. No account or cloud storage is required.
 
+## Why use it
+
+Use the grid for the overview and place deeper work inside it. A budget workspace might have monthly totals in Tiles, a Markdown note for assumptions, and receipts as local files. Open any object directly from its cell, then return to that same place without losing your train of thought.
+
+It is a simple way to keep related work together while giving each part enough room for better structure.
+
 ![Tactile feature tour](docs/tactile-feature-tour.gif)
 
 ## Use it
