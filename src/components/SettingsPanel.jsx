@@ -220,6 +220,7 @@ export function SettingsPanel({
           <SettingTab id="settings-tab-appearance" controls="settings-panel-appearance" active={tab === "appearance"} icon={IconPalette} onClick={() => setTab("appearance")}>Appearance</SettingTab>
           <SettingTab id="settings-tab-files" controls="settings-panel-files" active={tab === "files"} icon={IconFileTypeCsv} onClick={() => setTab("files")}>Files &amp; ownership</SettingTab>
           <SettingTab id="settings-tab-keyboard" controls="settings-panel-keyboard" active={tab === "keyboard"} icon={IconKeyboard} onClick={() => setTab("keyboard")}>Keyboard</SettingTab>
+          <SettingTab id="settings-tab-agents" controls="settings-panel-agents" active={tab === "agents"} icon={IconSparkles} onClick={() => setTab("agents")}>Agents.md</SettingTab>
         </nav>
 
         <div className="settings-content">
@@ -369,28 +370,6 @@ export function SettingsPanel({
                 <button type="button" onClick={onExportWorkspace}><IconDownload size={15} /> Export .zip</button>
                 {onOpenGuide ? <button type="button" onClick={onOpenGuide}><IconSparkles size={15} /> Open getting started guide</button> : null}
               </div>
-              <section className="workspace-authoring-prompt" aria-labelledby="workspace-authoring-prompt-title">
-                <div className="workspace-authoring-prompt-heading">
-                  <div>
-                    <span>For AI-assisted setup</span>
-                    <h4 id="workspace-authoring-prompt-title">Workspace authoring prompt</h4>
-                    <p>Give this to an LLM to plan a Tactile workspace and return a validated v4 payload.</p>
-                  </div>
-                  <code>{WORKSPACE_AUTHORING_PROMPT_VERSION}</code>
-                </div>
-                <textarea
-                  className="workspace-authoring-prompt-field"
-                  aria-label="Workspace authoring prompt"
-                  value={WORKSPACE_AUTHORING_PROMPT}
-                  readOnly
-                  rows={12}
-                  onFocus={(event) => event.currentTarget.select()}
-                />
-                <button className="workspace-authoring-prompt-copy" type="button" onClick={copyAuthoringPrompt}>
-                  {authoringPromptCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                  {authoringPromptCopied ? "Copied" : "Copy prompt"}
-                </button>
-              </section>
               {onChangeWorkspaceFolder ? (
                 <div className="native-workspace-settings">
                   <div className="native-workspace-heading">
@@ -412,6 +391,40 @@ export function SettingsPanel({
                   onChange={(checked) => onUpdateSettings({ reduceMotion: checked })}
                 />
               </label>
+            </div>
+          ) : null}
+
+          {tab === "agents" ? (
+            <div className="agents-settings" id="settings-panel-agents" role="tabpanel" aria-labelledby="settings-tab-agents">
+              <div className="agents-settings-intro">
+                <IconSparkles size={30} stroke={1.35} />
+                <div>
+                  <h3>Workspace authoring</h3>
+                  <p>Give this prompt to an LLM to plan a Tactile workspace and return a validated payload.</p>
+                </div>
+              </div>
+              <section className="workspace-authoring-prompt" aria-labelledby="workspace-authoring-prompt-title">
+                <div className="workspace-authoring-prompt-heading">
+                  <div>
+                    <span>For AI-assisted setup</span>
+                    <h4 id="workspace-authoring-prompt-title">Workspace authoring prompt</h4>
+                    <p>Versioned against the current Tactile workspace model.</p>
+                  </div>
+                  <code>{WORKSPACE_AUTHORING_PROMPT_VERSION}</code>
+                </div>
+                <textarea
+                  className="workspace-authoring-prompt-field"
+                  aria-label="Workspace authoring prompt"
+                  value={WORKSPACE_AUTHORING_PROMPT}
+                  readOnly
+                  rows={18}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <button className="workspace-authoring-prompt-copy" type="button" onClick={copyAuthoringPrompt}>
+                  {authoringPromptCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                  {authoringPromptCopied ? "Copied" : "Copy prompt"}
+                </button>
+              </section>
             </div>
           ) : null}
 

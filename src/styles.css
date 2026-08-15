@@ -2186,7 +2186,9 @@ kbd {
 .settings-content {
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .appearance-settings {
@@ -2898,7 +2900,8 @@ kbd {
 }
 
 .files-settings,
-.keyboard-settings {
+.keyboard-settings,
+.agents-settings {
   max-width: 660px;
   margin: 0 auto;
   padding: 52px 44px 70px;
@@ -2939,6 +2942,32 @@ kbd {
   display: flex;
   gap: 5px;
   margin-bottom: 28px;
+}
+
+.agents-settings-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-bottom: 22px;
+  color: var(--accent);
+}
+
+.agents-settings-intro > div {
+  min-width: 0;
+}
+
+.agents-settings-intro h3 {
+  margin: 0 0 5px;
+  color: var(--ink);
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.agents-settings-intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.55;
 }
 
 .workspace-authoring-prompt {
@@ -2999,7 +3028,7 @@ kbd {
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--muted);
-  background: var(--tray);
+  background: var(--paper);
   font-family: var(--font-mono);
   font-size: 8px;
   line-height: 1.5;
