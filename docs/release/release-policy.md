@@ -1,10 +1,10 @@
 # Release policy
 
-The current packaged release candidate is `v0.1.4`; its macOS workflow explicitly uses ad-hoc signing when Developer ID credentials are absent.
+The current packaged release candidate is `v0.1.4`; its macOS workflow explicitly uses ad-hoc signing when Developer ID credentials are absent. The project is licensed under MIT; platform signing and notarization remain separate release concerns.
 
 The current packaged release candidate is `v0.1.3`, following the `v0.1.0` source tag, the `v0.1.1` native-icon correction, and the `v0.1.2` macOS signing correction.
 
-Tactile `v0.1.2` is the first public packaged release candidate, following the `v0.1.0` source tag and the `v0.1.1` native-icon correction. The repository also contains a tag-triggered packaging workflow for Windows MSI, macOS DMG, and Linux AppImage/DEB artifacts. This policy does not declare a project license, signing identity, notarization status, or a supported-platform promise beyond the artifacts and evidence attached to a specific release.
+Tactile `v0.1.2` was the first public packaged release candidate, following the `v0.1.0` source tag and the `v0.1.1` native-icon correction. The repository also contains a tag-triggered packaging workflow for Windows MSI, macOS DMG, and Linux AppImage/DEB artifacts. This policy does not declare a signing identity, notarization status, or a supported-platform promise beyond the artifacts and evidence attached to a specific release.
 
 ## Required release inputs
 
@@ -45,7 +45,7 @@ The native Windows/macOS/Ubuntu smoke matrix must run before claiming native rel
 - `sbom-cargo.cdx.json`, from locked Cargo metadata plus Cargo.lock checksums;
 - `third-party-inventory.json` and `.md`, which map exact components to license evidence and direct/development/native scope.
 
-The inventory intentionally distinguishes evidence from legal approval. The repository does not evidence a project license or complete third-party notice bundle. No public/commercial release may rely on the generated IDs alone; an owner/legal reviewer must inspect the actual license texts, attribution requirements, copyleft obligations, asset fonts, and native distribution terms.
+The inventory intentionally distinguishes evidence from legal approval. The repository now includes the project MIT license, but it does not yet constitute a complete third-party notice bundle. No public/commercial release may rely on the generated IDs alone; an owner/legal reviewer must inspect the actual license texts, attribution requirements, copyleft obligations, asset fonts, and native distribution terms.
 
 Security advisories must be triaged per dependency and lockfile. A clean `npm audit` result is a snapshot, not a guarantee. Native advisory scanning, source review, and any OS/WebView/FFI obligations must be added to the release record when the native product is shipped.
 
@@ -63,7 +63,7 @@ Assign a version only after compatibility and migration behavior are reviewed. A
 - [ ] Supported platforms and versions declared.
 - [ ] Private security intake and response policy configured.
 - [ ] SQLite/WAL storage is integrated through the native persistence path and cross-platform smoke evidence is complete.
-- [ ] Project license selected and added by the legal owner.
+- [x] Project license selected and added: MIT (`LICENSE`).
 - [ ] Third-party license texts and notices collected.
 - [ ] SBOMs regenerated from the candidate lockfiles and reviewed.
 - [ ] Signing/provenance system configured and verification instructions published.

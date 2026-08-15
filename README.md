@@ -1,106 +1,118 @@
 # Tactile
 
-![Tactile — Fully local dimensional workspace](docs/tactile-banner.png)
+![Tactile - Fully local dimensional workspace](docs/tactile-banner.svg)
 
-Tactile is a local-first workspace built around a simple idea: a sheet is a map, and a cell can open another object.
+Tactile is a local workspace built on a sheet. Cells hold values or open objects. Objects stay readable on disk.
 
-No cloud layer. No mandatory account. The workspace stays on disk.
+No account is required. The local copy is the canonical copy.
 
-## The short version
+## Start here
 
-- **Tiles** are compact A1 sheets for values, formulas, ranges, and layout.
-- **Text** is Markdown stored as its own object.
-- **Files** are local assets with inspectable references.
-- **In & Out** keeps nested work attached to the cell that opened it.
-- **Portable v4** keeps the workspace readable, movable, and versioned.
-
-![Tactile feature tour](docs/tactile-feature-tour.gif)
-
-Click an embedded object once to float it. Double-click to open it fully. Press `]` to enter and `[` to return.
-
-## The model
-
-The app is a graph laid over a spreadsheet.
-
-```text
-workspace
-├── Home — a Tiles sheet and the default map
-├── Tiles — another sheet, embedded or opened directly
-├── Text — Markdown content stored separately
-└── File — an image, PDF, video, HTML, SVG, or local asset
-```
-
-Objects have stable IDs. A cell stores a value or a reference. A reference can point to the same object from more than one place. Parent links retain the route back to the source cell. Cycles are rejected.
-
-![Tactile workspace model](docs/tactile-architecture.svg)
-
-The portable link form is deliberately plain:
-
-```text
-[[tactile:<type>:<object-id>|<title>]]
-```
-
-Ordinary cells remain sparse sheet data. Text stays Markdown. Binary content stays in an asset record. The file is the source of truth.
-
-## Run it
-
-Requires Node.js and, for the native shell, Rust.
+### Browser development
 
 ```bash
 npm install
 npm run dev
 ```
 
-The browser development server is the fastest way to inspect the product. The native shell lives under `src-tauri` and can be started with:
+### Native shell
+
+Rust and the Tauri prerequisites are required for the desktop shell.
 
 ```bash
 npx tauri dev
 ```
 
-## A few controls
+Packaged builds are published on the [Releases](https://github.com/aryanxxvii/tactile/releases) page. The current public release is [v0.1.4](https://github.com/aryanxxvii/tactile/releases/tag/v0.1.4).
 
-| Action | Input |
-| --- | --- |
-| Move through a sheet | Arrow keys |
-| Edit the active tile | `Enter` or `F2` |
-| Enter an embedded object | `]` |
-| Return to the parent | `[` |
-| Open the edit menu | `Ctrl ]` |
-| Clear selected cells | `Delete` |
-| Copy and paste | `Ctrl C` / `Ctrl V` |
+## The product
 
-## Local files
+The sheet is the map.
 
-Tactile keeps a workspace inspectable instead of hiding it behind an opaque database.
+- **Tiles** are sparse A1 sheets for values, formulas, ranges, formatting, and embedded references.
+- **Text** is Markdown stored as a separate object, not inside the cell that opened it.
+- **Files** are separate local assets: images, PDFs, videos, HTML, SVG, and other native files.
+- **In & Out** preserves the source cell while an embedded child floats or opens full-screen.
+
+Click an embedded cell once to float it. Double-click to open it fully. Use `]` to enter and `[` to return.
+
+![Tactile feature tour](docs/tactile-feature-tour.gif)
+
+## The workspace model
+
+Tactile is a small object graph over a spreadsheet.
+
+```text
+workspace
+|-- Home sheet
+|   |-- ordinary values and formulas
+|   |-- embedded Tiles, Text, and Files
+|   `-- source-cell links
+|-- Markdown objects
+|-- native file assets
+`-- themes and launch metadata
+```
+
+Every object has a stable ID. An embedded link records the object, its parent, its source cell, and its relationship. The same object may be reached through aliases. Cycles are rejected before navigation or export.
+
+The cell syntax is intentionally plain:
+
+```text
+[[tactile:<type>:<object-id>|<title>]]
+```
+
+Ordinary cells remain sparse. The sheet exports only its used range, while Tactile keeps the visible map at 256 rows by 64 columns. Text and binary data stay in their own records.
+
+![Tactile workspace architecture](docs/tactile-architecture.svg)
+
+## Portable files
+
+The portable v4 workspace is a folder or ZIP bundle with inspectable files.
 
 ```text
 workspace.json
 objects/<object-id>/content.md
 objects/<sheet-id>/sheet.csv
-assets/<asset-id>/<file>
+assets/<asset-id>/<native-file>
 themes/<theme-id>.json
 ```
 
-The exact package layout is documented in [`docs/FILE_FORMAT.md`](docs/FILE_FORMAT.md). Export produces a ZIP bundle. The v4 compatibility rules are documented in [`docs/compatibility/README.md`](docs/compatibility/README.md).
+The format is documented in [`docs/FILE_FORMAT.md`](docs/FILE_FORMAT.md). Compatibility rules are in [`docs/compatibility/README.md`](docs/compatibility/README.md).
 
-## Settings can explain the model to another LLM
+Home and Start are metadata, not containment. Changing the launch object does not re-root the object graph. A saved route can be restored with its complete parent chain.
 
-Open **Settings → Files & ownership → Workspace authoring prompt** to copy a versioned prompt that describes the object graph, sparse sheets, Markdown, assets, links, themes, Home/Start metadata, and the strict v4 authoring payload. It is intended for requests such as:
+## Controls
+
+| Action | Input |
+| --- | --- |
+| Move through a sheet | Arrow keys |
+| Edit the active cell | `Enter` or `F2` |
+| Enter an embedded object | `]` |
+| Return to the parent | `[` |
+| Open the Edit menu | `Ctrl ]` |
+| Clear selected cells | `Delete` |
+| Copy and paste | `Ctrl C` / `Ctrl V` |
+
+## Workspace authoring prompt
+
+Settings includes a versioned **Workspace authoring prompt**. It teaches an LLM the object model, sparse CSV sheets, Markdown objects, asset references, themes, Home/Start metadata, embedded links, and the strict v4 output contract.
+
+For example:
 
 > Make me a workspace to manage my budgets.
 
-The result should be a plan, a machine-readable workspace payload, and a validation report.
+The intended result is a human-readable plan, a machine-readable workspace payload, and a validation report.
 
-## Project shape
+## Repository map
 
 ```text
-src/       browser application and workspace model
-src-tauri/ native shell and filesystem bridge
-docs/      format, architecture, security, QA, and release notes
-tests/     unit, compatibility, component, and end-to-end tests
+src/        browser application and workspace model
+src-tauri/  native shell and filesystem bridge
+docs/       format, architecture, security, QA, and release notes
+tests/      unit, compatibility, component, and end-to-end tests
 ```
 
-The architecture notes are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Product constraints and durable decisions live in [`AGENTS.md`](AGENTS.md). The current delivery tracker is [`TRACKER.md`](TRACKER.md).
+Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the implementation direction and [`AGENTS.md`](AGENTS.md) for durable product constraints.
 
 ## Checks
 
@@ -111,4 +123,12 @@ npm run test:unit
 npx vite build
 ```
 
-Tactile is still being built. The direction is stable: local files, familiar coordinates, quiet surfaces, and enough structure to grow without hiding the data.
+Native release checks are described in [`docs/release/release-policy.md`](docs/release/release-policy.md). Public artifacts are platform-specific and are accompanied by checksums.
+
+## License
+
+Tactile is released under the [MIT License](LICENSE).
+
+## Status
+
+Tactile is under active development. The storage model is local and portable. The interface is still being refined.
