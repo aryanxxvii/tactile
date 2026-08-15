@@ -4,7 +4,7 @@
 
 Tactile is a local workspace for arranging notes, data, and files on a grid.
 
-Your workspace stays on your computer. No account or cloud storage is required.
+Everything is fully local. Workspaces use common files such as CSV, Markdown, JSON, and native media files, so the contents can be viewed or edited separately when needed. No account or cloud storage is required.
 
 ## Why use it
 
