@@ -9,3 +9,12 @@ coverage/
 test-results-*/
 *.tsbuildinfo
 test-results/
+
+# Internal project planning and wave records are kept out of the public repository.
+/AGENTS.md
+/WORKFLOW.md
+/TRACKER.md
+/IDEAS.md
+/CHANGELOG.md
+/docs/wave-*/
+/docs/wave-*.md
