@@ -1,0 +1,307 @@
+/* Video player. Loaded as a lazy CSS chunk alongside FileObject so it stays out
+   of the entry CSS budget (see scripts/check-bundle-budget.mjs). */
+
+.video-player {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  /* The stage takes the remaining space and the control lane is intrinsic, so
+     the video can never push the controls out of the object. */
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: #101010;
+}
+
+.video-player:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.video-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Fit, never crop and never overflow: the element is bounded on both axes and
+   keeps the intrinsic ratio reported by loadedmetadata, so tall videos shrink
+   to the stage height instead of scrolling past the control lane. */
+.video-stage > video {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  aspect-ratio: var(--video-aspect, 16 / 9);
+  object-fit: contain;
+  background: #000;
+}
+
+.video-center-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: color-mix(in srgb, #000 52%, transparent);
+  box-shadow: 0 6px 22px color-mix(in srgb, #000 45%, transparent);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+}
+
+.video-controls {
+  display: grid;
+  gap: 5px;
+  padding: 6px 9px 8px;
+  border-top: 1px solid color-mix(in srgb, #fff 12%, transparent);
+  background: color-mix(in srgb, #000 78%, transparent);
+  transition: opacity 160ms ease-out, transform 160ms ease-out;
+}
+
+/* Chrome recedes only while playing; a paused player always shows its controls. */
+.video-player[data-idle="true"] .video-controls {
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+}
+
+.video-player[data-idle="true"] .video-stage {
+  cursor: none;
+}
+
+.video-scrub {
+  position: relative;
+  height: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.video-scrub-track {
+  position: absolute;
+  inset: auto 0;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 20%, transparent);
+}
+
+.video-scrub-buffered,
+.video-scrub-played {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  border-radius: 999px;
+}
+
+.video-scrub-buffered {
+  background: color-mix(in srgb, #fff 26%, transparent);
+}
+
+.video-scrub-played {
+  background: var(--accent);
+}
+
+/* A real range input drives seeking so keyboard and assistive tech work; the
+   painted track above is purely visual. */
+.video-scrub-input {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.video-scrub-input::-webkit-slider-thumb {
+  width: 11px;
+  height: 11px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px color-mix(in srgb, #000 60%, transparent);
+}
+
+.video-scrub-input::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.video-scrub-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.video-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: color-mix(in srgb, #fff 82%, transparent);
+}
+
+.video-buttons button {
+  width: 25px;
+  height: 23px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.video-buttons button:hover,
+.video-buttons button:focus-visible {
+  outline: 0;
+  color: #fff;
+  border-color: color-mix(in srgb, #fff 22%, transparent);
+  background: color-mix(in srgb, #fff 14%, transparent);
+}
+
+.video-buttons button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.video-play {
+  width: 28px !important;
+  height: 25px !important;
+  color: #fff !important;
+  border-color: color-mix(in srgb, #fff 20%, transparent) !important;
+  background: color-mix(in srgb, #fff 12%, transparent) !important;
+}
+
+.video-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  padding-left: 7px;
+  border-left: 1px solid color-mix(in srgb, #fff 16%, transparent);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.video-time-current { color: #fff; }
+.video-time-sep,
+.video-time-total { color: color-mix(in srgb, #fff 55%, transparent); }
+
+.video-volume {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* The slider stays collapsed until the group is engaged so narrow objects keep
+   every control reachable. */
+.video-volume input {
+  width: 0;
+  height: 3px;
+  margin: 0;
+  appearance: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 26%, transparent);
+  opacity: 0;
+  cursor: pointer;
+  transition: width 140ms ease-out, opacity 140ms ease-out;
+}
+
+.video-volume:hover input,
+.video-volume:focus-within input {
+  width: 54px;
+  opacity: 1;
+}
+
+.video-volume input::-webkit-slider-thumb {
+  width: 9px;
+  height: 9px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.video-volume input::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.video-rate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+.video-rate-caption {
+  color: color-mix(in srgb, #fff 55%, transparent);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.video-rate select {
+  height: 21px;
+  padding: 0 3px;
+  border: 1px solid color-mix(in srgb, #fff 20%, transparent);
+  border-radius: 4px;
+  color: #fff;
+  background: color-mix(in srgb, #000 55%, transparent);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  cursor: pointer;
+}
+
+.video-rate select:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* Fullscreen has no object chrome to respect, so the stage takes the display. */
+.video-player[data-fullscreen="true"] {
+  background: #000;
+}
+
+.video-player[data-fullscreen="true"] .video-controls {
+  padding: 9px 16px 13px;
+}
+
+@media (max-width: 900px) {
+  .video-rate-caption,
+  .video-time-total,
+  .video-time-sep {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-controls,
+  .video-volume input {
+    transition: none !important;
+  }
+}

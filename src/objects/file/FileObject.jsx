@@ -10,6 +10,7 @@ import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { objectTypeFor } from "../objectTypes.js";
 import { PdfViewer } from "./PdfViewer.jsx";
+import { VideoPlayer } from "./VideoPlayer.jsx";
 
 function dataUrlBytes(dataUrl) {
   const match = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(String(dataUrl || ""));
@@ -119,7 +120,7 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
             previewUrl ? <img src={previewUrl} alt={object.title} /> : null
           ) : null}
           {object.type === "video" && previewUrl ? (
-            <video src={previewUrl} controls preload="metadata" aria-label={object.title} />
+            <VideoPlayer src={previewUrl} title={object.title} />
           ) : null}
           {object.type === "pdf" && asset?.dataUrl ? (
             <PdfViewer asset={asset} fileName={asset.fileName || object.title} title={object.title} onChooseFile={() => fileInputRef.current?.click()} />
