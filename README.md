@@ -6,59 +6,34 @@ Tactile is a local workspace for arranging notes, data, and files on a grid.
 
 Everything is fully local. Workspaces use common files such as CSV, Markdown, JSON, and native media files, so the contents can be viewed or edited separately when needed. No account or cloud storage is required.
 
-## Why use it
-
 Use the grid for the overview and place deeper work inside it. A budget workspace might have monthly totals in Tiles, a Markdown note for assumptions, and receipts as local files. Open any object directly from its cell, then return to that same place without losing your train of thought.
 
-It is a simple way to keep related work together while giving each part enough room for better structure.
-
 ![Tactile feature tour](docs/tactile-feature-tour.gif)
-
-## Use it
 
 - **Tiles** hold values, formulas, and links to other objects.
 - **Text** holds Markdown.
 - **Files** hold local images, PDFs, videos, and other files.
 - Embedded objects can be opened and returned to without losing their place.
 
-The workspace is stored as readable local files and can be exported as a ZIP bundle.
+Sheets, Markdown, assets, themes, and workspace metadata are stored separately. The file layout is documented in [`docs/FILE_FORMAT.md`](docs/FILE_FORMAT.md). Workspaces can also be exported as ZIP files.
 
-## Run locally
+To run the browser version locally:
 
 ```bash
 npm install
 npm run dev
 ```
 
-For the desktop shell:
+To run the desktop shell:
 
 ```bash
 npx tauri dev
 ```
 
-## Shortcuts
+Useful shortcuts: arrow keys move between cells; `Enter` or `F2` edits a cell; `]` opens an embedded object; `[` returns to its parent; `Ctrl ]` opens the Edit menu; `Delete` clears selected cells.
 
-| Action | Shortcut |
-| --- | --- |
-| Move between cells | Arrow keys |
-| Edit a cell | `Enter` or `F2` |
-| Open an embedded object | `]` |
-| Return to the parent | `[` |
-| Open the Edit menu | `Ctrl ]` |
-| Clear selected cells | `Delete` |
-
-## Workspace files
-
-Tactile keeps the local copy inspectable. Sheets, Markdown, assets, themes, and workspace metadata are stored separately. The file layout is documented in [`docs/FILE_FORMAT.md`](docs/FILE_FORMAT.md).
-
-Settings includes a versioned **Workspace authoring prompt** for asking an LLM to create a workspace, for example:
-
-> Make me a workspace to manage my budgets.
-
-## Download
+The versioned **Workspace authoring prompt** in Settings can explain the workspace model to an LLM. For example: “Make me a workspace to manage my budgets.”
 
 Installers for Windows, macOS, and Linux are available on the [Releases](https://github.com/aryanxxvii/tactile/releases) page.
 
-## License
-
-[MIT](LICENSE)
+[MIT License](LICENSE)
