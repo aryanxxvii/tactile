@@ -34,12 +34,16 @@
   },
   "bundle": {
     "active": true,
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
+    "publisher": "Tactile",
+    "licenseFile": "../LICENSE",
+    "copyright": "Copyright © 2026 Tactile",
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "wix": {
+        "bannerPath": "./windows/banner.bmp",
+        "dialogImagePath": "./windows/dialog.bmp"
+      }
+    },
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
   }
 }

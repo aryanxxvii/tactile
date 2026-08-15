@@ -131,10 +131,92 @@ jobs:
           p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
           p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
+      # Configure these repository secrets when a trusted Authenticode certificate
+      # is available: WINDOWS_CERTIFICATE_BASE64, WINDOWS_CERTIFICATE_PASSWORD,
+      # and WINDOWS_TIMESTAMP_URL. WINDOWS_CERTIFICATE_THUMBPRINT is optional;
+      # when omitted, the thumbprint is read from the imported PFX certificate.
+      - name: Inspect Windows release prerequisites
+        if: matrix.platform == 'windows-x64'
+        id: windows-prereqs
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+          WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL }}
+        run: |
+          $signingReady = $false
+          $thumbprint = ""
+          $timestampUrl = $env:WINDOWS_TIMESTAMP_URL
+
+          if ($env:WINDOWS_CERTIFICATE_BASE64 -and $env:WINDOWS_CERTIFICATE_PASSWORD) {
+            $pfxPath = Join-Path $env:RUNNER_TEMP "tactile-signing.pfx"
+            [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+            $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+            $certificates = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $password
+            $certificate = $certificates | Where-Object { $_.HasPrivateKey } | Select-Object -First 1
+            if ($certificate) {
+              $thumbprint = $certificate.Thumbprint
+              $signingReady = $true
+            }
+          }
+
+          if ($env:WINDOWS_CERTIFICATE_THUMBPRINT) {
+            $thumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
+          }
+
+          if ($signingReady -and -not $timestampUrl) {
+            $signingReady = $false
+            "A Windows certificate was found, but WINDOWS_TIMESTAMP_URL is missing; keeping this build unsigned." >> $env:GITHUB_STEP_SUMMARY
+          }
+
+          "signing_ready=$($signingReady.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "certificate_thumbprint=$thumbprint" >> $env:GITHUB_OUTPUT
+          "timestamp_url=$timestampUrl" >> $env:GITHUB_OUTPUT
+
+          if ($signingReady) {
+            "Windows code signing prerequisites are configured; the MSI will be signed and timestamped." >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            "Windows code signing credentials are absent; the MSI will be branded but unsigned (Windows may show Unknown Publisher)." >> $env:GITHUB_STEP_SUMMARY
+          }
+
       - name: Install JavaScript dependencies
         run: npm ci
 
-      - name: Build Tauri bundle
+      - name: Build signed Windows Tauri bundle
+        if: matrix.platform == 'windows-x64' && steps.windows-prereqs.outputs.signing_ready == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_THUMBPRINT: ${{ steps.windows-prereqs.outputs.certificate_thumbprint }}
+          WINDOWS_TIMESTAMP_URL: ${{ steps.windows-prereqs.outputs.timestamp_url }}
+        run: |
+          $configPath = Join-Path $env:RUNNER_TEMP "tactile-windows-signing.json"
+          $config = @{
+            bundle = @{
+              windows = @{
+                certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
+                digestAlgorithm = "sha256"
+                timestampUrl = $env:WINDOWS_TIMESTAMP_URL
+              }
+            }
+          } | ConvertTo-Json -Depth 6
+          Set-Content -Path $configPath -Value $config -Encoding utf8
+
+          npx --yes @tauri-apps/cli@2.11.4 build `
+            --target '${{ matrix.rust-target }}' `
+            --bundles '${{ matrix.bundles }}' `
+            --config $configPath
+
+      - name: Build unsigned Windows Tauri bundle
+        if: matrix.platform == 'windows-x64' && steps.windows-prereqs.outputs.signing_ready != 'true'
+        shell: pwsh
+        run: |
+          npx --yes @tauri-apps/cli@2.11.4 build `
+            --target '${{ matrix.rust-target }}' `
+            --bundles '${{ matrix.bundles }}'
+
+      - name: Build non-Windows Tauri bundle
+        if: matrix.platform != 'windows-x64'
         env:
           APPLE_SIGNING_IDENTITY: ${{ steps.apple-prereqs.outputs.signing_ready == 'true' && secrets.APPLE_SIGNING_IDENTITY || '' }}
         shell: bash
