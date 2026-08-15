@@ -208,6 +208,28 @@ fn workspace_open_directory(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn workspace_serve_html(app: AppHandle, content: String) -> Result<String, String> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let sandbox_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|error| error.to_string())?
+        .join("html-sandbox");
+    std::fs::create_dir_all(&sandbox_dir).map_err(|error| error.to_string())?;
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    let file_name = format!("doc-{nanos}.html");
+    let path = sandbox_dir.join(&file_name);
+    atomic_write(&path, content.as_bytes())?;
+    // The asset protocol serves files inside its configured scope over
+    // asset://localhost/<relative-path>; that origin keeps inline scripts
+    // allowed, which is what lets user-authored HTML run in the native build.
+    Ok(format!("asset://localhost/html-sandbox/{file_name}"))
+}
+
+#[tauri::command]
 fn workspace_open_url(url: String) -> Result<(), String> {
     if !url.starts_with("http://") && !url.starts_with("https://") {
         return Err("only http and https addresses may be opened".to_owned());
@@ -293,6 +315,7 @@ pub fn run() {
             workspace_open_directory,
             workspace_open_url,
             workspace_write_snapshot,
+            workspace_serve_html,
         ])
         .setup(|app| {
             let window_config = app

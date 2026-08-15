@@ -1,6 +1,6 @@
 [package]
 name = "tactile"
-version = "1.0.1"
+version = "1.0.2"
 description = "Tactile local workspace shell"
 authors = ["Tactile contributors"]
 edition = "2021"
@@ -14,7 +14,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["protocol-asset"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }

@@ -9,6 +9,7 @@ import {
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { objectTypeFor } from "../objectTypes.js";
+import { resolveTauriInvoke } from "../../platform/tauri/runtime.ts";
 import { PdfViewer } from "./PdfViewer.jsx";
 import { VideoPlayer } from "./VideoPlayer.jsx";
 
@@ -63,24 +64,29 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
     [asset?.dataUrl, object.source, object.type],
   );
 
-  // The Tauri desktop shell injects a strict Content-Security-Policy that the
-  // app webview enforces process-wide. A srcDoc iframe has no origin of its own
-  // and inherits that policy, so inline <script> blocks authored by the user
-  // are blocked in the native build even though the browser dev server allows
-  // them. Inject a permissive meta CSP into the document head so the frame
-  // governs itself and user JavaScript actually runs everywhere.
-  const sandboxedHtml = useMemo(() => {
-    if (object.type !== "html" || !htmlSource) return "";
-    const policy = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; media-src * data: blob:; frame-src *;";
-    const metaTag = `<meta http-equiv="Content-Security-Policy" content="${policy}">`;
-    if (/<head[^>]*>/i.test(htmlSource)) {
-      return htmlSource.replace(/<head[^>]*>/i, (match) => `${match}\n${metaTag}`);
+  // In the native Tauri build the frontend runs over tauri://localhost, which
+  // carries Tauri's process-wide CSP. Tauri upgrades 'unsafe-inline' in
+  // script-src to a per-response nonce, so a srcDoc iframe (which has no origin
+  // and inherits that policy) cannot run user-authored <script> blocks — but the
+  // browser dev server and the web build have no such header, so they work. To
+  // make JavaScript run in the MSI/desktop app we hand the HTML to the asset
+  // protocol, whose asset://localhost origin is exempt from the nonce upgrade and
+  // keeps inline scripts allowed. The browser path keeps using srcDoc.
+  const [htmlAssetUrl, setHtmlAssetUrl] = useState("");
+  const isHtml = object.type === "html" && Boolean(htmlSource);
+  useEffect(() => {
+    if (!isHtml) {
+      setHtmlAssetUrl("");
+      return undefined;
     }
-    if (/<html[^>]*>/i.test(htmlSource)) {
-      return htmlSource.replace(/<html[^>]*>/i, (match) => `${match}\n<head>\n${metaTag}\n</head>`);
-    }
-    return `<!doctype html><html><head>${metaTag}</head>${htmlSource}`;
-  }, [htmlSource, object.type]);
+    const invoke = resolveTauriInvoke();
+    if (!invoke) return undefined;
+    let cancelled = false;
+    invoke("workspace_serve_html", { content: htmlSource })
+      .then((url) => { if (!cancelled) setHtmlAssetUrl(String(url || "")); })
+      .catch(() => { if (!cancelled) setHtmlAssetUrl(""); });
+    return () => { cancelled = true; };
+  }, [isHtml, htmlSource]);
 
   useEffect(() => {
     const blob = dataUrlBlob(asset?.dataUrl, asset?.mime);
@@ -145,7 +151,20 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
             <PdfViewer asset={asset} fileName={asset.fileName || object.title} title={object.title} onChooseFile={() => fileInputRef.current?.click()} />
           ) : null}
           {object.type === "html" && htmlSource ? (
-            <iframe srcDoc={sandboxedHtml} title={object.title} sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts" />
+            htmlAssetUrl ? (
+              <iframe
+                key={htmlAssetUrl}
+                src={htmlAssetUrl}
+                title={object.title}
+                sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
+              />
+            ) : (
+              <iframe
+                srcDoc={htmlSource}
+                title={object.title}
+                sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
+              />
+            )
           ) : null}
           {!asset?.dataUrl && !htmlSource ? (
             <div className="file-empty-state">
