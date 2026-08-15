@@ -73,18 +73,32 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
   // protocol, whose asset://localhost origin is exempt from the nonce upgrade and
   // keeps inline scripts allowed. The browser path keeps using srcDoc.
   const [htmlAssetUrl, setHtmlAssetUrl] = useState("");
+  const [htmlAssetFailed, setHtmlAssetFailed] = useState(false);
   const isHtml = object.type === "html" && Boolean(htmlSource);
   useEffect(() => {
     if (!isHtml) {
       setHtmlAssetUrl("");
+      setHtmlAssetFailed(false);
       return undefined;
     }
     const invoke = resolveTauriInvoke();
-    if (!invoke) return undefined;
+    if (!invoke) {
+      setHtmlAssetUrl("");
+      setHtmlAssetFailed(false);
+      return undefined;
+    }
     let cancelled = false;
     invoke("workspace_serve_html", { content: htmlSource })
-      .then((url) => { if (!cancelled) setHtmlAssetUrl(String(url || "")); })
-      .catch(() => { if (!cancelled) setHtmlAssetUrl(""); });
+      .then((url) => {
+        if (cancelled) return;
+        setHtmlAssetFailed(false);
+        setHtmlAssetUrl(String(url || ""));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHtmlAssetUrl("");
+        setHtmlAssetFailed(false);
+      });
     return () => { cancelled = true; };
   }, [isHtml, htmlSource]);
 
@@ -151,18 +165,19 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
             <PdfViewer asset={asset} fileName={asset.fileName || object.title} title={object.title} onChooseFile={() => fileInputRef.current?.click()} />
           ) : null}
           {object.type === "html" && htmlSource ? (
-            htmlAssetUrl ? (
+            !htmlAssetUrl || htmlAssetFailed ? (
               <iframe
-                key={htmlAssetUrl}
-                src={htmlAssetUrl}
+                srcDoc={htmlSource}
                 title={object.title}
                 sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
               />
             ) : (
               <iframe
-                srcDoc={htmlSource}
+                key={htmlAssetUrl}
+                src={htmlAssetUrl}
                 title={object.title}
                 sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
+                onError={() => setHtmlAssetFailed(true)}
               />
             )
           ) : null}
