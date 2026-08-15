@@ -11,6 +11,65 @@ pub mod storage;
 struct NativeWorkspaceFile {
     path: String,
     contents: String,
+    encoding: Option<String>,
+}
+
+fn decode_data_url(value: &str) -> Result<Vec<u8>, String> {
+    let (header, payload) = value
+        .split_once(',')
+        .ok_or_else(|| "invalid data URL".to_owned())?;
+    if !header.starts_with("data:") {
+        return Err("asset payload must be a data URL".to_owned());
+    }
+    if header.contains(";base64") {
+        let mut output = Vec::with_capacity(payload.len() * 3 / 4);
+        let mut buffer = 0u32;
+        let mut bits = 0u8;
+        for byte in payload.bytes() {
+            if byte == b'=' || byte.is_ascii_whitespace() {
+                continue;
+            }
+            let value = match byte {
+                b'A'..=b'Z' => byte - b'A',
+                b'a'..=b'z' => byte - b'a' + 26,
+                b'0'..=b'9' => byte - b'0' + 52,
+                b'+' => 62,
+                b'/' => 63,
+                _ => return Err("invalid base64 asset payload".to_owned()),
+            } as u32;
+            buffer = (buffer << 6) | value;
+            bits += 6;
+            if bits >= 8 {
+                bits -= 8;
+                output.push((buffer >> bits) as u8);
+                if bits == 0 {
+                    buffer = 0;
+                } else {
+                    buffer &= (1 << bits) - 1;
+                }
+            }
+        }
+        return Ok(output);
+    }
+    let mut output = Vec::with_capacity(payload.len());
+    let bytes = payload.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' && index + 2 < bytes.len() {
+            let high = (bytes[index + 1] as char)
+                .to_digit(16)
+                .ok_or_else(|| "invalid percent-encoded asset payload".to_owned())?;
+            let low = (bytes[index + 2] as char)
+                .to_digit(16)
+                .ok_or_else(|| "invalid percent-encoded asset payload".to_owned())?;
+            output.push(((high << 4) | low) as u8);
+            index += 3;
+        } else {
+            output.push(bytes[index]);
+            index += 1;
+        }
+    }
+    Ok(output)
 }
 
 fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), String> {
@@ -162,7 +221,12 @@ fn workspace_write_snapshot(
         if let Some(parent) = target.parent() {
             std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
         }
-        atomic_write(&target, file.contents.as_bytes())?;
+        let contents = if file.encoding.as_deref() == Some("data-url") {
+            decode_data_url(&file.contents)?
+        } else {
+            file.contents.into_bytes()
+        };
+        atomic_write(&target, &contents)?;
     }
     atomic_write(&root.join("workspace.json"), workspace_json.as_bytes())?;
     workspace_set_last_path(app, path)?;

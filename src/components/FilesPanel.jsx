@@ -172,6 +172,36 @@ function parentRouteFor(location) {
   };
 }
 
+function useFilesMarqueeDistances(panelRef) {
+  const [distances, setDistances] = useState({});
+  useEffect(() => {
+    const measure = () => {
+      const next = {};
+      panelRef.current?.querySelectorAll("[data-marquee-label]").forEach((label) => {
+        const distance = label.scrollWidth - label.clientWidth;
+        if (distance > 1) next[label.dataset.marqueeLabel] = distance;
+      });
+      setDistances((current) => {
+        const currentKeys = Object.keys(current);
+        const nextKeys = Object.keys(next);
+        if (currentKeys.length === nextKeys.length && nextKeys.every((key) => current[key] === next[key])) return current;
+        return next;
+      });
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" || !panelRef.current
+      ? null
+      : new ResizeObserver(measure);
+    if (observer && panelRef.current) observer.observe(panelRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [panelRef]);
+  return distances;
+}
+
 function FilesRenamePopover({ entry, index, x, y, themeSource, onClose, onCommit }) {
   const popoverRef = useRef(null);
   const inputRef = useRef(null);
@@ -456,6 +486,8 @@ function TreeRow({
   onDragOver,
   onDragLeave,
   onDrop,
+  marqueeId,
+  marqueeDistance,
 }) {
   return (
     <div
@@ -527,7 +559,13 @@ function TreeRow({
         onClick={onOpen}
         aria-label={`Open ${entry.title}`}
       >
-        <span className="files-tree-title">{entry.title}</span>
+        <span
+          className={`files-tree-title ${marqueeDistance ? "is-marquee" : ""}`.trim()}
+          data-marquee-label={marqueeId}
+          style={marqueeDistance ? { "--marquee-distance": `${marqueeDistance}px` } : undefined}
+        >
+          {entry.title}
+        </span>
         {entry.isStart ? <IconHome className="files-home-icon" size={12} stroke={1.7} aria-label="Start" /> : null}
         <span className="files-tree-kind">{isAlias ? "Alias" : entry.typeLabel}</span>
       </button>
@@ -613,6 +651,7 @@ export function FilesPanel({
   const [resizing, setResizing] = useState(false);
   const customizerRef = useRef(null);
   const resizeRef = useRef(null);
+  const marqueeDistances = useFilesMarqueeDistances(panelRef);
   const deferredQuery = useDeferredValue(query);
 
   useEffect(() => {
@@ -1015,7 +1054,13 @@ export function FilesPanel({
                   >
                     <ObjectGlyph item={entry} size={14} stroke={1.6} />
                     <span className="files-result-main">
-                      <strong>{entry.title}</strong>
+                      <strong
+                        className={marqueeDistances[`result:${entry.objectId}`] ? "is-marquee" : ""}
+                        data-marquee-label={`result:${entry.objectId}`}
+                        style={marqueeDistances[`result:${entry.objectId}`] ? { "--marquee-distance": `${marqueeDistances[`result:${entry.objectId}`]}px` } : undefined}
+                      >
+                        {entry.title}
+                      </strong>
                       <small>{entry.canonical?.pathLabel || entry.typeLabel}</small>
                     </span>
                     {entry.isStart ? <IconHome size={12} stroke={1.7} aria-label="Start" /> : null}
@@ -1047,6 +1092,9 @@ export function FilesPanel({
                           type="button"
                           draggable
                           key={`${entry.objectId}-alias-${aliasIndex}`}
+                          className={marqueeDistances[`alias:${entry.objectId}:${aliasIndex}`] ? "is-marquee" : ""}
+                          data-marquee-label={`alias:${entry.objectId}:${aliasIndex}`}
+                          style={marqueeDistances[`alias:${entry.objectId}:${aliasIndex}`] ? { "--marquee-distance": `${marqueeDistances[`alias:${entry.objectId}:${aliasIndex}`]}px` } : undefined}
                           onDragStart={(event) => beginObjectDrag(event, entry.objectId, location)}
                           onClick={() => openRoute(location)}
                         >
@@ -1090,6 +1138,8 @@ export function FilesPanel({
                     setSelectedId(row.entry.objectId);
                     openRoute(row.location);
                   }}
+                  marqueeId={`tree:${row.key}`}
+                  marqueeDistance={marqueeDistances[`tree:${row.key}`]}
                 />
               ))}
               {!treeRows.length ? <p className="files-empty-state">No objects are available yet.</p> : null}

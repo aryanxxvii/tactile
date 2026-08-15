@@ -31,7 +31,7 @@ fn production_csp_has_no_remote_content_sources() {
 
     assert!(csp.contains("default-src 'self'"));
     assert!(csp.contains("object-src 'none'"));
-    assert!(csp.contains("frame-src 'none'"));
+    assert!(csp.contains("frame-src 'self' asset: blob: data:"));
     assert!(csp.contains("script-src 'self'"));
     assert!(!csp.contains("http:"));
     assert!(!csp.contains("https:"));

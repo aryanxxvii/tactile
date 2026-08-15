@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconBrackets,
   IconDownload,
@@ -9,14 +9,45 @@ import {
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { objectTypeFor } from "../objectTypes.js";
+import { PdfViewer } from "./PdfViewer.jsx";
+
+function dataUrlBytes(dataUrl) {
+  const match = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(String(dataUrl || ""));
+  if (!match) return new Uint8Array(0);
+  if (match[2]) {
+    const binary = atob(match[3]);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return bytes;
+  }
+  return new TextEncoder().encode(decodeURIComponent(match[3]));
+}
 
 function dataUrlText(dataUrl) {
-  if (!dataUrl || !dataUrl.includes(",")) return "";
-  const [header, body] = dataUrl.split(",", 2);
+  const bytes = dataUrlBytes(dataUrl);
+  if (!bytes.length) return "";
   try {
-    return header.includes(";base64") ? atob(body) : decodeURIComponent(body);
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
   } catch {
     return "";
+  }
+}
+
+function dataUrlBlob(dataUrl, fallbackMime = "application/octet-stream") {
+  if (typeof dataUrl !== "string") return null;
+  const match = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(dataUrl);
+  if (!match) return null;
+  const mime = match[1] || fallbackMime;
+  try {
+    if (match[2]) {
+      const binary = atob(match[3]);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      return new Blob([bytes], { type: mime });
+    }
+    return new Blob([decodeURIComponent(match[3])], { type: mime });
+  } catch {
+    return null;
   }
 }
 
@@ -25,10 +56,27 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
   const definition = objectTypeFor(object.type);
   const ObjectIcon = (props) => <ObjectGlyph item={object} {...props} />;
   const fileInputRef = useRef(null);
+  const [assetUrl, setAssetUrl] = useState("");
   const htmlSource = useMemo(
     () => object.type === "html" ? (object.source || dataUrlText(asset?.dataUrl)) : "",
     [asset?.dataUrl, object.source, object.type],
   );
+
+  useEffect(() => {
+    const blob = dataUrlBlob(asset?.dataUrl, asset?.mime);
+    if (!blob || typeof URL?.createObjectURL !== "function") {
+      setAssetUrl("");
+      return undefined;
+    }
+    const url = URL.createObjectURL(blob);
+    setAssetUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+      setAssetUrl("");
+    };
+  }, [asset?.dataUrl, asset?.mime]);
+
+  const previewUrl = assetUrl || asset?.dataUrl || "";
 
   return (
     <article className="object-surface file-object" data-object-type={object.type}>
@@ -68,13 +116,13 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
         </div>
         <div className="file-stage">
           {object.type === "image" || object.type === "svg" ? (
-            asset?.dataUrl ? <img src={asset.dataUrl} alt={object.title} /> : null
+            previewUrl ? <img src={previewUrl} alt={object.title} /> : null
           ) : null}
-          {object.type === "video" && asset?.dataUrl ? (
-            <video src={asset.dataUrl} controls preload="metadata" aria-label={object.title} />
+          {object.type === "video" && previewUrl ? (
+            <video src={previewUrl} controls preload="metadata" aria-label={object.title} />
           ) : null}
           {object.type === "pdf" && asset?.dataUrl ? (
-            <iframe src={asset.dataUrl} title={object.title} />
+            <PdfViewer asset={asset} fileName={asset.fileName || object.title} title={object.title} onChooseFile={() => fileInputRef.current?.click()} />
           ) : null}
           {object.type === "html" && htmlSource ? (
             <iframe srcDoc={htmlSource} title={object.title} sandbox="allow-forms allow-modals allow-popups allow-scripts" />

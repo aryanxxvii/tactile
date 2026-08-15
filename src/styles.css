@@ -1598,6 +1598,137 @@ kbd {
   background: white;
 }
 
+.pdf-reader {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--tray) 55%, var(--paper-elevated));
+}
+
+.pdf-toolbar {
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper-elevated) 92%, transparent);
+}
+
+.pdf-toolbar button {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pdf-toolbar button:hover,
+.pdf-toolbar button:focus-visible {
+  outline: 0;
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--tray) 55%, transparent);
+}
+
+.pdf-toolbar button:disabled {
+  color: var(--line-strong);
+  cursor: default;
+  border-color: transparent;
+  background: transparent;
+}
+
+.pdf-page-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1;
+}
+
+.pdf-page-input {
+  width: 30px;
+  height: 21px;
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--paper-elevated);
+  font-size: 9.5px;
+  line-height: 1;
+  text-align: center;
+}
+
+.pdf-page-input:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.pdf-zoom-label {
+  min-width: 36px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdf-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 10px 26px;
+}
+
+.pdf-page {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.pdf-page canvas {
+  display: block;
+  border-radius: 3px;
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--elevation-shadow) 58%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--line) 60%, transparent);
+  background: white;
+}
+
+.pdf-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.pdf-loading-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  animation: pdf-spin 0.7s linear infinite;
+}
+
+@keyframes pdf-spin {
+  to { transform: rotate(360deg); }
+}
+
 .file-empty-state {
   width: min(360px, calc(100% - 48px));
   padding: 30px;
@@ -3276,7 +3407,6 @@ kbd {
   pointer-events: auto;
   transform-origin: 0 0;
   contain: paint;
-  will-change: transform, border-radius, opacity;
   transition-property: transform, border-radius, box-shadow, background-color, border-color;
   transition-duration: 300ms;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -3334,6 +3464,7 @@ kbd {
   box-shadow: 0 3px 8px color-mix(in srgb, var(--elevation-shadow) 78%, transparent);
   transform: translate3d(var(--source-x), var(--source-y), 0) scale(var(--source-scale-x), var(--source-scale-y));
   transition-duration: 300ms;
+  will-change: transform, border-radius, opacity;
 }
 
 .phase-origin.is-closing .object-window {
@@ -3382,6 +3513,7 @@ kbd {
   border-radius: 14px;
   transform: translate3d(var(--floating-x, 4vw), var(--floating-y, 4vh), 0) scale(var(--floating-scale, 0.92));
   transition-duration: 300ms;
+  will-change: transform, border-radius, opacity;
 }
 
 .phase-floating.is-closing .object-window {
@@ -3410,7 +3542,7 @@ kbd {
 
 .phase-full .object-window {
   border-radius: 0;
-  transform: translate3d(0, 0, 0) scale(1);
+  transform: none;
   transition-duration: 260ms;
 }
 
@@ -5162,9 +5294,17 @@ kbd {
   background: transparent;
   font: inherit;
   line-height: 1;
+}
+
+.app-dock-path-part > .app-dock-path-button > .app-dock-path-button-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app-dock-path-part > .app-dock-path-button[aria-current="location"] {
+  max-width: 168px;
 }
 
 .app-dock-path-part > .app-dock-path-button:hover,
@@ -5208,7 +5348,7 @@ kbd {
   z-index: 260;
   box-sizing: border-box;
   width: max-content;
-  max-width: calc(100vw - 16px);
+  max-width: min(380px, calc(100vw - 16px));
   min-width: 0;
   max-height: min(300px, calc(100vh - 48px));
   transform: translateX(-50%);
@@ -5301,10 +5441,17 @@ kbd {
 
 .app-dock-path-popover button.is-marquee:hover .app-dock-path-popover-label,
 .app-dock-path-popover button.is-marquee:focus-visible .app-dock-path-popover-label {
+  flex: 0 0 auto;
   width: max-content;
+  min-width: 100%;
   max-width: none;
   text-overflow: clip;
-  animation: ancestry-label-marquee 4s ease-in-out 300ms infinite alternate;
+  animation: ancestry-label-marquee 4s ease-in-out 420ms infinite alternate;
+}
+
+.app-dock-path-popover button.is-marquee:hover .app-dock-path-popover-label,
+.app-dock-path-popover button.is-marquee:focus-visible .app-dock-path-popover-label {
+  animation-duration: max(5s, calc(var(--marquee-distance) / 64px * 1s));
 }
 
 @keyframes ancestry-label-marquee {
@@ -5417,6 +5564,7 @@ kbd {
 .app-dock-brand {
   position: relative;
   border-right: 0;
+  flex: 0 0 auto;
 }
 
 .app-dock-brand::after,
@@ -5439,6 +5587,7 @@ kbd {
 .app-dock .app-dock-files {
   position: relative;
   margin-inline: 0;
+  flex: 0 0 auto;
 }
 
 /* Keep the Files boundary explicit when the path is empty. The separator uses
@@ -5458,6 +5607,7 @@ kbd {
 .app-dock-history {
   position: relative;
   border-left: 0;
+  flex: 0 0 auto;
   /* Keep the Undo glyph the same distance from the preceding Files rule as
      the other dock controls are from their group separators. */
   padding-left: 0.5px;
@@ -5474,6 +5624,7 @@ kbd {
 .app-dock > button.app-dock-settings {
   margin-left: 0;
   padding-left: 10px;
+  flex: 0 0 auto;
 }
 
 .app-dock .app-dock-settings::before {
@@ -5775,6 +5926,10 @@ kbd {
   cursor: pointer;
 }
 
+.files-tree-open {
+  overflow: hidden;
+}
+
 .files-tree-open:focus-visible,
 .files-result-row:focus-visible {
   outline: 0;
@@ -5867,6 +6022,7 @@ kbd {
   display: grid;
   gap: 2px;
   padding: 0 8px 4px 29px;
+  overflow: hidden;
 }
 
 .files-alias-links button {
@@ -5886,6 +6042,58 @@ kbd {
 .files-alias-links button:focus-visible {
   outline: 0;
   color: var(--accent);
+}
+
+.files-tree-title.is-marquee:hover,
+.files-tree-title.is-marquee:focus-visible,
+.files-result-main strong.is-marquee:hover,
+.files-result-main strong.is-marquee:focus-visible,
+.files-alias-links button.is-marquee:hover,
+.files-alias-links button.is-marquee:focus-visible {
+  max-width: none;
+  text-overflow: clip;
+  animation: files-label-marquee 5s ease-in-out 420ms infinite alternate;
+}
+
+.files-tree-title.is-marquee:hover,
+.files-tree-title.is-marquee:focus-visible,
+.files-result-main strong.is-marquee:hover,
+.files-result-main strong.is-marquee:focus-visible,
+.files-alias-links button.is-marquee:hover,
+.files-alias-links button.is-marquee:focus-visible {
+  animation-duration: max(5s, calc(var(--marquee-distance) / 64px * 1s));
+}
+
+.files-tree-title.is-marquee:hover,
+.files-tree-title.is-marquee:focus-visible {
+  flex: 0 0 auto;
+  width: max-content;
+}
+
+.files-result-main strong.is-marquee:hover,
+.files-result-main strong.is-marquee:focus-visible {
+  width: max-content;
+}
+
+.files-alias-links button.is-marquee:hover,
+.files-alias-links button.is-marquee:focus-visible {
+  width: max-content;
+}
+
+@keyframes files-label-marquee {
+  0%, 18% { transform: translateX(0); }
+  82%, 100% { transform: translateX(calc(-1 * var(--marquee-distance))); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .files-tree-title.is-marquee:hover,
+  .files-tree-title.is-marquee:focus-visible,
+  .files-result-main strong.is-marquee:hover,
+  .files-result-main strong.is-marquee:focus-visible,
+  .files-alias-links button.is-marquee:hover,
+  .files-alias-links button.is-marquee:focus-visible {
+    animation: none;
+  }
 }
 
 .files-empty-state {
@@ -5955,12 +6163,14 @@ kbd {
 .files-tree {
   --files-indent: 12px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 4px;
 }
 
 .files-results {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 4px;
 }

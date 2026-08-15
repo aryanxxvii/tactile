@@ -40,7 +40,7 @@ function DockPathButton({ item, onNavigate, current = false, overflow = false, c
       data-path-object-id={item.id}
       ref={buttonRef}
     >
-      {item.title}
+      <span className="app-dock-path-button-text">{item.title}</span>
     </button>
   );
 }
@@ -177,7 +177,7 @@ function DockPath({ path = [], onNavigatePath }) {
     return () => window.clearTimeout(timer);
   }, [pathKey, visiblePath]);
 
-  const openPathPopover = () => {
+const openPathPopover = () => {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
     const rect = overflowButtonRef.current?.getBoundingClientRect();
     if (rect) setPathAnchor({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
@@ -190,14 +190,16 @@ function DockPath({ path = [], onNavigatePath }) {
       setPathAnchor(null);
     }, PATH_CLOSE_DELAY);
   };
+  const keepPopoverOpen = () => {
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+  };
   const navigatePath = (item) => {
     onNavigatePath?.(item);
     setPathPopoverOpen(false);
     setPathAnchor(null);
   };
 
-  const renderPanel = (items, { entering = false, leaving = false, current = !leaving } = {}) => {
-    const panelOmitted = items === visiblePath ? omitted : [];
+const renderPanel = (items, { entering = false, leaving = false, current = !leaving } = {}) => {
     return (
       <div
         className={`app-dock-path-panel ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`.trim()}
@@ -226,17 +228,6 @@ function DockPath({ path = [], onNavigatePath }) {
                   expanded={!leaving && pathPopoverOpen}
                   buttonRef={leaving ? undefined : overflowButtonRef}
                 />
-                {!leaving && pathPopoverOpen && panelOmitted.length ? (
-                  <FullPathPopover
-                    id={pathPopoverId}
-                    path={path}
-                    anchorRect={pathAnchor}
-                    themeSource={overflowButtonRef.current}
-                    onNavigate={navigatePath}
-                    onPointerEnter={openPathPopover}
-                    onPointerLeave={closePathPopover}
-                  />
-                ) : null}
               </span>
             ) : (
               <DockPathButton
@@ -270,7 +261,7 @@ function DockPath({ path = [], onNavigatePath }) {
   return (
     <nav
       className={`app-dock-path ${transition ? "is-transitioning" : ""}`.trim()}
-      style={{ flex: "0 0 auto", width: "fit-content", paddingLeft: "6px", display: "inline-flex", alignItems: "center" }}
+      style={{ flex: "0 1 auto", minWidth: 0, width: "fit-content", paddingLeft: "6px", display: "inline-flex", alignItems: "center" }}
       aria-label="Object path"
     >
       {transition ? (
@@ -283,7 +274,18 @@ function DockPath({ path = [], onNavigatePath }) {
             {transitionParts.to.length ? renderPanel(transitionParts.to, { entering: true }) : null}
           </div>
         </>
-      ) : renderPanel(visiblePath)}
+) : renderPanel(visiblePath)}
+      {pathPopoverOpen && omitted.length ? (
+        <FullPathPopover
+          id={pathPopoverId}
+          path={path}
+          anchorRect={pathAnchor}
+          themeSource={overflowButtonRef.current}
+          onNavigate={navigatePath}
+          onPointerEnter={keepPopoverOpen}
+          onPointerLeave={closePathPopover}
+        />
+      ) : null}
     </nav>
   );
 }

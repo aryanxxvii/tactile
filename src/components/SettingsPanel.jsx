@@ -398,9 +398,9 @@ export function SettingsPanel({
             <div className="agents-settings" id="settings-panel-agents" role="tabpanel" aria-labelledby="settings-tab-agents">
               <div className="agents-settings-intro">
                 <IconSparkles size={30} stroke={1.35} />
-                <div>
+<div>
                   <h3>Workspace authoring</h3>
-                  <p>Give this prompt to an LLM to plan a Tactile workspace and return a validated payload.</p>
+                  <p>Give this prompt to an LLM (e.g. ChatGPT) to build a complete workspace folder or .tactile/.zip bundle — or extend your own without altering anything you made.</p>
                 </div>
               </div>
               <section className="workspace-authoring-prompt" aria-labelledby="workspace-authoring-prompt-title">

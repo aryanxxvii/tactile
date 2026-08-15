@@ -316,8 +316,12 @@ export function App() {
     if (!nativeRuntime || !hydrated || !nativeInvoke || !workspace.settings.nativeWorkspacePath) return undefined;
     const packageData = buildPortablePackage(workspace);
     const files = Object.entries(packageData.files)
-      .filter(([filePath, contents]) => filePath !== "workspace.json" && typeof contents === "string")
-      .map(([filePath, contents]) => ({ path: filePath, contents }));
+      .filter(([filePath, contents]) => filePath !== "workspace.json" && (typeof contents === "string" || contents?.dataUrl))
+      .map(([filePath, contents]) => ({
+        path: filePath,
+        contents: typeof contents === "string" ? contents : contents.dataUrl,
+        ...(typeof contents === "string" ? {} : { encoding: "data-url" }),
+      }));
     const pending = nativeSnapshotRef.current;
     pending.version += 1;
     pending.pending = {
