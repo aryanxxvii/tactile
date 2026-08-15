@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 440" role="img" aria-labelledby="title desc">
   <title id="title">Tactile</title>
   <desc id="desc">Tactile logo and wordmark.</desc>
-  <rect width="1600" height="440" fill="#F3F0E8"/>
-  <g transform="translate(560 130)">
-    <g fill="#B34D35" shape-rendering="geometricPrecision">
+  <rect x="24" y="24" width="1552" height="392" rx="32" fill="#F3F0E8"/>
+  <g transform="translate(804 220)">
+    <g transform="translate(-231 -53)" fill="#B34D35" shape-rendering="geometricPrecision">
       <circle cx="18" cy="18" r="4.3" opacity=".68"/><circle cx="32" cy="18" r="4.7" opacity=".82"/><circle cx="46" cy="18" r="5"/><circle cx="60" cy="18" r="5"/><circle cx="74" cy="18" r="4.7" opacity=".88"/><circle cx="88" cy="18" r="4.3" opacity=".72"/>
       <circle cx="11" cy="32" r="4" opacity=".56"/><circle cx="25" cy="32" r="4.7" opacity=".76"/><circle cx="39" cy="32" r="5" opacity=".92"/><circle cx="53" cy="32" r="5.1"/><circle cx="67" cy="32" r="5" opacity=".94"/><circle cx="81" cy="32" r="4.7" opacity=".8"/><circle cx="95" cy="32" r="4" opacity=".6"/>
       <circle cx="18" cy="46" r="4" opacity=".62"/><circle cx="32" cy="46" r="4.6" opacity=".8"/><circle cx="46" cy="46" r="4.9" opacity=".94"/><circle cx="60" cy="46" r="5.1"/><circle cx="74" cy="46" r="4.7" opacity=".9"/><circle cx="88" cy="46" r="4" opacity=".66"/>
       <circle cx="46" cy="60" r="4.7" opacity=".9"/><circle cx="60" cy="60" r="5"/><circle cx="46" cy="74" r="4.6" opacity=".88"/><circle cx="60" cy="74" r="4.9"/><circle cx="46" cy="88" r="4.3" opacity=".76"/><circle cx="60" cy="88" r="4.6" opacity=".9"/>
     </g>
-    <text x="180" y="78" fill="#252522" font-family="Public Sans, Inter, Arial, sans-serif" font-size="88" font-weight="650" letter-spacing="-3">Tactile</text>
+    <text x="-87" y="42" fill="#252522" font-family="Public Sans, Inter, Arial, sans-serif" font-size="88" font-weight="650" letter-spacing="-3" textLength="300" lengthAdjust="spacingAndGlyphs">Tactile</text>
   </g>
 </svg>
