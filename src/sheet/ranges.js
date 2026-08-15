@@ -61,6 +61,42 @@ function clipboardValue(cell) {
   return cell?.formula || cell?.value || "";
 }
 
+// Clipboard payloads carry formatting in a separate sentinel-delimited block so
+// plain value TSV (and cross-app spreadsheet copy/paste) stays byte-compatible.
+const STYLE_SEPARATOR = "⁂TACTILE-STYLE⁂";
+
+function styleToken(style) {
+  if (!style) return "";
+  const parts = [];
+  if (style.bold) parts.push("bold=1");
+  if (style.highlight) parts.push(`highlight=${style.highlight}`);
+  if (style.textColor) parts.push(`textColor=${style.textColor}`);
+  if (style.align) parts.push(`align=${style.align}`);
+  if (style.verticalAlign) parts.push(`verticalAlign=${style.verticalAlign}`);
+  if (Number.isFinite(style.fontSize)) parts.push(`fontSize=${style.fontSize}`);
+  return parts.join(";");
+}
+
+function parseStyleToken(token) {
+  if (!token) return null;
+  const style = {};
+  for (const pair of token.split(";")) {
+    if (!pair) continue;
+    const equalIndex = pair.indexOf("=");
+    if (equalIndex === -1) continue;
+    const key = pair.slice(0, equalIndex);
+    const value = pair.slice(equalIndex + 1);
+    if (key === "bold") style.bold = true;
+    else if (key === "fontSize") {
+      const size = Number(value);
+      if (Number.isFinite(size)) style.fontSize = size;
+    } else if (key === "highlight" || key === "textColor" || key === "align" || key === "verticalAlign") {
+      if (value) style[key] = value;
+    }
+  }
+  return Object.keys(style).length ? style : null;
+}
+
 function cellAt(sheet, row, column) {
   return sheet?.cells?.[cellId(row, column)]
     || sheet?.cells?.[`${row}:${column}`]
@@ -126,14 +162,23 @@ export function serializeRange(sheet, range) {
   const normalized = normalizeRange(range?.anchor, range?.focus);
   if (!normalized) return "";
   const lines = [];
+  let hasStyle = false;
   for (let row = normalized.rowStart; row <= normalized.rowEnd; row += 1) {
     const values = [];
+    const styles = [];
     for (let column = normalized.columnStart; column <= normalized.columnEnd; column += 1) {
-      values.push(clipboardValue(sheet.cells?.[cellId(row, column)]));
+      const cell = sheet.cells?.[cellId(row, column)];
+      values.push(clipboardValue(cell));
+      const token = styleToken(cell?.style);
+      if (token) hasStyle = true;
+      styles.push(token);
     }
     lines.push(values.join("\t"));
+    if (hasStyle) lines.push(styles.join("\t"));
   }
-  return lines.join("\n");
+  // A trailing marker tells pasteChanges a style block exists even if every
+  // style line was empty; without it a style-only block would be ambiguous.
+  return hasStyle ? `${lines.join("\n")}${STYLE_SEPARATOR}` : lines.join("\n");
 }
 
 export function parseClipboardGrid(text) {
@@ -146,23 +191,35 @@ export function parseClipboardGrid(text) {
 export function pasteChanges(startAddress, text) {
   const start = coordinatesFromAddress(startAddress);
   if (!start) return { changes: [], endAddress: startAddress };
-  const grid = parseClipboardGrid(text);
-  const width = Math.max(0, ...grid.map((row) => row.length));
+  const raw = String(text ?? "");
+  const hasStyleBlock = raw.includes(STYLE_SEPARATOR);
+  const body = hasStyleBlock ? raw.slice(0, raw.indexOf(STYLE_SEPARATOR)) : raw;
+  const grid = parseClipboardGrid(body);
+  // When a style block is present, value and style lines alternate row by row.
+  const valueRows = hasStyleBlock ? grid.filter((_, index) => index % 2 === 0) : grid;
+  const styleRows = hasStyleBlock ? grid.filter((_, index) => index % 2 === 1) : [];
+  const width = Math.max(0, ...valueRows.map((row) => row.length));
   const changes = [];
-  grid.forEach((values, rowOffset) => {
+  valueRows.forEach((values, rowOffset) => {
+    const styleTokens = styleRows[rowOffset] || [];
     for (let columnOffset = 0; columnOffset < width; columnOffset += 1) {
       const value = values[columnOffset] ?? "";
       const row = start.row + rowOffset;
       const column = start.column + columnOffset;
+      const style = parseStyleToken(styleTokens[columnOffset]);
+      const basePatch = value.startsWith("=")
+        ? { formula: value, value: "", embed: null }
+        : { value, formula: "", embed: null };
+      // Omit `style` entirely when the source had none, so spreading the patch in
+      // commitCellChanges does not overwrite an existing destination style with
+      // `undefined`.
       changes.push({
         cellId: cellId(row, column),
-        patch: value.startsWith("=")
-          ? { formula: value, value: "", embed: null }
-          : { value, formula: "", embed: null },
+        patch: style ? { ...basePatch, style } : basePatch,
       });
     }
   });
-  const finalRow = start.row + Math.max(0, grid.length - 1);
+  const finalRow = start.row + Math.max(0, valueRows.length - 1);
   const finalColumn = start.column + Math.max(0, width - 1);
   return {
     changes,
