@@ -1,16 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 440" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" role="img" aria-labelledby="title desc">
   <title id="title">Tactile</title>
-  <desc id="desc">Tactile logo and wordmark.</desc>
-  <rect x="24" y="24" width="1552" height="392" rx="32" fill="#F3F0E8"/>
-  <g transform="translate(804 220)">
-    <g transform="translate(-231 -53)" fill="#B34D35" shape-rendering="geometricPrecision">
-      <circle cx="18" cy="18" r="4.3" opacity=".68"/><circle cx="32" cy="18" r="4.7" opacity=".82"/><circle cx="46" cy="18" r="5"/><circle cx="60" cy="18" r="5"/><circle cx="74" cy="18" r="4.7" opacity=".88"/><circle cx="88" cy="18" r="4.3" opacity=".72"/>
-      <circle cx="11" cy="32" r="4" opacity=".56"/><circle cx="25" cy="32" r="4.7" opacity=".76"/><circle cx="39" cy="32" r="5" opacity=".92"/><circle cx="53" cy="32" r="5.1"/><circle cx="67" cy="32" r="5" opacity=".94"/><circle cx="81" cy="32" r="4.7" opacity=".8"/><circle cx="95" cy="32" r="4" opacity=".6"/>
-      <circle cx="18" cy="46" r="4" opacity=".62"/><circle cx="32" cy="46" r="4.6" opacity=".8"/><circle cx="46" cy="46" r="4.9" opacity=".94"/><circle cx="60" cy="46" r="5.1"/><circle cx="74" cy="46" r="4.7" opacity=".9"/><circle cx="88" cy="46" r="4" opacity=".66"/>
-      <circle cx="46" cy="60" r="4.7" opacity=".9"/><circle cx="60" cy="60" r="5"/><circle cx="46" cy="74" r="4.6" opacity=".88"/><circle cx="60" cy="74" r="4.9"/><circle cx="46" cy="88" r="4.3" opacity=".76"/><circle cx="60" cy="88" r="4.6" opacity=".9"/>
-    </g>
-    <g transform="translate(-87 0) scale(1 1.3)">
-      <text x="0" y="0" fill="#252522" font-family="Public Sans Variable, Segoe UI Variable, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-2" dominant-baseline="middle">Tactile</text>
-    </g>
+  <desc id="desc">The Tactile dotted mark and wordmark.</desc>
+
+  <!-- A solid Paper field keeps the banner dependable on light and dark pages. -->
+  <rect width="1600" height="400" fill="#F3F0E8"/>
+
+  <!-- Canonical dotted tactile-field mark. -->
+  <g transform="translate(549 136) scale(2)" fill="#B34D35" shape-rendering="geometricPrecision">
+    <circle cx="12" cy="12" r="2.55" opacity=".66"/><circle cx="20" cy="12" r="2.75" opacity=".78"/><circle cx="28" cy="12" r="2.9" opacity=".9"/><circle cx="36" cy="12" r="2.9"/><circle cx="44" cy="12" r="2.75" opacity=".9"/><circle cx="52" cy="12" r="2.55" opacity=".72"/>
+    <circle cx="8" cy="20" r="2.4" opacity=".54"/><circle cx="16" cy="20" r="2.75" opacity=".76"/><circle cx="24" cy="20" r="2.9" opacity=".9"/><circle cx="32" cy="20" r="3"/><circle cx="40" cy="20" r="2.9" opacity=".95"/><circle cx="48" cy="20" r="2.75" opacity=".78"/><circle cx="56" cy="20" r="2.4" opacity=".58"/>
+    <circle cx="12" cy="28" r="2.35" opacity=".6"/><circle cx="20" cy="28" r="2.65" opacity=".76"/><circle cx="28" cy="28" r="2.85" opacity=".9"/><circle cx="36" cy="28" r="2.95"/><circle cx="44" cy="28" r="2.7" opacity=".88"/><circle cx="52" cy="28" r="2.35" opacity=".64"/>
+    <circle cx="28" cy="36" r="2.75" opacity=".9"/><circle cx="36" cy="36" r="2.85"/>
+    <circle cx="28" cy="44" r="2.7" opacity=".88"/><circle cx="36" cy="44" r="2.8"/>
+    <circle cx="28" cy="52" r="2.55" opacity=".76"/><circle cx="36" cy="52" r="2.65" opacity=".9"/>
+  </g>
+
+  <!--
+    Public Sans Variable, weight 620, converted to outlines so GitHub cannot
+    substitute a system font. Native kerning plus the app's -0.035em title
+    tracking are baked into the glyph positions below.
+  -->
+  <g transform="translate(697 242.5) scale(.058 -.058)" fill="#252522">
+    <path d="M488.5625 0V1218.625H40.9375V1446H1174.875V1218.625H742.5V0Z"/>
+    <path transform="translate(1025)" d="M436.125 -20Q336.9375 -20 258.5 16.46875Q180.0625 52.9375 135.0625 122.0625Q90.0625 191.1875 90.0625 289.875Q90.0625 460.5 214.375 547.59375Q338.6875 634.6875 609.75 638.625L759.3125 642.125V710.625Q759.3125 790.8125 712.125 835.46875Q664.9375 880.125 565.6875 879Q492.875 878.4375 431.75 844.90625Q370.625 811.375 349.6875 732.125H135.75Q141.75 839.6875 198.03125 911.25Q254.3125 982.8125 352.0625 1018.40625Q449.8125 1054 577.5625 1054Q727.375 1054 821.0625 1014.96875Q914.75 975.9375 958.5 902.34375Q1002.25 828.75 1002.25 725V0H789.625L769.1875 184.125Q714 68.625 629.8125 24.3125Q545.625 -20 436.125 -20ZM518.875 150.75Q563.0625 150.75 605.71875 166.65625Q648.375 182.5625 682.78125 210.125Q717.1875 237.6875 737.96875 271.9375Q758.75 306.1875 759.3125 343V504.5L636.5 502.75Q546.875 501.4375 478.09375 482.71875Q409.3125 464 370.28125 423.53125Q331.25 383.0625 331.25 315Q331.25 237.75 384.96875 194.25Q438.6875 150.75 518.875 150.75Z"/>
+    <path transform="translate(2078)" d="M572.6875 -20Q430.375 -20 319.375 42.84375Q208.375 105.6875 145.125 225.03125Q81.875 344.375 81.875 512.875Q81.875 673.75 141.5625 795.53125Q201.25 917.3125 311.59375 985.65625Q421.9375 1054 572.6875 1054Q695.5 1054 788.125 1004.90625Q880.75 955.8125 936.09375 870.125Q991.4375 784.4375 1001.3125 675H786.9375Q779.4375 721.0625 753.53125 763.1875Q727.625 805.3125 683 832.03125Q638.375 858.75 574.375 858.75Q460.875 858.75 390.21875 773.9375Q319.5625 689.125 319.5625 515.125Q319.5625 353.5625 386.9375 258.34375Q454.3125 163.125 578.875 163.125Q642.3125 163.125 686.65625 191.53125Q731 219.9375 756.625 262.0625Q782.25 304.1875 789.1875 345.75H998.5Q989.75 240.125 933.84375 157.25Q877.9375 74.375 785.59375 27.1875Q693.25 -20 572.6875 -20Z"/>
+    <path transform="translate(3062)" d="M556.5625 -9Q430.75 -9 361.9375 24.0625Q293.125 57.125 266.34375 117.6875Q239.5625 178.25 239.5625 261.25V855.75H71.5625V1034H247.4375L310.6875 1342H492.375V1035.125H723.1875V855.75H492.375L493.5 271.375Q493.5 226.9375 503.75 205.96875Q514 185 536.96875 178.75Q559.9375 172.5 597.9375 172.5H727.5625V13.375Q707.4375 5.125 666.46875 -1.9375Q625.5 -9 556.5625 -9Z"/>
+    <path transform="translate(3805)" d="M138.9375 0V1034H381.625V0ZM135 1208.125V1445.125H384.6875V1208.125Z"/>
+    <path transform="translate(4264)" d="M440.0625 -15.875Q336.875 -15.875 275.625 9.59375Q214.375 35.0625 184.0625 77.5Q153.75 119.9375 144.375 173.03125Q135 226.125 135 281.375V1486H383.4375V310.625Q383.4375 246.0625 410.09375 209.125Q436.75 172.1875 500 166L551.1875 163.75V5.625Q524.0625 -3.4375 495.15625 -9.65625Q466.25 -15.875 440.0625 -15.875Z"/>
+    <path transform="translate(4776)" d="M596.1875 -20Q446.125 -20 331.9375 43.75Q217.75 107.5 153.90625 225.5Q90.0625 343.5 90.0625 505.75Q90.0625 663.8125 148.1875 787.71875Q206.3125 911.625 316.375 982.8125Q426.4375 1054 581.9375 1054Q735.625 1054 840.53125 988.8125Q945.4375 923.625 999.3125 806.5Q1053.1875 689.375 1053.1875 533.75V458.625H342.125Q341.5625 372.5625 369.875 306.65625Q398.1875 240.75 453.90625 203.5Q509.625 166.25 590.5625 166.25Q674.1875 166.25 736.15625 203.3125Q798.125 240.375 819.5 318.75H1050.1875Q1032.4375 210.3125 964 134.46875Q895.5625 58.625 798.5625 19.3125Q701.5625 -20 596.1875 -20ZM341.875 614.5H814.9375Q814.9375 686.75 789.1875 745.625Q763.4375 804.5 711.625 838.9375Q659.8125 873.375 581.0625 873.375Q503 873.375 449.65625 835.65625Q396.3125 797.9375 368.875 738.40625Q341.4375 678.875 341.875 614.5Z"/>
   </g>
 </svg>

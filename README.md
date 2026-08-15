@@ -1,4 +1,4 @@
-![Tactile - Fully local dimensional workspace](docs/tactile-banner.svg)
+![Tactile](docs/tactile-banner.svg)
 
 Tactile is a fully local grid for notes, data, and files.
 
