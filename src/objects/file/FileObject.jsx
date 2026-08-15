@@ -63,6 +63,25 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
     [asset?.dataUrl, object.source, object.type],
   );
 
+  // The Tauri desktop shell injects a strict Content-Security-Policy that the
+  // app webview enforces process-wide. A srcDoc iframe has no origin of its own
+  // and inherits that policy, so inline <script> blocks authored by the user
+  // are blocked in the native build even though the browser dev server allows
+  // them. Inject a permissive meta CSP into the document head so the frame
+  // governs itself and user JavaScript actually runs everywhere.
+  const sandboxedHtml = useMemo(() => {
+    if (object.type !== "html" || !htmlSource) return "";
+    const policy = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; media-src * data: blob:; frame-src *;";
+    const metaTag = `<meta http-equiv="Content-Security-Policy" content="${policy}">`;
+    if (/<head[^>]*>/i.test(htmlSource)) {
+      return htmlSource.replace(/<head[^>]*>/i, (match) => `${match}\n${metaTag}`);
+    }
+    if (/<html[^>]*>/i.test(htmlSource)) {
+      return htmlSource.replace(/<html[^>]*>/i, (match) => `${match}\n<head>\n${metaTag}\n</head>`);
+    }
+    return `<!doctype html><html><head>${metaTag}</head>${htmlSource}`;
+  }, [htmlSource, object.type]);
+
   useEffect(() => {
     const blob = dataUrlBlob(asset?.dataUrl, asset?.mime);
     if (!blob || typeof URL?.createObjectURL !== "function") {
@@ -126,7 +145,7 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
             <PdfViewer asset={asset} fileName={asset.fileName || object.title} title={object.title} onChooseFile={() => fileInputRef.current?.click()} />
           ) : null}
           {object.type === "html" && htmlSource ? (
-            <iframe srcDoc={htmlSource} title={object.title} sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts" />
+            <iframe srcDoc={sandboxedHtml} title={object.title} sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts" />
           ) : null}
           {!asset?.dataUrl && !htmlSource ? (
             <div className="file-empty-state">
