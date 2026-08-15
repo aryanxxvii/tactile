@@ -49,7 +49,7 @@ npx tauri dev
 
 ## Workspace files
 
-Tactile keeps the local copy inspectable. Sheets, Markdown, assets, themes, and workspace metadata are stored separately. The portable format is documented in [`docs/FILE_FORMAT.md`](docs/FILE_FORMAT.md).
+Tactile keeps the local copy inspectable. Sheets, Markdown, assets, themes, and workspace metadata are stored separately. The file layout is documented in [`docs/FILE_FORMAT.md`](docs/FILE_FORMAT.md).
 
 Settings includes a versioned **Workspace authoring prompt** for asking an LLM to create a workspace, for example:
 
