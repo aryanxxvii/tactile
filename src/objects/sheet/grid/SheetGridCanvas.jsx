@@ -4,6 +4,7 @@ import { preloadObjectRenderer } from "../../objectRegistry.jsx";
 import { formatFormulaResult } from "../../../sheet/formulas.js";
 import { formatCellValue } from "../../../sheet/formatting.js";
 import { cellAddress, cellId, columnLabel, coordinatesFromAddress } from "../../../sheet/coordinates.js";
+import { isBareUrlValue } from "../../../model.js";
 import { normalizeRange } from "../../../sheet/ranges.js";
 import { conditionalToneForCoordinates, compileConditionalRules } from "./conditionalRuleProjection.js";
 import { EmbeddedCellSlot, SheetCellSlot } from "./SheetCellSlot.jsx";
@@ -358,11 +359,14 @@ export function SheetGridCanvas({
           const embed = cell?.embed;
           const calculatedValue = formula ? formatFormulaResult(formulaValues.get(address)) : rawValue;
           const embeddedTitle = embed ? workspaceObjects?.[embed.objectId]?.title : "";
+          const linkUrl = !embed && !formula && isBareUrlValue(rawValue) ? rawValue : "";
           const displayValue = embed
             ? embeddedTitle || rawValue || "Embedded object"
-            : formatCellValue(calculatedValue, cell?.style);
+            : linkUrl
+              ? rawValue
+              : formatCellValue(calculatedValue, cell?.style);
           const fontSize = Number(cell?.style?.fontSize);
-          const Slot = embed ? EmbeddedCellSlot : SheetCellSlot;
+          const Slot = embed || linkUrl ? EmbeddedCellSlot : SheetCellSlot;
           return (
             <Slot
               key={id}
@@ -382,6 +386,7 @@ export function SheetGridCanvas({
               embedObject={embed?.objectId ? workspaceObjects?.[embed.objectId] : null}
               embedType={embed?.type || ""}
               embedLinkId={embed?.linkId || ""}
+              linkUrl={linkUrl}
               role={cell?.role || ""}
               styleBold={Boolean(cell?.style?.bold)}
               styleHighlight={cell?.style?.highlight || ""}

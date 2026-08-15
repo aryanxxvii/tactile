@@ -3,7 +3,7 @@
  * The JSDoc shapes are consumed by editors and can be promoted to TypeScript
  * without changing the object-type boundary.
  *
- * @typedef {"sheet" | "markdown" | "document" | "pdf" | "image" | "video" | "html" | "svg"} ObjectTypeKey
+ * @typedef {"sheet" | "markdown" | "document" | "pdf" | "image" | "video" | "html" | "svg" | "link"} ObjectTypeKey
  *
  * @typedef {Object} RendererDefinition
  * @property {() => Promise<{default?: Function, [key: string]: Function}>} load

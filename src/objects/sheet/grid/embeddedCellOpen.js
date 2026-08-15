@@ -7,6 +7,7 @@ export function useEmbeddedCellOpen({
   embedObjectId,
   embedType,
   embedLinkId,
+  linkUrl,
   sourceLabel,
   onOpenObject,
 }) {
@@ -21,29 +22,34 @@ export function useEmbeddedCellOpen({
   useEffect(() => clearTimer, [clearTimer]);
 
   const open = useCallback((event, mode, sourceElement = event.currentTarget) => {
-    if (!embedObjectId) return;
+    if (!embedObjectId && !linkUrl) return;
     onOpenObject?.({
-      objectId: embedObjectId,
-      linkId: embedLinkId,
+      ...(embedObjectId
+        ? {
+            objectId: embedObjectId,
+            linkId: embedLinkId,
+          }
+        : {}),
+      ...(linkUrl ? { linkUrl } : {}),
       sourceObjectId: objectId,
       sourceCellId: cellId,
       sourceAddress: address,
       sourceLabel,
-      sourceType: embedType,
+      sourceType: embedType || "link",
       sourceElement,
       mode,
     });
-  }, [address, cellId, embedLinkId, embedObjectId, embedType, objectId, onOpenObject, sourceLabel]);
+  }, [address, cellId, embedLinkId, embedObjectId, embedType, linkUrl, objectId, onOpenObject, sourceLabel]);
 
   const onClick = useCallback((event) => {
-    if (!embedObjectId) return;
+    if (!embedObjectId && !linkUrl) return;
     clearTimer();
     const sourceElement = event.currentTarget;
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null;
       open(null, "floating", sourceElement);
     }, 170);
-  }, [clearTimer, embedObjectId, open]);
+  }, [clearTimer, embedObjectId, linkUrl, open]);
 
   const onDoubleClick = useCallback((event) => {
     clearTimer();

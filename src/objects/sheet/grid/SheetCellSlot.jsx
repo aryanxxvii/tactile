@@ -19,6 +19,7 @@ const CellSlot = memo(function CellSlot({
   embedObject,
   embedType,
   embedLinkId,
+  linkUrl,
   role,
   styleBold,
   styleHighlight,
@@ -72,6 +73,7 @@ const CellSlot = memo(function CellSlot({
         embedObject={embedObject}
         embedType={embedType}
         embedLinkId={embedLinkId}
+        linkUrl={linkUrl}
         role={role}
         styleBold={styleBold}
         styleHighlight={styleHighlight}
@@ -121,6 +123,7 @@ export const EmbeddedCellSlot = memo(function EmbeddedCellSlot(props) {
     embedObjectId: props.embedObjectId,
     embedType: props.embedType,
     embedLinkId: props.embedLinkId,
+    linkUrl: props.linkUrl,
     sourceLabel: props.displayValue,
     onOpenObject: props.onOpenObject,
   });

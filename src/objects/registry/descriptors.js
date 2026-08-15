@@ -1,5 +1,6 @@
 import {
   IconCode,
+  IconExternalLink,
   IconFileTypePdf,
   IconLayoutGrid,
   IconMovie,
@@ -107,5 +108,12 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
     icon: IconVectorBezier,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
+  }),
+  link: descriptor({
+    type: "link",
+    label: "Link",
+    icon: IconExternalLink,
+    renderer: renderer("../link/LinkObject.jsx", () => import("../link/LinkObject.jsx").then((module) => module.LinkObject)),
+    assetPolicy: noAssetPolicy,
   }),
 });

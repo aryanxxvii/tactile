@@ -208,6 +208,37 @@ fn workspace_open_directory(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn workspace_open_url(url: String) -> Result<(), String> {
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("only http and https addresses may be opened".to_owned());
+    }
+
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = std::process::Command::new("cmd");
+        command.arg("/C").arg("start").arg("").arg(&url);
+        command
+    };
+    #[cfg(target_os = "macos")]
+    let mut command = {
+        let mut command = std::process::Command::new("open");
+        command.arg(&url);
+        command
+    };
+    #[cfg(target_os = "linux")]
+    let mut command = {
+        let mut command = std::process::Command::new("xdg-open");
+        command.arg(&url);
+        command
+    };
+
+    command
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn workspace_write_snapshot(
     app: AppHandle,
     path: String,
@@ -260,6 +291,7 @@ pub fn run() {
             workspace_get_last_path,
             workspace_set_last_path,
             workspace_open_directory,
+            workspace_open_url,
             workspace_write_snapshot,
         ])
         .setup(|app| {

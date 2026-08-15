@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { IconExternalLink } from "@tabler/icons-react";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { FORMULA_CATALOG } from "../../sheet/formulas.js";
 import {
@@ -65,6 +66,7 @@ export const SheetCell = memo(function SheetCell({
   embedObject,
   embedType,
   embedLinkId,
+  linkUrl,
   role,
   styleBold,
   styleHighlight,
@@ -102,10 +104,11 @@ export const SheetCell = memo(function SheetCell({
   const inlineEditorRef = useRef(null);
   const [inlineQuery, setInlineQuery] = useState(null);
   const [inlineActiveIndex, setInlineActiveIndex] = useState(0);
-  const localDraft = useLocalCellDraft(cellRef, cellId);
+const localDraft = useLocalCellDraft(cellRef, cellId);
   const localValue = localDraft?.formula ? localDraft.displayValue || localDraft.formula : localDraft?.value;
   const shownValue = localDraft ? localValue : displayValue ?? value;
-  const hasEmbed = Boolean(embedObjectId);
+  const isLinkCell = Boolean(linkUrl) && !embedObjectId;
+  const hasEmbed = Boolean(embedObjectId) || isLinkCell;
   const inlineEditing = inlineEditingCellId === cellId && !hasEmbed;
   const inlineValue = localDraft
     ? (localDraft.formula || localDraft.value || "")
@@ -188,11 +191,11 @@ export const SheetCell = memo(function SheetCell({
       className={`sheet-cell ${selected ? "is-selected" : ""} ${multiSelected ? "is-multi-selected" : ""} ${dropTarget ? "is-object-drop-target" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${hasEmbed ? "is-embedded" : ""} ${role === "heading" ? "is-table-heading" : ""} ${role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${styleBold ? "is-bold" : ""} ${styleHighlight ? `highlight-${styleHighlight}` : ""} ${styleTextColor ? `text-${styleTextColor}` : ""} ${styleAlign ? `align-${styleAlign}` : ""} ${styleVerticalAlign ? `align-${styleVerticalAlign}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
       role="gridcell"
       aria-selected={selected}
-      aria-label={`${address}${shownValue ? `, ${shownValue}` : ""}${hasEmbed ? ", embedded object" : ""}`}
+      aria-label={`${address}${shownValue ? `, ${shownValue}` : ""}${hasEmbed ? (isLinkCell ? ", link" : ", embedded object") : ""}`}
       tabIndex={selected ? 0 : -1}
       data-object-id={objectId}
       data-cell-address={address}
-      draggable={hasEmbed}
+      draggable={Boolean(embedObjectId)}
       style={cellStyle}
       onDragStart={(event) => {
         if (!hasEmbed) return;
@@ -284,8 +287,10 @@ export const SheetCell = memo(function SheetCell({
         }
       }}
     >
-      <span className="cell-content">
-        {hasEmbed ? (
+<span className="cell-content">
+        {isLinkCell ? (
+          <IconExternalLink className="embed-icon" size={14} stroke={1.55} aria-hidden="true" />
+        ) : hasEmbed ? (
           <ObjectGlyph
             item={embedObject || { type: embedType }}
             className="embed-icon"

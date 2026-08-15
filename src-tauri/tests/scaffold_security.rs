@@ -23,7 +23,7 @@ fn native_build_uses_the_existing_vite_client_output() {
 }
 
 #[test]
-fn production_csp_has_no_remote_content_sources() {
+fn production_csp_limits_remote_content_to_link_previews() {
     let config = config();
     let csp = config["app"]["security"]["csp"]
         .as_str()
@@ -31,11 +31,11 @@ fn production_csp_has_no_remote_content_sources() {
 
     assert!(csp.contains("default-src 'self'"));
     assert!(csp.contains("object-src 'none'"));
-    assert!(csp.contains("frame-src 'self' asset: blob: data:"));
+    assert!(csp.contains("frame-src 'self' asset: blob: data: https: http:"));
     assert!(csp.contains("script-src 'self'"));
-    assert!(!csp.contains("http:"));
-    assert!(!csp.contains("https:"));
-    assert!(!csp.contains("ws:"));
+    assert!(csp.contains("connect-src 'self'"));
+    assert!(csp.contains("img-src 'self'"));
+    assert!(csp.contains("media-src 'self'"));
     assert!(!csp.contains("wss:"));
 }
 

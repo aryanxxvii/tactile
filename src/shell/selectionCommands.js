@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { materializeCell, usedSheetBounds } from "../model.js";
+import { isBareUrlValue, materializeCell, usedSheetBounds } from "../model.js";
 import { cellAddress, coordinatesFromAddress, moveAddress } from "../sheet/coordinates.js";
 import { cellIdsInRange, normalizeRange, pasteChanges, rangeLabel, serializeRange } from "../sheet/ranges.js";
 
@@ -157,6 +157,7 @@ export function useSelectionCommands({
   workspace,
   layers,
   openObject,
+  openLinkCell,
   showNotice,
   updateCells,
   clearCells,
@@ -305,23 +306,38 @@ export function useSelectionCommands({
     const activeObject = workspace.objects[activeLayer.objectId];
     if (activeObject?.type !== "sheet") return;
     const cell = selectedCellFor(activeObject);
-    if (!cell?.embed) return;
+    if (!cell) return;
 
     const selector = `[data-object-id="${activeObject.id}"][data-cell-address="${cell.address}"]`;
     const sourceElement = document.querySelector(selector);
     if (!sourceElement) return;
-    openObject({
-      objectId: cell.embed.objectId,
-      linkId: cell.embed.linkId,
-      sourceObjectId: activeObject.id,
-      sourceCellId: cell.id,
-      sourceAddress: cell.address,
-      sourceLabel: workspace.objects[cell.embed.objectId]?.title || cell.value || "Embedded object",
-      sourceType: cell.embed.type,
-      sourceElement,
-      mode: "floating",
-    });
-  }, [layers, openObject, selectedCellFor, workspace.objects]);
+    if (cell.embed) {
+      openObject({
+        objectId: cell.embed.objectId,
+        linkId: cell.embed.linkId,
+        sourceObjectId: activeObject.id,
+        sourceCellId: cell.id,
+        sourceAddress: cell.address,
+        sourceLabel: workspace.objects[cell.embed.objectId]?.title || cell.value || "Embedded object",
+        sourceType: cell.embed.type,
+        sourceElement,
+        mode: "floating",
+      });
+      return;
+    }
+    if (isBareUrlValue(cell.value)) {
+      openLinkCell?.({
+        sourceObjectId: activeObject.id,
+        sourceCellId: cell.id,
+        sourceAddress: cell.address,
+        sourceLabel: cell.value,
+        sourceType: "link",
+        linkUrl: cell.value,
+        sourceElement,
+        mode: "floating",
+      });
+    }
+  }, [layers, openLinkCell, openObject, selectedCellFor, workspace.objects]);
 
   const moveSelection = useCallback((rowDelta, columnDelta, extend = false) => {
     const activeLayer = layers[layers.length - 1];

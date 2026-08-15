@@ -24,6 +24,7 @@ export const OBJECT_TYPE_NAMES = {
   video: "Video",
   html: "HTML",
   svg: "SVG",
+  link: "Link",
 };
 
 export function createId(prefix = "object") {
@@ -48,6 +49,23 @@ export function createCellRecord(row, column, patch = {}) {
     embed: null,
     ...patch,
   };
+}
+
+/**
+ * A bare URL is an http(s) address that fills the whole cell. Such a value
+ * behaves like an embedded link object: it opens in a floating or expanded
+ * window and can also be handed to the system browser.
+ */
+export function isBareUrlValue(value) {
+  return typeof value === "string" && /^https?:\/\/\S+$/i.test(value.trim());
+}
+
+export function bareUrlTitle(url) {
+  try {
+    return new URL(url).hostname || url;
+  } catch {
+    return url;
+  }
 }
 
 export function materializeCell(sheet, row, column) {
@@ -507,6 +525,56 @@ export function createEmbeddedObject(workspace, {
     embed: {
       objectId: object.id,
       type: object.type,
+      linkId,
+      relation: "containment",
+    },
+  });
+  object.parent = {
+    linkId,
+    parentObjectId,
+    parentCellId: cell.id,
+    sourceAddress: cell.address,
+  };
+  const now = new Date().toISOString();
+  return {
+    object,
+    workspace: repairWorkspaceTopology({
+      ...workspace,
+      updatedAt: now,
+      objects: {
+        ...workspace.objects,
+        [parentObjectId]: {
+          ...parent,
+          cells: { ...parent.cells, [cell.id]: cell },
+        },
+        [object.id]: object,
+      },
+    }),
+  };
+}
+
+export function createEmbeddedLink(workspace, {
+  parentObjectId,
+  parentCellId,
+  url,
+}) {
+  const parent = workspace.objects[parentObjectId];
+  if (parent?.type !== "sheet") return { workspace, object: null };
+  const coordinates = coordinatesFromCellId(parentCellId);
+  if (!coordinates) return { workspace, object: null };
+  const address = cellAddress(coordinates.row, coordinates.column);
+  const object = createObjectForType("link", {
+    title: bareUrlTitle(url),
+    url,
+  });
+  const linkId = createId("link");
+  const cell = createCellRecord(coordinates.row, coordinates.column, {
+    ...(parent.cells[parentCellId] || {}),
+    value: object.title,
+    formula: "",
+    embed: {
+      objectId: object.id,
+      type: "link",
       linkId,
       relation: "containment",
     },

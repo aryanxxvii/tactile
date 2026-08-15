@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { getObjectTypeDefinition, listObjectTypeDefinitions } from "../../../src/objects/registry/index.js";
 
-const EXPECTED_TYPES = ["sheet", "markdown", "document", "pdf", "image", "video", "html", "svg"];
+const EXPECTED_TYPES = ["sheet", "markdown", "document", "pdf", "image", "video", "html", "svg", "link"];
 
 test("registers every existing object type with a lazy renderer contract", () => {
   const definitions = listObjectTypeDefinitions();

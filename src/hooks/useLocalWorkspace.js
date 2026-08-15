@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DEFAULT_COLUMNS,
   DEFAULT_ROWS,
+  bareUrlTitle,
   createBlankWorkspace,
   createCellRecord,
   createId,
@@ -9,6 +10,7 @@ import {
   deleteObjectFromWorkspace,
   generatedObjectTitle,
   inferFileObjectType,
+  isBareUrlValue,
   isCellUsed,
   normalizeWorkspace,
 } from "../model.js";
@@ -424,6 +426,47 @@ export function useLocalWorkspace() {
     return created;
   }, [commitWorkspace]);
 
+  const createEmbeddedLink = useCallback((parentObjectId, parentCellId, url) => {
+    const coordinates = coordinatesFromCellId(parentCellId);
+    if (!coordinates || !isBareUrlValue(url)) return null;
+    const address = cellAddress(coordinates.row, coordinates.column);
+    const created = createObjectForType("link", {
+      title: bareUrlTitle(url),
+      url,
+    });
+    const linkId = createId("link");
+    created.parent = {
+      linkId,
+      parentObjectId,
+      parentCellId,
+      sourceAddress: address,
+    };
+    commitWorkspace((current) => {
+      const parent = current.objects[parentObjectId];
+      if (parent?.type !== "sheet") return current;
+      const cell = createCellRecord(coordinates.row, coordinates.column, {
+        ...(parent.cells[parentCellId] || {}),
+        value: created.title,
+        formula: "",
+        embed: {
+          objectId: created.id,
+          type: "link",
+          linkId,
+          relation: "containment",
+        },
+      });
+      return touch(current, {
+        ...current.objects,
+        [parentObjectId]: {
+          ...parent,
+          cells: { ...parent.cells, [parentCellId]: cell },
+        },
+        [created.id]: created,
+      }, true);
+    }, `create:${parentObjectId}:${parentCellId}`);
+    return created;
+  }, [commitWorkspace]);
+
   const createObject = useCallback((type) => {
     if (type !== "sheet" && type !== "markdown") return null;
     const created = createObjectForType(type);
@@ -717,6 +760,7 @@ export function useLocalWorkspace() {
     clearCells,
     createObject,
     createEmbeddedObject,
+    createEmbeddedLink,
     createEmbeddedFile,
     replaceObjectFile,
     reparentObject,

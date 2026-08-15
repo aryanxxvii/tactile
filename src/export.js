@@ -96,6 +96,9 @@ export function buildPortablePackage(workspaceInput) {
     } else if (object.type === "markdown") {
       record.file = `${folder}/content.md`;
       files[record.file] = object.content || "";
+    } else if (object.type === "link") {
+      record.url = object.url || "";
+      record.source = object.source || "";
     } else {
       const asset = object.assetId ? workspace.assets[object.assetId] : null;
       const extension = extensionForObject(object, asset);
@@ -262,6 +265,18 @@ export async function workspaceFromZip(input) {
         iconEmoji: record.iconEmoji || "",
         iconColor: record.iconColor || "",
         content: record.file && zip.file(record.file) ? await zip.file(record.file).async("text") : "",
+      };
+    } else if (record.type === "link") {
+      objects[record.id] = {
+        id: record.id,
+        type: "link",
+        title: record.title,
+        description: record.description || "",
+        parent: record.parent || null,
+        iconEmoji: record.iconEmoji || "",
+        iconColor: record.iconColor || "",
+        url: record.url || "",
+        source: record.source || "",
       };
     } else {
       const file = record.file ? zip.file(record.file) : null;

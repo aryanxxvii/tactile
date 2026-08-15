@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import JSZip from "jszip";
 import {
+  bareUrlTitle,
   createBlankWorkspace,
   createCellRecord,
+  createEmbeddedLink,
   createEmbeddedObject,
+  isBareUrlValue,
   usedSheetBounds,
 } from "../src/model.js";
 import {
@@ -92,6 +95,49 @@ test("embedded objects serialize as links and round-trip from a bundle", async (
   const childId = imported.objects.home.cells.r1c1.embed.objectId;
   assert.equal(imported.objects[childId].type, "markdown");
   assert.equal(imported.objects[childId].iconEmoji, "🧠");
+});
+
+test("bare http(s) URLs are detected as link cells with host titles", () => {
+  assert.equal(isBareUrlValue("https://example.com/path?q=1"), true);
+  assert.equal(isBareUrlValue("http://example.com"), true);
+  assert.equal(isBareUrlValue("   https://example.com  "), true);
+  assert.equal(isBareUrlValue("example.com"), false);
+  assert.equal(isBareUrlValue("https://"), false);
+  assert.equal(isBareUrlValue("mailto:hi@example.com"), false);
+  assert.equal(bareUrlTitle("https://Sub.Example.com/path"), "sub.example.com");
+  assert.equal(bareUrlTitle("not-a-url"), "not-a-url");
+});
+
+test("a bare-URL cell materializes an embedded link object that round-trips from a bundle", async () => {
+  let workspace = createBlankWorkspace({ id: "link-workspace" });
+  let created;
+  const parentCellId = "r1c2";
+  ({ workspace, object: created } = createEmbeddedLink(workspace, {
+    parentObjectId: "home",
+    parentCellId,
+    url: "https://example.com/docs",
+  }));
+
+  assert.equal(created.type, "link");
+  assert.equal(created.url, "https://example.com/docs");
+  assert.equal(created.title, "example.com");
+  const cell = workspace.objects.home.cells[parentCellId];
+  assert.equal(cell.embed.type, "link");
+  assert.equal(cell.embed.objectId, created.id);
+  assert.equal(cell.value, "example.com");
+  assert.equal(created.parent.parentObjectId, "home");
+  assert.equal(created.parent.sourceAddress, "B1");
+  assert.equal(workspace.objects.home.cells[parentCellId].embed.objectId, created.id);
+
+  const packageData = buildPortablePackage(workspace);
+  const zip = new JSZip();
+  Object.entries(packageData.files).forEach(([path, value]) => zip.file(path, value));
+  const imported = await workspaceFromZip(await zip.generateAsync({ type: "uint8array" }));
+  const importedCell = imported.objects.home.cells[parentCellId];
+  assert.equal(importedCell.embed.type, "link");
+  assert.equal(imported.objects[importedCell.embed.objectId].type, "link");
+  assert.equal(imported.objects[importedCell.embed.objectId].url, "https://example.com/docs");
+  assert.equal(imported.objects[importedCell.embed.objectId].title, "example.com");
 });
 
 test("portable workspaces preserve the containment path to a nested home", async () => {

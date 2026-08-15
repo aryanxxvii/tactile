@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { cloneTheme, downloadTheme, themeFromFile } from "../themes.js";
+import { isBareUrlValue } from "../model.js";
 import { readLocalFile } from "./selectionCommands.js";
 
 let portableCommandsPromise;
@@ -15,6 +16,7 @@ export function useWorkspaceCommands({
   updateObject,
   updateCell,
   createEmbeddedObject,
+  createEmbeddedLink,
   createEmbeddedFile,
   replaceObjectFile,
   setHomeObject,
@@ -99,6 +101,35 @@ export function useWorkspaceCommands({
     }
   }, [createEmbeddedFile, openObject, schedule, showNotice]);
 
+  const openLinkCell = useCallback((parentObjectId, payload) => {
+    const parent = workspace.objects[parentObjectId];
+    if (parent?.type !== "sheet" || !isBareUrlValue(payload?.linkUrl)) return;
+    const sourceElement = payload.sourceElement || null;
+    if (!sourceElement && !payload.sourceRect) return;
+    const existingEmbed = parent.cells?.[payload.sourceCellId]?.embed;
+    if (existingEmbed?.objectId && workspace.objects[existingEmbed.objectId]) {
+      openObject({
+        ...payload,
+        objectId: existingEmbed.objectId,
+        linkId: existingEmbed.linkId,
+        sourceObjectId: parentObjectId,
+        sourceType: existingEmbed.type,
+      });
+      return;
+    }
+    const created = createEmbeddedLink(parentObjectId, payload.sourceCellId, payload.linkUrl);
+    if (!created) return;
+    schedule(() => {
+      openObject({
+        ...payload,
+        objectId: created.id,
+        sourceObjectId: parentObjectId,
+        sourceLabel: created.title,
+        sourceType: "link",
+      });
+    }, 20);
+  }, [createEmbeddedLink, openObject, schedule, workspace.objects]);
+
   const replaceFileObject = useCallback(async (objectId, file) => {
     try {
       const asset = await readLocalFile(file);
@@ -125,6 +156,7 @@ export function useWorkspaceCommands({
     handleImportFile,
     createInCell,
     createFileInCell,
+    openLinkCell,
     replaceFileObject,
     importTheme,
     cloneTheme,

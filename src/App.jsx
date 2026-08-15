@@ -10,7 +10,7 @@ import { buildFilesIndex } from "./shell/filesIndex.js";
 import { useWorkspaceCommands } from "./shell/workspaceCommands.js";
 import { reparentReasonMessage } from "./core/reparenting.js";
 import { buildPortablePackage } from "./export.js";
-import { createBlankWorkspace, normalizeWorkspace } from "./model.js";
+import { createBlankWorkspace, isBareUrlValue, normalizeWorkspace } from "./model.js";
 import { saveNativeWorkspacePath } from "./storage.js";
 import {
   cloneTheme,
@@ -47,6 +47,7 @@ export function App() {
     clearCells,
     createObject,
     createEmbeddedObject,
+    createEmbeddedLink,
     createEmbeddedFile,
     replaceObjectFile,
     reparentObject,
@@ -96,23 +97,13 @@ export function App() {
     filesIndexRef.current = next;
     return next;
   }, [workspace]);
-  const selection = useSelectionCommands({
-    workspace,
-    layers: inOut.layers,
-    openObject: inOut.openObject,
-    showNotice: shell.showNotice,
-    updateCells,
-    clearCells,
-    createEmbeddedFile,
-    undo,
-    redo,
-  });
   const commands = useWorkspaceCommands({
     workspace,
     replaceWorkspace,
     updateObject,
     updateCell,
     createEmbeddedObject,
+    createEmbeddedLink,
     createEmbeddedFile,
     replaceObjectFile,
     setHomeObject,
@@ -126,7 +117,18 @@ export function App() {
     showNotice: shell.showNotice,
     setExportState: shell.setExportState,
     importInputRef: shell.importInputRef,
-    resetSelection: selection.resetSelection,
+  });
+  const selection = useSelectionCommands({
+    workspace,
+    layers: inOut.layers,
+    openObject: inOut.openObject,
+    openLinkCell: commands.openLinkCell,
+    showNotice: shell.showNotice,
+    updateCells,
+    clearCells,
+    createEmbeddedFile,
+    undo,
+    redo,
   });
 
   // Keep the document-level keyboard and clipboard bridge mounted once. The
@@ -436,6 +438,25 @@ export function App() {
     }
   };
 
+  const openExternalUrl = async (url) => {
+    if (!isBareUrlValue(url)) return;
+    if (nativeInvoke) {
+      try {
+        await nativeInvoke("workspace_open_url", { url });
+        return;
+      } catch {
+        // Fall back to a browser tab/window when the native opener is absent.
+      }
+    }
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  };
+
   const activeTheme = useMemo(
     () => resolveTheme(workspace.activeThemeId, workspace.themes),
     [workspace.activeThemeId, workspace.themes],
@@ -479,7 +500,14 @@ export function App() {
       onReparentObject: handleReparentObject,
       onUpdateCell: (cellId, patch) => updateCell(object.id, cellId, patch),
       onUpdateCells: (changes, historyKey) => updateCells(object.id, changes, historyKey),
-      onOpenObject: (payload) => inOut.openObject({ ...payload, sourceObjectId: object.id }),
+      onOpenObject: (payload) => {
+        if (payload.linkUrl) {
+          commands.openLinkCell(object.id, payload);
+          return;
+        }
+        inOut.openObject({ ...payload, sourceObjectId: object.id });
+      },
+      onOpenExternal: openExternalUrl,
       onCreateEmbedded: (cell, type, sourceElement) => commands.createInCell(object.id, cell, type, sourceElement),
       onCreateFile: (cell, file, sourceElement) => commands.createFileInCell(object.id, cell, file, sourceElement),
       onReplaceFile: (file) => commands.replaceFileObject(object.id, file),
