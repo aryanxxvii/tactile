@@ -9,6 +9,8 @@
       <circle cx="18" cy="46" r="4" opacity=".62"/><circle cx="32" cy="46" r="4.6" opacity=".8"/><circle cx="46" cy="46" r="4.9" opacity=".94"/><circle cx="60" cy="46" r="5.1"/><circle cx="74" cy="46" r="4.7" opacity=".9"/><circle cx="88" cy="46" r="4" opacity=".66"/>
       <circle cx="46" cy="60" r="4.7" opacity=".9"/><circle cx="60" cy="60" r="5"/><circle cx="46" cy="74" r="4.6" opacity=".88"/><circle cx="60" cy="74" r="4.9"/><circle cx="46" cy="88" r="4.3" opacity=".76"/><circle cx="60" cy="88" r="4.6" opacity=".9"/>
     </g>
-    <text x="-87" y="0" fill="#252522" font-family="Public Sans, Inter, Arial, sans-serif" font-size="92" font-weight="700" letter-spacing="-2" dominant-baseline="middle">Tactile</text>
+    <g transform="translate(-87 0) scale(1 1.2)">
+      <text x="0" y="0" fill="#252522" font-family="Public Sans, Inter, Arial, sans-serif" font-size="92" font-weight="700" letter-spacing="-2" dominant-baseline="middle">Tactile</text>
+    </g>
   </g>
 </svg>
