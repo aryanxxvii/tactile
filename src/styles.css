@@ -5167,6 +5167,13 @@ kbd {
   display: none !important;
 }
 
+/* The object footers render a separator before the shortcut hint. With the hint
+   hidden, that separator would strand a bare "·" at the end of the status lane,
+   so hide any divider whose only following sibling is the hidden hint. */
+.status-divider:has(+ .keyboard-hint:last-child) {
+  display: none;
+}
+
 .status-caption {
   color: var(--faint);
   font-size: 7.5px;
