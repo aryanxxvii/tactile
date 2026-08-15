@@ -125,7 +125,7 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
             <PdfViewer asset={asset} fileName={asset.fileName || object.title} title={object.title} onChooseFile={() => fileInputRef.current?.click()} />
           ) : null}
           {object.type === "html" && htmlSource ? (
-            <iframe srcDoc={htmlSource} title={object.title} sandbox="allow-forms allow-modals allow-popups allow-scripts" />
+            <iframe srcDoc={htmlSource} title={object.title} sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts" />
           ) : null}
           {!asset?.dataUrl && !htmlSource ? (
             <div className="file-empty-state">
