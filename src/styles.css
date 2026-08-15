@@ -3998,8 +3998,8 @@ kbd {
 }
 
 .object-statusbar {
-  height: 32px;
-  min-height: 32px;
+  height: 30px;
+  min-height: 30px;
   box-sizing: border-box;
   align-items: center;
   gap: 8px;
