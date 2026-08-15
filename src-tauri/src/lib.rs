@@ -1,6 +1,7 @@
 const APPLICATION_TITLE_PREFIX: &str = "Tactile — ";
 use serde::Deserialize;
 use std::path::{Component, Path, PathBuf};
+use tauri::http::{header::CONTENT_SECURITY_POLICY, Response as HttpResponse, StatusCode};
 use tauri::{AppHandle, Manager};
 
 pub mod assets;
@@ -208,7 +209,10 @@ fn workspace_open_directory(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn workspace_serve_html(app: AppHandle, content: String) -> Result<String, String> {
+fn workspace_serve_html(
+    app: AppHandle,
+    content: String,
+) -> Result<String, String> {
     use std::time::{SystemTime, UNIX_EPOCH};
     let sandbox_dir = app
         .path()
@@ -223,10 +227,17 @@ fn workspace_serve_html(app: AppHandle, content: String) -> Result<String, Strin
     let file_name = format!("doc-{nanos}.html");
     let path = sandbox_dir.join(&file_name);
     atomic_write(&path, content.as_bytes())?;
-    // The asset protocol serves files inside its configured scope over
-    // asset://localhost/<relative-path>; that origin keeps inline scripts
-    // allowed, which is what lets user-authored HTML run in the native build.
-    Ok(format!("asset://localhost/html-sandbox/{file_name}"))
+    // The custom `tactile-html` protocol serves this file with its own
+    // permissive CSP (set in `run`), which is exempt from the main window's
+    // nonce'd script-src policy, so user-authored inline scripts run in the
+    // native build. Tauri serves custom schemes at different URL forms per
+    // platform: `scheme://localhost/...` on macOS/Linux, but
+    // `http://scheme.localhost/...` on Windows/Android.
+    #[cfg(target_os = "windows")]
+    let url = format!("http://tactile-html.localhost/{file_name}");
+    #[cfg(not(target_os = "windows"))]
+    let url = format!("tactile-html://localhost/{file_name}");
+    Ok(url)
 }
 
 #[tauri::command]
@@ -317,6 +328,38 @@ pub fn run() {
             workspace_write_snapshot,
             workspace_serve_html,
         ])
+        .register_uri_scheme_protocol("tactile-html", |_context, request| {
+            // User-authored HTML objects are rendered through this custom protocol
+            // so we can stamp our own permissive CSP on the response. Tauri's main
+            // window CSP upgrades `unsafe-inline` to a per-response nonce, which would
+            // block the user's inline <script> blocks; a custom scheme response with an
+            // explicit script-src that allows inline scripts escapes that.
+            let raw_path = request.uri().path().trim_start_matches('/').to_string();
+            let file_name = raw_path.split('/').last().unwrap_or(&raw_path).to_string();
+            let sandbox_root = _context
+                .app_handle()
+                .path()
+                .app_config_dir()
+                .map(|dir| dir.join("html-sandbox"))
+                .unwrap_or_default();
+            let path = sandbox_root.join(file_name);
+            match std::fs::read(&path) {
+                Ok(bytes) => HttpResponse::builder()
+                    .status(StatusCode::OK)
+                    .header("Content-Type", "text/html; charset=utf-8")
+                    .header(
+                        CONTENT_SECURITY_POLICY,
+                        "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; media-src * data: blob:; frame-src *;",
+                    )
+                    .body(bytes)
+                    .unwrap_or_else(|_| HttpResponse::new("internal error".as_bytes().to_vec())),
+                Err(_) => HttpResponse::builder()
+                    .status(StatusCode::NOT_FOUND)
+                    .header("Content-Type", "text/plain")
+                    .body("not found".as_bytes().to_vec())
+                    .unwrap_or_else(|_| HttpResponse::new(Vec::new())),
+            }
+        })
         .setup(|app| {
             let window_config = app
                 .config()

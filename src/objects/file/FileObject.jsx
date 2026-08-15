@@ -69,9 +69,9 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
   // script-src to a per-response nonce, so a srcDoc iframe (which has no origin
   // and inherits that policy) cannot run user-authored <script> blocks — but the
   // browser dev server and the web build have no such header, so they work. To
-  // make JavaScript run in the MSI/desktop app we hand the HTML to the asset
-  // protocol, whose asset://localhost origin is exempt from the nonce upgrade and
-  // keeps inline scripts allowed. The browser path keeps using srcDoc.
+  // make JavaScript run in the MSI/desktop app we hand the HTML to a custom
+  // `tactile-html://` protocol whose response carries its own permissive CSP,
+  // exempt from the main window's nonce upgrade. The browser path keeps srcDoc.
   const [htmlAssetUrl, setHtmlAssetUrl] = useState("");
   const [htmlAssetFailed, setHtmlAssetFailed] = useState(false);
   const isHtml = object.type === "html" && Boolean(htmlSource);

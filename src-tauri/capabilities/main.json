@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The Tactile main window needs the asset protocol so user-authored HTML objects can load over asset://localhost (exempt from the nonce'd CSP that blocks inline scripts).",
+  "description": "The Tactile main window intentionally has no native command permissions yet.",
   "windows": ["main"],
-  "permissions": ["core:asset:default"]
+  "permissions": []
 }
