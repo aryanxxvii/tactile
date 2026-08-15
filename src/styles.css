@@ -5303,13 +5303,21 @@ kbd {
   align-items: center;
   transform: translate3d(0, 0, 0);
   pointer-events: none;
-  /* The dock is a global chrome surface, not part of the worksheet layer.
-     Keep it opaque and at full strength so floating/full transitions and their
-     backdrop can never tint it through transparent gaps. */
+  /* The dock is a global chrome surface, not part of the worksheet layer, so it
+     stays at full strength and untinted. But it must NOT paint across the whole
+     bottom lane: the object status bar (active cell, dimensions, word counts)
+     lives in that same 32px lane, and an opaque full-width background hides it
+     in full view. The opaque paper therefore belongs on .app-dock itself. */
   opacity: 1;
   filter: none;
-  background: var(--paper);
+  background: transparent;
   isolation: isolate;
+}
+
+.app-bottom-bar > .app-dock {
+  /* Opaque only under the actual controls, so the right-aligned object status
+     items remain visible and selectable beside the dock. */
+  background: var(--paper);
 }
 
 .tactile-app.has-floating-layer .app-bottom-bar {
