@@ -66,7 +66,9 @@
   padding: 6px 9px 8px;
   border-top: 1px solid color-mix(in srgb, #fff 12%, transparent);
   background: color-mix(in srgb, #000 78%, transparent);
-  transition: opacity 160ms ease-out, transform 160ms ease-out;
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
 }
 
 /* Chrome recedes only while playing; a paused player always shows its controls. */
@@ -203,9 +205,13 @@
   white-space: nowrap;
 }
 
-.video-time-current { color: #fff; }
+.video-time-current {
+  color: #fff;
+}
 .video-time-sep,
-.video-time-total { color: color-mix(in srgb, #fff 55%, transparent); }
+.video-time-total {
+  color: color-mix(in srgb, #fff 55%, transparent);
+}
 
 .video-volume {
   display: inline-flex;
@@ -224,7 +230,9 @@
   background: color-mix(in srgb, #fff 26%, transparent);
   opacity: 0;
   cursor: pointer;
-  transition: width 140ms ease-out, opacity 140ms ease-out;
+  transition:
+    width 140ms ease-out,
+    opacity 140ms ease-out;
 }
 
 .video-volume:hover input,
