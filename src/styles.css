@@ -1501,25 +1501,96 @@ kbd {
   box-shadow: 0 9px 22px color-mix(in srgb, var(--elevation-shadow) 38%, transparent);
 }
 
-.code-language-select {
-  height: 24px;
-  min-width: 0;
-  padding: 0 20px 0 8px;
+.code-language-trigger {
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.code-language-trigger:hover,
+.code-language-trigger:focus-visible,
+.code-language-trigger[aria-expanded="true"] {
   outline: 0;
-  border: 1px solid var(--line);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.code-language-menu {
+  min-width: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  position: fixed;
+  z-index: 400;
+  pointer-events: auto;
+  padding: 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--paper-elevated);
+  box-shadow: 0 16px 38px var(--elevation-shadow), inset 0 1px 0 var(--surface-highlight);
+  backdrop-filter: blur(14px);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+.code-language-menu::-webkit-scrollbar {
+  width: 10px;
+}
+
+.code-language-menu::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.code-language-menu::-webkit-scrollbar-thumb {
+  border: 2px solid var(--scrollbar-track);
   border-radius: 6px;
+  background: var(--scrollbar-thumb);
+}
+
+.code-language-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.code-language-menu button {
+  width: 100%;
+  min-height: 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 5px;
   color: var(--ink);
-  background: var(--paper);
-  font-family: var(--font-body);
-  font-size: 11.5px;
-  appearance: none;
-  -webkit-appearance: none;
+  text-align: left;
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.code-language-menu button:hover,
+.code-language-menu button:focus-visible,
+.code-language-menu button.is-selected {
+  outline: 0;
+  background: var(--tray);
+}
+
+.code-language-menu button:focus-visible {
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .code-editor-shell {
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) 7px auto;
 }
 
 .code-editor-surface {
@@ -1540,6 +1611,9 @@ kbd {
   font-size: 12.5px;
   line-height: 1.6;
   tab-size: 4;
+  letter-spacing: normal;
+  word-spacing: normal;
+  font-kerning: none;
   white-space: pre;
   overflow: auto;
 }
@@ -1548,6 +1622,14 @@ kbd {
   z-index: 0;
   pointer-events: none;
   color: var(--ink);
+}
+
+.code-pre code {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  font-variant-ligatures: none;
+  font-feature-settings: normal;
 }
 
 .code-input {
@@ -1562,13 +1644,13 @@ kbd {
 
 .code-input::selection,
 .code-input::placeholder {
-  color: transparent;
-  background: var(--selection-background);
+  color: transparent !important;
+  background: var(--selection-background) !important;
   -webkit-text-fill-color: transparent;
 }
 
 .code-input::placeholder {
-  background: transparent;
+  background: transparent !important;
 }
 
 .code-tok-comment { color: var(--muted); font-style: italic; }
@@ -1576,14 +1658,46 @@ kbd {
 .code-tok-keyword, .code-tok-function, .code-tok-tag { color: var(--accent); }
 .code-tok-number { color: var(--negative); }
 
+.code-output-resizer {
+  height: 7px;
+  position: relative;
+  z-index: 2;
+  cursor: ns-resize;
+}
+
+.code-output-resizer::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 36px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--line-strong) 55%, transparent);
+  transition: background 120ms ease;
+}
+
+.code-output-resizer:hover::before {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+body.code-resizing {
+  cursor: ns-resize;
+  user-select: none;
+}
+
 .code-output {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-top: 1px solid var(--line);
   background: var(--paper-elevated);
-  max-height: 180px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .code-output-header {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1595,6 +1709,9 @@ kbd {
 }
 
 .code-output-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   margin: 0;
   padding: 8px 12px;
   font-family: var(--font-mono);
@@ -1612,6 +1729,62 @@ kbd {
   padding: 10px 12px;
   color: var(--faint);
   font-size: 11.5px;
+}
+
+.code-run-button {
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-radius: 7px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 13%, var(--paper-elevated));
+  box-shadow: inset 0 1px 0 var(--surface-highlight);
+  font-weight: 600;
+  line-height: 1;
+  gap: 6px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.code-run-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 22%, var(--paper-elevated));
+}
+
+.code-run-button.is-running {
+  border-color: color-mix(in srgb, var(--negative) 45%, var(--line));
+  color: var(--negative);
+  background: color-mix(in srgb, var(--negative) 9%, var(--paper-elevated));
+}
+
+.code-toolbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.code-clear-button {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.code-clear-button:hover,
+.code-clear-button:focus-visible {
+  outline: 0;
+  color: var(--negative);
+  background: color-mix(in srgb, var(--negative) 9%, var(--paper-elevated));
+  border-color: color-mix(in srgb, var(--negative) 30%, transparent);
 }
 
 .file-toolbar {
@@ -3557,14 +3730,91 @@ kbd {
   gap: 5px;
 }
 
-.updates-settings .updates-status em {
-  font-style: normal;
-  color: var(--muted);
-  font-size: 9px;
+.updates-settings {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 52px 44px 70px;
 }
 
-.updates-settings .updates-status em.is-error {
+.updates-settings-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-bottom: 22px;
+  color: var(--accent);
+}
+
+.updates-settings-intro h3 {
+  margin: 0 0 5px;
+  color: var(--ink);
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.updates-settings-intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.updates-status {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-elevated);
+}
+
+.updates-status em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.updates-status em.is-error {
   color: var(--negative);
+}
+
+.updates-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.updates-actions button {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--paper-elevated);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.updates-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.updates-actions button.is-primary {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 13%, var(--paper-elevated));
+  font-weight: 600;
+}
+
+.updates-actions button.is-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 22%, var(--paper-elevated));
+}
+
+.updates-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .native-workspace-actions button {

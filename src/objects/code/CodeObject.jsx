@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  IconArrowBigRightLine,
   IconBrackets,
+  IconChevronDown,
   IconLanguage,
+  IconPlayerPlay,
   IconSquareCheck,
   IconTerminal2,
   IconTrash,
 } from "@tabler/icons-react";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
+import { PaperPortal } from "../../components/PaperPortal.jsx";
 import { useLocalDraft } from "../../components/localEditSession.js";
 import { codeLanguageForExtension } from "../../model.js";
 import { resolveTauriInvoke } from "../../platform/tauri/runtime.ts";
@@ -164,6 +166,136 @@ function languageRunsInBrowser(language) {
   return language === "javascript" || language === "jsx" || language === "typescript" || language === "tsx";
 }
 
+function LanguageMenu({ value, options, onChange, disabled = false }) {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const selected = options.find((option) => option.value === value) || options[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOutside = (event) => {
+      if (!triggerRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) setOpen(false);
+    };
+    window.addEventListener("pointerdown", closeOutside);
+    window.requestAnimationFrame(() => menuRef.current?.querySelector('[data-selected="true"]')?.focus());
+    return () => window.removeEventListener("pointerdown", closeOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !position) return undefined;
+    const updatePosition = () => {
+      const menu = menuRef.current;
+      const trigger = triggerRef.current;
+      if (!menu || !trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const width = menu.offsetWidth || 180;
+      const height = menu.offsetHeight || 200;
+      const gutter = 8;
+      const gap = 6;
+      const left = Math.max(gutter, Math.min(rect.left, window.innerWidth - width - gutter));
+      const below = rect.bottom + gap;
+      const above = rect.top - gap - height;
+      const top = below + height <= window.innerHeight - gutter
+        ? below
+        : above >= gutter
+          ? above
+          : Math.max(gutter, Math.min(below, window.innerHeight - height - gutter));
+      setPosition((current) => (current && current.left === left && current.top === top ? current : { left, top }));
+    };
+    updatePosition();
+    const frame = window.requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, position]);
+
+  const openMenu = () => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    setPosition({ left: rect ? Math.max(8, rect.left) : 0, top: rect ? rect.bottom + 6 : 0 });
+    setOpen(true);
+  };
+
+  const selectOption = (option) => {
+    onChange(option.value);
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const handleMenuKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const buttons = [...(menuRef.current?.querySelectorAll("button") || [])];
+    const activeIndex = buttons.indexOf(document.activeElement);
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? buttons.length - 1
+        : (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
+    buttons[nextIndex]?.focus();
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="code-language-trigger"
+        aria-label="Language"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+      >
+        <IconLanguage size={14} stroke={1.6} />
+        <span>{selected.label}</span>
+        <IconChevronDown size={13} stroke={1.7} />
+      </button>
+      {open && position ? (
+        <PaperPortal className="tactile-code-menu-layer" themeSource={triggerRef.current}>
+          <div
+            ref={menuRef}
+            className="code-language-menu"
+            role="listbox"
+            aria-label="Language"
+            style={{ left: position.left, top: position.top }}
+            onKeyDown={handleMenuKeyDown}
+          >
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={option.value === value}
+                data-selected={option.value === value}
+                className={option.value === value ? "is-selected" : ""}
+                onClick={() => selectOption(option)}
+              >
+                <span>{option.label}</span>
+                {option.detail ? <small>{option.detail}</small> : null}
+                {option.value === value ? <IconSquareCheck size={13} stroke={1.8} /> : null}
+              </button>
+            ))}
+          </div>
+        </PaperPortal>
+      ) : null}
+    </>
+  );
+}
+
 export function CodeObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
   const canonicalContent = object.content || "";
   const contentSession = useLocalDraft(canonicalContent, (next) => onUpdateObject({ content: next }));
@@ -177,6 +309,13 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
 
   const highlighted = useMemo(() => highlight(content, language), [content, language]);
   const languageLabel = LANGUAGE_LABELS[language] || language;
+  const languageOptions = useMemo(
+    () => Object.entries(LANGUAGE_LABELS).map(([key, label]) => ({ value: key, label })),
+    [],
+  );
+  const [outputHeight, setOutputHeight] = useState(176);
+  const shellRef = useRef(null);
+  const resizingRef = useRef(null);
 
   useEffect(() => () => { terminateRef.current?.(); }, []);
   useEffect(() => {
@@ -260,6 +399,27 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
 
   const handleLanguageChange = (nextLanguage) => onUpdateObject({ language: nextLanguage });
 
+  const beginResize = (event) => {
+    const shell = shellRef.current;
+    if (!shell || event.button !== 0) return;
+    event.preventDefault();
+    const startY = event.clientY;
+    const startHeight = outputHeight;
+    const shellHeight = shell.getBoundingClientRect().height;
+    const onMove = (moveEvent) => {
+      const next = startHeight + (startY - moveEvent.clientY);
+      setOutputHeight(Math.max(72, Math.min(next, shellHeight - 160)));
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      document.body.classList.remove("code-resizing");
+    };
+    document.body.classList.add("code-resizing");
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
   return (
     <article className="object-surface code-object" data-object-type="code">
       <ObjectHeader
@@ -276,38 +436,33 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
       <main className="code-workspace">
         <div className="code-toolbar cell-format-toolbar" aria-label="Code commands">
           <div className="cell-format-group" role="group" aria-label="Language">
-            <IconLanguage size={14} stroke={1.6} />
-            <select
-              className="code-language-select"
-              aria-label="Language"
+            <LanguageMenu
               value={language}
-              onChange={(event) => handleLanguageChange(event.target.value)}
-            >
-              {Object.entries(LANGUAGE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+              options={languageOptions}
+              onChange={handleLanguageChange}
+            />
           </div>
-          <span className="markdown-toolbar-separator" />
-          <button
-            type="button"
-            className={running ? "is-active" : ""}
-            disabled={language === "plaintext"}
-            data-tooltip={running ? "Stop" : `Run ${languageLabel}`}
-            onClick={handleRun}
-          >
-            {running ? <IconSquareCheck size={14} stroke={1.7} /> : <IconArrowBigRightLine size={14} stroke={1.7} />}
-            {running ? "Stop" : "Run"}
-          </button>
-          <button type="button" data-tooltip="Clear output" onClick={() => setLines([])}>
-            <IconTrash size={14} stroke={1.7} />
-          </button>
+          <div className="code-toolbar-actions">
+            <button
+              type="button"
+              className={`code-run-button${running ? " is-running" : ""}`}
+              disabled={language === "plaintext"}
+              data-tooltip={running ? "Stop" : `Run ${languageLabel}`}
+              onClick={handleRun}
+            >
+              {running ? <IconSquareCheck size={14} stroke={1.9} /> : <IconPlayerPlay size={14} stroke={1.9} />}
+              {running ? "Stop" : "Run"}
+            </button>
+            <button className="code-clear-button" type="button" data-tooltip="Clear output" onClick={() => setLines([])}>
+              <IconTrash size={14} stroke={1.7} />
+            </button>
+          </div>
         </div>
 
-        <div className="code-editor-shell">
+        <div ref={shellRef} className="code-editor-shell">
           <div className="code-editor-surface">
             <pre ref={preRef} className="code-pre" aria-hidden="true">
-              <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: highlighted || "\n" }} />
+              <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: highlighted }} />
             </pre>
             <textarea
               ref={textareaRef}
@@ -324,10 +479,11 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
               aria-label={`${object.title} code editor`}
             />
           </div>
-          <div className={`code-output${lines.length ? "" : " is-empty"}`}>
-<div className="code-output-header">
-            <IconTerminal2 size={13} stroke={1.6} /> Output
-          </div>
+          <div className="code-output-resizer" role="separator" aria-orientation="horizontal" aria-label="Resize output" onPointerDown={beginResize} />
+          <div className={`code-output${lines.length ? "" : " is-empty"}`} style={{ height: outputHeight }}>
+            <div className="code-output-header">
+              <IconTerminal2 size={13} stroke={1.6} /> Output
+            </div>
             {lines.length ? (
               <pre className="code-output-body">
                 {lines.map((line, index) => (

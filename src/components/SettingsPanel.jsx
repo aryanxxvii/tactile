@@ -242,8 +242,11 @@ onChangeWorkspaceFolder,
           }}
         >
           <SettingTab id="settings-tab-appearance" controls="settings-panel-appearance" active={tab === "appearance"} icon={IconPalette} onClick={() => setTab("appearance")}>Appearance</SettingTab>
-          <SettingTab id="settings-tab-files" controls="settings-panel-files" active={tab === "files"} icon={IconFileTypeCsv} onClick={() => setTab("files")}>Files &amp; ownership</SettingTab>
+<SettingTab id="settings-tab-files" controls="settings-panel-files" active={tab === "files"} icon={IconFileTypeCsv} onClick={() => setTab("files")}>Files &amp; ownership</SettingTab>
           <SettingTab id="settings-tab-keyboard" controls="settings-panel-keyboard" active={tab === "keyboard"} icon={IconKeyboard} onClick={() => setTab("keyboard")}>Keyboard</SettingTab>
+          {onCheckForUpdate ? (
+            <SettingTab id="settings-tab-updates" controls="settings-panel-updates" active={tab === "updates"} icon={IconRefresh} onClick={() => setTab("updates")}>Updates</SettingTab>
+          ) : null}
           <SettingTab id="settings-tab-agents" controls="settings-panel-agents" active={tab === "agents"} icon={IconSparkles} onClick={() => setTab("agents")}>Agents.md</SettingTab>
         </nav>
 
@@ -415,33 +418,37 @@ onChangeWorkspaceFolder,
                   onChange={(checked) => onUpdateSettings({ reduceMotion: checked })}
                 />
               </label>
-              {onCheckForUpdate ? (
-                <div className="native-workspace-settings updates-settings">
-                  <div className="native-workspace-heading">
-                    <IconDownload size={18} stroke={1.5} />
-                    <span><strong>Updates</strong><small>Check GitHub for the latest Tactile release.</small></span>
-                  </div>
-                  <div className="updates-status" role="status">
-                    {updateState === "idle" || updateState === "checking"
-                      ? <em>{updateState === "checking" ? "Checking for updates…" : "Not checked yet."}</em>
-                      : updateState === "unavailable"
-                        ? <em>You are on the latest version.</em>
-                        : updateState === "error"
-                          ? <em className="is-error">Update failed. Try again.</em>
-                          : updateState === "installing"
-                            ? <em>Downloading &amp; installing…</em>
-                            : <em>Version {updateInfo?.version} is available.</em>}
-                  </div>
-                  <div className="native-workspace-actions">
-                    {updateState === "available" ? (
-                      <button type="button" onClick={runUpdateInstall}><IconDownload size={14} /> Download &amp; restart</button>
-                    ) : null}
-                    <button type="button" onClick={runUpdateCheck} disabled={updateState === "checking" || updateState === "installing"}>
-                      <IconRefresh size={14} /> Check again
-                    </button>
-                  </div>
+            </div>
+          ) : null}
+
+          {tab === "updates" && onCheckForUpdate ? (
+            <div className="updates-settings" id="settings-panel-updates" role="tabpanel" aria-labelledby="settings-tab-updates">
+              <div className="updates-settings-intro">
+                <IconDownload size={30} stroke={1.35} />
+                <div>
+                  <h3>Updates</h3>
+                  <p>Check GitHub for the latest Tactile release and install it right here.</p>
                 </div>
-              ) : null}
+              </div>
+              <div className="updates-status" role="status">
+                {updateState === "idle" || updateState === "checking"
+                  ? <em>{updateState === "checking" ? "Checking for updates…" : "Not checked yet."}</em>
+                  : updateState === "unavailable"
+                    ? <em>You are on the latest version.</em>
+                    : updateState === "error"
+                      ? <em className="is-error">Update failed. Try again.</em>
+                      : updateState === "installing"
+                        ? <em>Downloading &amp; installing…</em>
+                        : <em>Version {updateInfo?.version} is available.</em>}
+              </div>
+              <div className="updates-actions">
+                {updateState === "available" ? (
+                  <button className="is-primary" type="button" onClick={runUpdateInstall}><IconDownload size={14} /> Download &amp; restart</button>
+                ) : null}
+                <button type="button" onClick={runUpdateCheck} disabled={updateState === "checking" || updateState === "installing"}>
+                  <IconRefresh size={14} /> Check again
+                </button>
+              </div>
             </div>
           ) : null}
 
