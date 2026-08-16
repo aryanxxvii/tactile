@@ -32,11 +32,20 @@
       "capabilities": ["main"]
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4REI1MTkwMjlBMkY4RTYKUldUbStLSXBrRkhiK0NPcGRGcnVjRlNlaU9RTFZRTld3NEZXeDgzSlR2ZytNTnIzL0pJRnM3K0QK",
+      "endpoints": [
+        "https://github.com/aryanxxvii/tactile/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "bundle": {
     "active": true,
     "publisher": "Tactile",
     "licenseFile": "../LICENSE",
     "copyright": "Copyright © 2026 Tactile",
+    "createUpdaterArtifacts": true,
     "windows": {
       "digestAlgorithm": "sha256",
       "wix": {

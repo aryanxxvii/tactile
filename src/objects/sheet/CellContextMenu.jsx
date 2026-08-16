@@ -27,6 +27,7 @@ import { objectTypeFor } from "../objectTypes.js";
 
 const SheetIcon = objectTypeFor("sheet").icon;
 const TextIcon = objectTypeFor("markdown").icon;
+const CodeIcon = objectTypeFor("code").icon;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -299,6 +300,7 @@ export function CellContextMenu({
           <>
             <MenuItem icon={SheetIcon} label="In: Tiles" shortcut="]" onSelect={invoke(() => onCreate("sheet"))} />
             <MenuItem icon={TextIcon} label="In: Text" onSelect={invoke(() => onCreate("markdown"))} />
+            <MenuItem icon={CodeIcon} label="In: Code" onSelect={invoke(() => onCreate("code"))} />
             <MenuItem icon={IconPaperclip} label="In: Local file…" onSelect={invoke(onAttachFile)} />
           </>
         )}

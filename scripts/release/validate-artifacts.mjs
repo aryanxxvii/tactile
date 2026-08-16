@@ -8,6 +8,7 @@ const ARTIFACT_EXTENSIONS = new Map([
   ["dmg", ".dmg"],
   ["appimage", ".appimage"],
   ["deb", ".deb"],
+  ["sig", ".sig"],
 ]);
 
 function fail(message) {

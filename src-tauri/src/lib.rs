@@ -1,8 +1,9 @@
 const APPLICATION_TITLE_PREFIX: &str = "Tactile — ";
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Component, Path, PathBuf};
 use tauri::http::{header::CONTENT_SECURITY_POLICY, Response as HttpResponse, StatusCode};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_updater::UpdaterExt;
 
 pub mod assets;
 pub mod portable;
@@ -314,9 +315,309 @@ fn native_window_title(document_title: &str) -> String {
     }
 }
 
+#[derive(Debug, Serialize)]
+struct RunCodeResult {
+    exit_code: Option<i32>,
+    stdout: String,
+    stderr: String,
+    timed_out: bool,
+    error: Option<String>,
+}
+
+fn run_process_with_timeout(command: &mut std::process::Command, timeout_ms: u64) -> RunCodeResult {
+    use std::io::Read;
+    let mut child = match command
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::null())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(error) => {
+            return RunCodeResult {
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                error: Some(format!("unable to launch process: {error}")),
+            };
+        }
+    };
+    let mut stdout_reader = child.stdout.take();
+    let mut stderr_reader = child.stderr.take();
+    let stdout_handle = std::thread::spawn(move || {
+        let mut buffer = String::new();
+        if let Some(mut reader) = stdout_reader.take() {
+            let _ = reader.read_to_string(&mut buffer);
+        }
+        buffer
+    });
+    let stderr_handle = std::thread::spawn(move || {
+        let mut buffer = String::new();
+        if let Some(mut reader) = stderr_reader.take() {
+            let _ = reader.read_to_string(&mut buffer);
+        }
+        buffer
+    });
+
+    let started = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                return RunCodeResult {
+                    exit_code: status.code(),
+                    stdout: stdout_handle.join().unwrap_or_default(),
+                    stderr: stderr_handle.join().unwrap_or_default(),
+                    timed_out: false,
+                    error: None,
+                };
+            }
+            Ok(None) => {
+                if started.elapsed().as_millis() as u64 >= timeout_ms {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(25));
+            }
+            Err(error) => {
+                return RunCodeResult {
+                    exit_code: None,
+                    stdout: stdout_handle.join().unwrap_or_default(),
+                    stderr: stderr_handle.join().unwrap_or_default(),
+                    timed_out: false,
+                    error: Some(error.to_string()),
+                };
+            }
+        }
+    }
+    RunCodeResult {
+        exit_code: None,
+        stdout: stdout_handle.join().unwrap_or_default(),
+        stderr: stderr_handle.join().unwrap_or_default(),
+        timed_out: true,
+        error: None,
+    }
+}
+
+fn first_available(candidates: &[&str]) -> Option<String> {
+    for candidate in candidates {
+        if let Ok(output) = std::process::Command::new(candidate)
+            .arg("--version")
+            .stdin(std::process::Stdio::null())
+            .output()
+        {
+            if output.status.success() {
+                return Some(candidate.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn write_source(dir: &Path, file_name: &str, source: &str) -> Result<PathBuf, String> {
+    std::fs::create_dir_all(dir).map_err(|error| error.to_string())?;
+    let path = dir.join(file_name);
+    std::fs::write(&path, source).map_err(|error| error.to_string())?;
+    Ok(path)
+}
+
+fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult {
+    let dir = std::env::temp_dir().join(format!("tactile-code-run-{}", std::process::id()));
+    let _ = std::fs::create_dir_all(&dir);
+    let file_ext = match language {
+        "javascript" | "jsx" | "typescript" | "tsx" => "js",
+        "python" => "py",
+        "c" => "c",
+        "cpp" => "cpp",
+        "java" => "java",
+        "rust" => "rs",
+        "go" => "go",
+        "ruby" => "rb",
+        "bash" => "sh",
+        _ => {
+            return RunCodeResult {
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                error: Some(format!("running {language} internally is not supported yet")),
+            };
+        }
+    };
+    let file_name = if language == "java" { "Main.java".to_owned() } else { format!("main.{file_ext}") };
+    let file_path = match write_source(&dir, &file_name, source) {
+        Ok(path) => path,
+        Err(error) => {
+            return RunCodeResult {
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                error: Some(error),
+            };
+        }
+    };
+    let exe_name = if cfg!(windows) { "main.exe" } else { "main" };
+    let exe = dir.join(exe_name);
+
+    let compile_and_run = |compiler_args: Vec<String>, program_args: Vec<String>| -> RunCodeResult {
+        let mut compile = std::process::Command::new(&compiler_args[0]);
+        for argument in compiler_args.iter().skip(1) {
+            compile.arg(argument);
+        }
+        let build = run_process_with_timeout(&mut compile, timeout_ms);
+        if build.exit_code != Some(0) {
+            return build;
+        }
+        let mut run = std::process::Command::new(&program_args[0]);
+        for argument in program_args.iter().skip(1) {
+            run.arg(argument);
+        }
+        run_process_with_timeout(&mut run, timeout_ms)
+    };
+
+    match language {
+        "c" => compile_and_run(
+            vec!["gcc".into(), file_path.to_string_lossy().into_owned(), "-o".into(), exe.to_string_lossy().into_owned()],
+            vec![exe.to_string_lossy().into_owned()],
+        ),
+        "cpp" => compile_and_run(
+            vec!["g++".into(), file_path.to_string_lossy().into_owned(), "-o".into(), exe.to_string_lossy().into_owned()],
+            vec![exe.to_string_lossy().into_owned()],
+        ),
+        "rust" => compile_and_run(
+            vec!["rustc".into(), file_path.to_string_lossy().into_owned(), "-o".into(), exe.to_string_lossy().into_owned()],
+            vec![exe.to_string_lossy().into_owned()],
+        ),
+        "go" => {
+            let mut run = std::process::Command::new("go");
+            run.arg("run").arg(&file_path);
+            run_process_with_timeout(&mut run, timeout_ms)
+        }
+        "java" => {
+            let mut javac = std::process::Command::new("javac");
+            javac.current_dir(&dir).arg(&file_name);
+            let build = run_process_with_timeout(&mut javac, timeout_ms);
+            if build.exit_code != Some(0) {
+                return build;
+            }
+            let mut java = std::process::Command::new("java");
+            java.current_dir(&dir).arg("-cp").arg(".").arg("Main");
+            run_process_with_timeout(&mut java, timeout_ms)
+        }
+        "python" => match first_available(&["python3", "python"]) {
+            Some(program) => {
+                let mut run = std::process::Command::new(program);
+                run.arg(&file_path);
+                run_process_with_timeout(&mut run, timeout_ms)
+            }
+            None => RunCodeResult {
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                error: Some("Python interpreter not found on this device".into()),
+            },
+        },
+        "javascript" | "jsx" | "typescript" | "tsx" => match first_available(&["node"]) {
+            Some(program) => {
+                let mut run = std::process::Command::new(program);
+                run.arg(&file_path);
+                run_process_with_timeout(&mut run, timeout_ms)
+            }
+            None => RunCodeResult {
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                error: Some("Node.js not found on this device".into()),
+            },
+        },
+        "ruby" => match first_available(&["ruby"]) {
+            Some(program) => {
+                let mut run = std::process::Command::new(program);
+                run.arg(&file_path);
+                run_process_with_timeout(&mut run, timeout_ms)
+            }
+            None => RunCodeResult {
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                error: Some("Ruby interpreter not found on this device".into()),
+            },
+        },
+        "bash" => match first_available(&["bash"]) {
+            Some(program) => {
+                let mut run = std::process::Command::new(program);
+                run.arg(&file_path);
+                run_process_with_timeout(&mut run, timeout_ms)
+            }
+            None => RunCodeResult {
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                timed_out: false,
+                error: Some("bash not found on this device".into()),
+            },
+        },
+        _ => RunCodeResult {
+            exit_code: None,
+            stdout: String::new(),
+            stderr: String::new(),
+            timed_out: false,
+            error: Some(format!("running {language} internally is not supported yet")),
+        },
+    }
+}
+
+#[tauri::command]
+fn workspace_run_code(language: String, source: String, timeout_ms: Option<u64>) -> RunCodeResult {
+    run_code_impl(&language, &source, timeout_ms.unwrap_or(12_000))
+}
+
+#[derive(serde::Serialize)]
+struct UpdateInfo {
+    version: String,
+    current_version: String,
+    body: Option<String>,
+    download_url: String,
+}
+
+#[tauri::command]
+async fn check_for_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    match updater.check().await {
+        Ok(Some(update)) => Ok(Some(UpdateInfo {
+            version: update.version,
+            current_version: update.current_version,
+            body: update.body,
+            download_url: update.download_url.to_string(),
+        })),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn download_and_install_update(app: tauri::AppHandle) -> Result<(), String> {
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let update = updater.check().await.map_err(|e| e.to_string())?;
+    if let Some(update) = update {
+        update
+            .download_and_install(|_, _| {}, || {})
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    app.restart();
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             workspace_choose_directory,
             workspace_prepare_directory,
@@ -327,6 +628,9 @@ pub fn run() {
             workspace_open_url,
             workspace_write_snapshot,
             workspace_serve_html,
+            workspace_run_code,
+            check_for_update,
+            download_and_install_update,
         ])
         .register_uri_scheme_protocol("tactile-html", |_context, request| {
             // User-authored HTML objects are rendered through this custom protocol

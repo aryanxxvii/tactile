@@ -19,6 +19,7 @@ export const OBJECT_TYPE_NAMES = {
   sheet: "Tiles",
   markdown: "Text",
   document: "Text",
+  code: "Code",
   pdf: "PDF",
   image: "Image",
   video: "Video",
@@ -186,6 +187,18 @@ export function createMarkdownObject({
 export function createObjectForType(type, options = {}) {
   if (type === "sheet") return createSheetObject(options);
   if (type === "markdown" || type === "document") return createMarkdownObject(options);
+  if (type === "code") {
+    return {
+      ...options,
+      id: options.id || createId(type),
+      type,
+      title: options.title || generatedObjectTitle(type),
+      description: options.description || "",
+      parent: options.parent && typeof options.parent === "object" ? { ...options.parent } : null,
+      content: options.content || "",
+      language: options.language || codeLanguageForExtension(options.extension) || "javascript",
+    };
+  }
   return {
     ...options,
     id: options.id || createId(type),
@@ -198,6 +211,37 @@ export function createObjectForType(type, options = {}) {
   };
 }
 
+const CODE_EXTENSIONS = Object.freeze(new Set([
+  "js", "mjs", "cjs", "jsx", "ts", "tsx", "py", "ipynb", "c", "h", "cpp",
+  "cc", "cxx", "hpp", "java", "rs", "go", "rb", "sh", "bash", "json", "sql",
+]));
+
+export function isCodeExtension(extension) {
+  return CODE_EXTENSIONS.has(String(extension || "").toLowerCase());
+}
+
+export function codeLanguageForExtension(extension) {
+  switch (String(extension || "").toLowerCase()) {
+    case "js": case "mjs": case "cjs": return "javascript";
+    case "jsx": return "jsx";
+    case "ts": return "typescript";
+    case "tsx": return "tsx";
+    case "py": case "ipynb": return "python";
+    case "c": case "h": return "c";
+    case "cpp": case "cc": case "cxx": case "hpp": return "cpp";
+    case "java": return "java";
+    case "rs": return "rust";
+    case "go": return "go";
+    case "rb": return "ruby";
+    case "sh": case "bash": return "bash";
+    case "json": return "json";
+    case "sql": return "sql";
+    case "html": case "htm": return "html";
+    case "css": return "css";
+    default: return "plaintext";
+  }
+}
+
 export function inferFileObjectType(file) {
   const mime = String(file?.mime || file?.type || "").toLowerCase();
   const extension = String(file?.extension || file?.fileName || file?.name || "").split(".").pop().toLowerCase();
@@ -206,6 +250,7 @@ export function inferFileObjectType(file) {
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("video/")) return "video";
   if (mime === "text/html" || ["html", "htm"].includes(extension)) return "html";
+  if (isCodeExtension(extension)) return "code";
   return "markdown";
 }
 

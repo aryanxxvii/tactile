@@ -68,6 +68,12 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
     icon: IconTextCaption,
     renderer: renderer("../markdown/MarkdownObject.jsx", () => import("../markdown/MarkdownObject.jsx").then((module) => module.MarkdownObject)),
   }),
+  code: descriptor({
+    type: "code",
+    label: "Code",
+    icon: IconCode,
+    renderer: renderer("../code/CodeObject.jsx", () => import("../code/CodeObject.jsx").then((module) => module.CodeObject)),
+  }),
   document: descriptor({
     type: "document",
     label: "Document",

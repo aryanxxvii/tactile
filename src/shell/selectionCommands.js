@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { isBareUrlValue, materializeCell, usedSheetBounds } from "../model.js";
+import { isBareUrlValue, isCodeExtension, materializeCell, usedSheetBounds } from "../model.js";
 import { cellAddress, coordinatesFromAddress, moveAddress } from "../sheet/coordinates.js";
 import { cellIdsInRange, normalizeRange, pasteChanges, rangeLabel, serializeRange } from "../sheet/ranges.js";
 
@@ -612,7 +612,7 @@ export function readLocalFile(file) {
     const reader = new FileReader();
     reader.onload = async () => {
       const extension = file.name.includes(".") ? file.name.split(".").pop().toLowerCase() : "bin";
-      const isText = file.type.startsWith("text/") || ["md", "markdown", "html", "htm", "svg"].includes(extension);
+      const isText = file.type.startsWith("text/") || ["md", "markdown", "html", "htm", "svg"].includes(extension) || isCodeExtension(extension);
       resolve({
         fileName: file.name,
         mime: file.type || "application/octet-stream",

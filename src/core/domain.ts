@@ -12,10 +12,10 @@ import type {
   WorkspaceId,
 } from "./ids.ts";
 
-export const KNOWN_OBJECT_TYPES = ["sheet", "markdown", "document", "pdf", "image", "video", "html", "svg"] as const;
+export const KNOWN_OBJECT_TYPES = ["sheet", "markdown", "document", "code", "pdf", "image", "video", "html", "svg"] as const;
 
 export type KnownObjectType = (typeof KNOWN_OBJECT_TYPES)[number];
-export type FileObjectType = Exclude<KnownObjectType, "sheet" | "markdown" | "document">;
+export type FileObjectType = Exclude<KnownObjectType, "sheet" | "markdown" | "document" | "code">;
 export type AxisName = "row" | "column";
 export type CellScalar = string | number | boolean | null;
 export type CellValue = string;
@@ -129,12 +129,18 @@ export interface DocumentObject extends ObjectRecordBase<"document"> {
   content: string;
 }
 
+export interface CodeObject extends ObjectRecordBase<"code"> {
+  content: string;
+  language: string;
+  extension?: string | null;
+}
+
 export interface FileObject extends ObjectRecordBase<FileObjectType> {
   assetId: AssetId | null;
   source: string;
 }
 
-export type WorkspaceObject = SheetObject | MarkdownObject | DocumentObject | FileObject;
+export type WorkspaceObject = SheetObject | MarkdownObject | DocumentObject | CodeObject | FileObject;
 
 export interface AssetRecord {
   id: AssetId;

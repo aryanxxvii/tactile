@@ -486,7 +486,9 @@ export function useLocalWorkspace() {
     const title = fileName.replace(/\.[^.]+$/, "") || generatedObjectTitle(type, cellAddress(coordinates.row, coordinates.column));
     const created = createObjectForType(type, type === "markdown"
       ? { title, content: fileAsset.text || "" }
-      : { title, assetId, source: type === "html" ? fileAsset.text || "" : "" });
+      : type === "code"
+        ? { title, content: fileAsset.text || "", extension: fileAsset.extension }
+        : { title, assetId, source: type === "html" ? fileAsset.text || "" : "" });
     const linkId = createId("link");
     created.parent = {
       linkId,
@@ -517,7 +519,7 @@ export function useLocalWorkspace() {
           },
           [created.id]: created,
         }, true);
-      return type === "markdown"
+      return type === "markdown" || type === "code"
         ? next
         : { ...next, assets: { ...current.assets, [assetId]: asset } };
     }, `create-file:${parentObjectId}:${parentCellId}`);

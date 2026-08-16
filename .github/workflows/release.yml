@@ -23,6 +23,11 @@ env:
   CARGO_TERM_COLOR: always
   NPM_CONFIG_FUND: "false"
   NPM_CONFIG_AUDIT: "false"
+  # Updater signing: every bundled artifact is signed with the minisign keypair
+  # so the app can verify and install new releases. OWNER ACTION: the
+  # TAURI_SIGNING_PRIVATE_KEY repository secret must be the private key that
+  # matches plugins.updater.pubkey in src-tauri/tauri.conf.json.
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
 jobs:
   package:
@@ -354,6 +359,17 @@ jobs:
 
       - name: Verify SHA-256 checksums and artifact coverage
         run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,appimage,deb --checksums release-artifacts/SHA256SUMS.txt
+
+      - name: Generate updater manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          node scripts/release/create-updater-manifest.mjs \
+            --dir release-artifacts \
+            --version "$version" \
+            --repo "${{ github.repository }}" \
+            --output release-artifacts/latest.json
 
       - name: Upload assembled release assets
         uses: actions/upload-artifact@v4

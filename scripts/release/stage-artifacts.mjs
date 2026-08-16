@@ -120,6 +120,13 @@ async function main() {
     }
 
     console.log(`${path.basename(destination)} <= ${sourceFile}`);
+
+    const signatureFile = `${sourceFile}.sig`;
+    if (extension(signatureFile) === "sig" && (await stat(signatureFile).catch(() => null))) {
+      const signatureDestination = `${destination}.sig`;
+      await copyFile(signatureFile, signatureDestination);
+      console.log(`${path.basename(signatureDestination)} <= ${signatureFile}`);
+    }
   }
 }
 

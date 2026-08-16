@@ -9,9 +9,10 @@ import {
   IconFolderOpen,
   IconKeyboard,
   IconLayoutList,
-  IconMoon,
+IconMoon,
   IconPalette,
   IconPlus,
+  IconRefresh,
   IconSparkles,
   IconSun,
   IconTrash,
@@ -112,8 +113,10 @@ export function SettingsPanel({
   onExportTheme,
   onUpdateSettings,
   onExportWorkspace,
-  onChangeWorkspaceFolder,
+onChangeWorkspaceFolder,
   onOpenWorkspaceFolder,
+  onCheckForUpdate,
+  onDownloadAndInstallUpdate,
   onOpenGuide,
   onClose,
 }) {
@@ -121,6 +124,8 @@ export function SettingsPanel({
   const [themeFilter, setThemeFilter] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [authoringPromptCopied, setAuthoringPromptCopied] = useState(false);
+  const [updateState, setUpdateState] = useState("idle");
+  const [updateInfo, setUpdateInfo] = useState(null);
   const themeInputRef = useRef(null);
   const panelRef = useRef(null);
   const closeRef = useRef(null);
@@ -185,6 +190,25 @@ export function SettingsPanel({
   }, [onClose]);
 
   useEffect(() => setDeleteConfirm(false), [activeTheme.id]);
+
+  const runUpdateCheck = async () => {
+    if (!onCheckForUpdate) return;
+    setUpdateState("checking");
+    const result = await onCheckForUpdate();
+    if (!result) {
+      setUpdateState("unavailable");
+    } else {
+      setUpdateInfo(result);
+      setUpdateState("available");
+    }
+  };
+
+  const runUpdateInstall = async () => {
+    if (!onDownloadAndInstallUpdate) return;
+    setUpdateState("installing");
+    const installed = await onDownloadAndInstallUpdate();
+    if (!installed) setUpdateState("error");
+  };
 
   return (
     <div className="settings-layer" role="presentation">
@@ -391,6 +415,33 @@ export function SettingsPanel({
                   onChange={(checked) => onUpdateSettings({ reduceMotion: checked })}
                 />
               </label>
+              {onCheckForUpdate ? (
+                <div className="native-workspace-settings updates-settings">
+                  <div className="native-workspace-heading">
+                    <IconDownload size={18} stroke={1.5} />
+                    <span><strong>Updates</strong><small>Check GitHub for the latest Tactile release.</small></span>
+                  </div>
+                  <div className="updates-status" role="status">
+                    {updateState === "idle" || updateState === "checking"
+                      ? <em>{updateState === "checking" ? "Checking for updates…" : "Not checked yet."}</em>
+                      : updateState === "unavailable"
+                        ? <em>You are on the latest version.</em>
+                        : updateState === "error"
+                          ? <em className="is-error">Update failed. Try again.</em>
+                          : updateState === "installing"
+                            ? <em>Downloading &amp; installing…</em>
+                            : <em>Version {updateInfo?.version} is available.</em>}
+                  </div>
+                  <div className="native-workspace-actions">
+                    {updateState === "available" ? (
+                      <button type="button" onClick={runUpdateInstall}><IconDownload size={14} /> Download &amp; restart</button>
+                    ) : null}
+                    <button type="button" onClick={runUpdateCheck} disabled={updateState === "checking" || updateState === "installing"}>
+                      <IconRefresh size={14} /> Check again
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
