@@ -301,8 +301,7 @@ const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).rep
           />
         ) : null}
         {inlineEditing ? (
-          <>
-<textarea
+          <textarea
               ref={inlineEditorRef}
               className="cell-inline-editor"
               rows={1}
@@ -353,39 +352,38 @@ const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).rep
               aria-controls={`${cellId}-formula-suggestions`}
               spellCheck="false"
             />
-            {inlineListOpen ? (
-            <div
-              className="formula-suggestions cell-formula-suggestions"
-              id={`${cellId}-formula-suggestions`}
-              role="listbox"
-              aria-label="Formula suggestions"
-            >
-              <div className="formula-suggestions-label">Functions</div>
-              {inlineSuggestions.map((item, index) => (
-                <button
-                  id={`${cellId}-formula-suggestion-${index}`}
-                  key={item.name}
-                  className={index === inlineActiveIndex ? "formula-suggestion is-active" : "formula-suggestion"}
-                  type="button"
-                  role="option"
-                  aria-selected={index === inlineActiveIndex}
-                  onPointerDown={(event) => event.preventDefault()}
-                  onPointerMove={() => setInlineActiveIndex(index)}
-                  onClick={() => chooseInlineSuggestion(item)}
-                >
-                  <span className="formula-suggestion-copy">
-                    <strong>{item.name}</strong>
-                    <small>{item.description}</small>
-                  </span>
-                  <code>{item.signature}</code>
-                </button>
-              ))}
-              <div className="formula-suggestions-hint"><kbd>↑</kbd><kbd>↓</kbd> choose <kbd>Enter</kbd> insert</div>
-            </div>
-            ) : null}
-          </>
         ) : <span className="cell-value">{shownValue || " "}</span>}
       </span>
+      {inlineListOpen ? (
+        <div
+          className="formula-suggestions cell-formula-suggestions"
+          id={`${cellId}-formula-suggestions`}
+          role="listbox"
+          aria-label="Formula suggestions"
+        >
+          <div className="formula-suggestions-label">Functions</div>
+          {inlineSuggestions.map((item, index) => (
+            <button
+              id={`${cellId}-formula-suggestion-${index}`}
+              key={item.name}
+              className={index === inlineActiveIndex ? "formula-suggestion is-active" : "formula-suggestion"}
+              type="button"
+              role="option"
+              aria-selected={index === inlineActiveIndex}
+              onPointerDown={(event) => event.preventDefault()}
+              onPointerMove={() => setInlineActiveIndex(index)}
+              onClick={() => chooseInlineSuggestion(item)}
+            >
+              <span className="formula-suggestion-copy">
+                <strong>{item.name}</strong>
+                <small>{item.description}</small>
+              </span>
+              <code>{item.signature}</code>
+            </button>
+          ))}
+          <div className="formula-suggestions-hint"><kbd>↑</kbd><kbd>↓</kbd> choose <kbd>Enter</kbd> insert</div>
+        </div>
+      ) : null}
       {inFormulaRange ? (
         <svg className="formula-reference-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <rect x="1" y="1" width="98" height="98" rx="7" pathLength="100" />

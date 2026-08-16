@@ -1344,18 +1344,6 @@ input:focus-visible,
   justify-content: flex-start;
 }
 
-.sheet-cell.align-top {
-  align-items: flex-start;
-}
-
-.sheet-cell.align-middle {
-  align-items: center;
-}
-
-.sheet-cell.align-bottom {
-  align-items: flex-end;
-}
-
 .sheet-cell.is-bold .cell-value {
   font-weight: 680;
 }
@@ -1398,9 +1386,14 @@ input:focus-visible,
 
 .cell-content {
   min-width: 0;
+  min-height: 0;
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 1 1 auto;
+  align-self: stretch;
+  overflow: hidden;
+  border-radius: var(--cell-radius);
 }
 
 .embed-icon {
@@ -1436,6 +1429,19 @@ input:focus-visible,
 .sheet-cell.is-wrap .cell-content,
 .sheet-cell.is-multiline .cell-content {
   align-items: flex-start;
+}
+
+/* Explicit vertical alignment overrides the multiline/wrap top-align default. */
+.sheet-cell.align-top .cell-content {
+  align-items: flex-start;
+}
+
+.sheet-cell.align-middle .cell-content {
+  align-items: center;
+}
+
+.sheet-cell.align-bottom .cell-content {
+  align-items: flex-end;
 }
 
 .object-statusbar {
