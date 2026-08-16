@@ -6,6 +6,7 @@ import path from "node:path";
 const ARTIFACT_EXTENSIONS = new Map([
   ["msi", ".msi"],
   ["dmg", ".dmg"],
+  ["tar.gz", ".tar.gz"],
   ["appimage", ".appimage"],
   ["deb", ".deb"],
   ["sig", ".sig"],
@@ -70,6 +71,7 @@ function relativePath(directory, filePath) {
 }
 
 function extensionKey(filePath) {
+  if (filePath.toLowerCase().endsWith(".tar.gz")) return "tar.gz";
   const extension = path.extname(filePath).toLowerCase();
   for (const [key, expectedExtension] of ARTIFACT_EXTENSIONS) {
     if (extension === expectedExtension) {

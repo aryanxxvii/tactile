@@ -3,7 +3,7 @@ import path from "node:path";
 
 const TARGET_FOR = [
   { platform: "windows-x64", extension: ".msi", targets: ["windows-x86_64"] },
-  { platform: "macos-universal", extension: ".dmg", targets: ["darwin-aarch64", "darwin-x86_64"] },
+  { platform: "macos-universal", extension: ".tar.gz", targets: ["darwin-aarch64", "darwin-x86_64"] },
   { platform: "linux-x64", extension: ".appimage", targets: ["linux-x86_64"] },
 ];
 

@@ -47,8 +47,8 @@ jobs:
             os: macos-14
             rust-target: universal-apple-darwin
             rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
-            bundles: dmg
-            expected: dmg
+            bundles: app,dmg
+            expected: dmg,tar.gz
           - platform: linux-x64
             os: ubuntu-24.04
             rust-target: x86_64-unknown-linux-gnu
@@ -352,13 +352,13 @@ jobs:
           merge-multiple: true
 
       - name: Validate release matrix
-        run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,appimage,deb
+        run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,tar.gz,appimage,deb
 
       - name: Generate SHA-256 checksums
         run: node scripts/release/create-checksums.mjs --dir release-artifacts --output release-artifacts/SHA256SUMS.txt
 
       - name: Verify SHA-256 checksums and artifact coverage
-        run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,appimage,deb --checksums release-artifacts/SHA256SUMS.txt
+        run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,tar.gz,appimage,deb --checksums release-artifacts/SHA256SUMS.txt
 
       - name: Generate updater manifest
         shell: bash

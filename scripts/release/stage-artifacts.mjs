@@ -3,7 +3,7 @@ import path from "node:path";
 
 const PLATFORM_BUNDLES = Object.freeze({
   "windows-x64": ["msi"],
-  "macos-universal": ["dmg"],
+  "macos-universal": ["dmg", "tar.gz"],
   "linux-x64": ["appimage", "deb"],
 });
 
@@ -73,6 +73,7 @@ async function walkFiles(directory) {
 }
 
 function extension(filePath) {
+  if (filePath.toLowerCase().endsWith(".tar.gz")) return "tar.gz";
   return path.extname(filePath).toLowerCase().replace(".", "");
 }
 
