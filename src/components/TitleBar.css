@@ -1,0 +1,122 @@
+/* Custom window title bar for the frameless Tauri shell. Loaded as a lazy CSS
+   chunk (see scripts/check-bundle-budget.mjs) so it stays out of the entry
+   budget. */
+
+.title-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: 4000;
+  display: flex;
+  align-items: stretch;
+  user-select: none;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--tray) 72%, var(--paper));
+  border-bottom: 1px solid var(--line);
+}
+
+.title-bar-drag {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  cursor: default;
+}
+
+.title-bar-mark {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.title-bar-name {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.title-bar-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  opacity: 0.72;
+}
+
+.title-bar-controls {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+}
+
+.title-bar-controls button {
+  width: 42px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  background: transparent;
+  cursor: default;
+}
+
+.title-bar-controls button:hover,
+.title-bar-controls button:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper-elevated) 60%, var(--tray));
+}
+
+.title-bar-controls .title-bar-close:hover,
+.title-bar-controls .title-bar-close:focus-visible {
+  color: #fff;
+  background: #c0392b;
+}
+
+/* Invisible resize handles around the window perimeter. */
+.title-bar-resize {
+  position: fixed;
+  z-index: 4100;
+  pointer-events: auto;
+}
+
+.title-bar-resize[data-resize="north"] { top: 0; left: 6px; right: 6px; height: 5px; cursor: ns-resize; }
+.title-bar-resize[data-resize="south"] { bottom: 0; left: 6px; right: 6px; height: 5px; cursor: ns-resize; }
+.title-bar-resize[data-resize="east"] { top: 6px; right: 0; bottom: 6px; width: 5px; cursor: ew-resize; }
+.title-bar-resize[data-resize="west"] { top: 6px; left: 0; bottom: 6px; width: 5px; cursor: ew-resize; }
+.title-bar-resize[data-resize="northWest"] { top: 0; left: 0; width: 6px; height: 6px; cursor: nwse-resize; }
+.title-bar-resize[data-resize="northEast"] { top: 0; right: 0; width: 6px; height: 6px; cursor: nesw-resize; }
+.title-bar-resize[data-resize="southEast"] { bottom: 0; right: 0; width: 6px; height: 6px; cursor: nwse-resize; }
+.title-bar-resize[data-resize="southWest"] { bottom: 0; left: 0; width: 6px; height: 6px; cursor: nesw-resize; }
+
+/* Reserve space for the fixed 32px title bar: the workspace layer is absolute
+   (inset 0) so padding on the app root never moves it. Offset the workspace
+   shell down instead so content starts below the title bar and nothing is
+   clipped behind it. The bottom dock is fixed to the viewport bottom, so it
+   needs no adjustment. */
+.tactile-app.native-shell .workspace-shell {
+  top: 32px;
+}
+
+/* The Files panel is a fixed surface that spans the full workspace lane; in the
+   native shell it also spans under the title bar. Offset it below the bar too. */
+.tactile-app.native-shell .files-layer {
+  top: 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-bar-controls button {
+    transition: none;
+  }
+}

@@ -600,6 +600,57 @@ async fn check_for_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, S
     }
 }
 
+// Frameless-window commands backing the custom TitleBar (move, resize,
+// minimize, maximize/restore, close). Resize uses the Window handle because
+// start_resize_dragging only exists on tauri::Window, not WebviewWindow.
+#[tauri::command]
+fn window_minimize(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.minimize().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn window_toggle_maximize(window: tauri::WebviewWindow) -> Result<(), String> {
+    if window.is_maximized().map_err(|error| error.to_string())? {
+        window.unmaximize().map_err(|error| error.to_string())?;
+    } else {
+        window.maximize().map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn window_is_maximized(window: tauri::WebviewWindow) -> Result<bool, String> {
+    window.is_maximized().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn window_close(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.close().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn window_start_drag(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.start_dragging().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn window_start_resize(app: tauri::AppHandle, direction: String) -> Result<(), String> {
+    use tauri_runtime::ResizeDirection;
+    let window = app.get_window("main").ok_or_else(|| "main window not found".to_string())?;
+    let direction = match direction.as_str() {
+        "north" => ResizeDirection::North,
+        "south" => ResizeDirection::South,
+        "east" => ResizeDirection::East,
+        "west" => ResizeDirection::West,
+        "northEast" => ResizeDirection::NorthEast,
+        "northWest" => ResizeDirection::NorthWest,
+        "southEast" => ResizeDirection::SouthEast,
+        "southWest" => ResizeDirection::SouthWest,
+        _ => return Err("invalid window resize direction".to_string()),
+    };
+    window.start_resize_dragging(direction).map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 async fn download_and_install_update(app: tauri::AppHandle) -> Result<(), String> {
     let updater = app.updater().map_err(|e| e.to_string())?;
@@ -631,6 +682,12 @@ pub fn run() {
             workspace_run_code,
             check_for_update,
             download_and_install_update,
+            window_minimize,
+            window_toggle_maximize,
+            window_is_maximized,
+            window_close,
+            window_start_drag,
+            window_start_resize,
         ])
         .register_uri_scheme_protocol("tactile-html", |_context, request| {
             // User-authored HTML objects are rendered through this custom protocol
@@ -679,6 +736,7 @@ pub fn run() {
                 })?;
 
             tauri::WebviewWindowBuilder::from_config(app.handle(), window_config)?
+                .decorations(false)
                 .on_document_title_changed(|window, title| {
                     if let Err(error) = window.set_title(&native_window_title(&title)) {
                         eprintln!("failed to update the Tactile window title: {error}");

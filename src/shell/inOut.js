@@ -875,6 +875,7 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
       const top = layersRef.current[layersRef.current.length - 1];
       if (!top || top.phase !== "floating" || top.closing) return;
       if (event.target instanceof Element && event.target.closest(".files-layer")) return;
+      if (event.target instanceof Element && event.target.closest(".title-bar")) return;
       if (event.target instanceof Element && event.target.closest(".app-bottom-bar")) return;
       if (event.target instanceof Element && event.target.closest(".app-dock-path-popover")) return;
       if (event.target instanceof Element && event.target.closest(".settings-layer")) return;

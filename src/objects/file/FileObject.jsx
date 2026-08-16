@@ -12,6 +12,7 @@ import { objectTypeFor } from "../objectTypes.js";
 import { resolveTauriInvoke } from "../../platform/tauri/runtime.ts";
 import { PdfViewer } from "./PdfViewer.jsx";
 import { VideoPlayer } from "./VideoPlayer.jsx";
+import { AudioPlayer } from "./AudioPlayer.jsx";
 
 function dataUrlBytes(dataUrl) {
   const match = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(String(dataUrl || ""));
@@ -136,7 +137,7 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
           ref={fileInputRef}
           className="native-file-input"
           type="file"
-          accept=".pdf,.md,.markdown,.html,.htm,.svg,image/*,video/*,application/pdf,text/html,text/markdown"
+          accept=".pdf,.md,.markdown,.html,.htm,.svg,image/*,video/*,audio/*,application/pdf,text/html,text/markdown"
           tabIndex={-1}
           aria-hidden="true"
           onChange={(event) => {
@@ -160,6 +161,9 @@ export function FileObject({ object, path, saveState, onUpdateObject, onBack, ca
           ) : null}
           {object.type === "video" && previewUrl ? (
             <VideoPlayer src={previewUrl} title={object.title} />
+          ) : null}
+          {object.type === "audio" && previewUrl ? (
+            <AudioPlayer src={previewUrl} title={object.title} />
           ) : null}
           {object.type === "pdf" && asset?.dataUrl ? (
             <PdfViewer asset={asset} fileName={asset.fileName || object.title} title={object.title} onChooseFile={() => fileInputRef.current?.click()} />

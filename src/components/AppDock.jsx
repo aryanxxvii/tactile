@@ -322,7 +322,7 @@ export function AppDock({
     >
       <span className="app-dock-brand">
         <img className="app-dock-mark" src="/tactile-mark.svg" alt="" />
-        <span>Tactile</span>
+        {/* <span>Tactile</span>?*/}
       </span>
       <button
         className={`app-dock-files ${filesOpen ? "is-active" : ""}`}

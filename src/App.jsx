@@ -19,6 +19,7 @@ import {
   themeStyle,
 } from "./themes.js";
 import { isTauriRuntime, resolveTauriInvoke } from "./platform/tauri/runtime.ts";
+import { TitleBar } from "./components/TitleBar.jsx";
 
 const FilesPanel = lazy(() => import("./components/FilesPanel.jsx").then(({ FilesPanel: Component }) => ({ default: Component })));
 const SettingsPanel = lazy(() => import("./components/SettingsPanel.jsx").then(({ SettingsPanel: Component }) => ({ default: Component })));
@@ -554,13 +555,14 @@ export function App() {
 
   return (
     <div
-      className={`tactile-app ${shell.filesPinned && shell.filesOpen ? "files-is-pinned" : ""} ${floatingLayerActive ? "has-floating-layer" : ""} ${shell.settingsOpen ? "settings-open" : ""}`}
+      className={`tactile-app ${nativeRuntime ? "native-shell" : ""} ${shell.filesPinned && shell.filesOpen ? "files-is-pinned" : ""} ${floatingLayerActive ? "has-floating-layer" : ""} ${shell.settingsOpen ? "settings-open" : ""}`}
         data-paper-scheme
       data-files-pinned={shell.filesPinned ? "true" : undefined}
       data-files-resizing={shell.filesResizing ? "true" : undefined}
       data-reduce-motion={workspace.settings.reduceMotion ? "true" : "false"}
       style={{ ...themeStyle(activeTheme), "--files-sidebar-width": `${shell.filesWidth}px` }}
     >
+      {nativeRuntime ? <TitleBar /> : null}
       <div
         className="workspace-shell"
         data-logical-layer-count={inOut.layers.length}

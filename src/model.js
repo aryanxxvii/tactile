@@ -23,6 +23,7 @@ export const OBJECT_TYPE_NAMES = {
   pdf: "PDF",
   image: "Image",
   video: "Video",
+  audio: "Audio",
   html: "HTML",
   svg: "SVG",
   link: "Link",
@@ -249,6 +250,7 @@ export function inferFileObjectType(file) {
   if (mime === "image/svg+xml" || extension === "svg") return "svg";
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
   if (mime === "text/html" || ["html", "htm"].includes(extension)) return "html";
   if (isCodeExtension(extension)) return "code";
   return "markdown";

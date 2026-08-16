@@ -1,0 +1,311 @@
+/* Audio player. Loaded as a lazy CSS chunk alongside FileObject so it stays out
+   of the entry CSS budget (see scripts/check-bundle-budget.mjs). */
+
+.audio-player {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 18px;
+  padding: 30px 44px 34px;
+  outline: 0;
+  background: color-mix(in srgb, var(--paper-elevated) 72%, var(--paper));
+}
+
+.audio-player:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.audio-art {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.audio-art-disc {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: color-mix(in srgb, var(--accent) 78%, var(--ink));
+  background: radial-gradient(circle at 30% 28%, var(--surface-highlight), transparent 45%);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 var(--surface-highlight),
+    0 10px 26px var(--elevation-shadow);
+}
+
+.audio-art-disc[data-playing="true"] {
+  animation: audio-disc-spin 4s linear infinite;
+  will-change: transform;
+}
+
+@keyframes audio-disc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.audio-art-center {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--line-strong), 0 1px 3px var(--elevation-shadow);
+}
+
+.audio-art-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  opacity: 0.7;
+  transition: transform 240ms ease-out;
+}
+
+.audio-art-ring[data-playing="true"] {
+  border-color: var(--accent);
+  opacity: 0.9;
+}
+
+.audio-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.audio-title {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audio-status {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.audio-scrub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.audio-scrub-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.audio-scrub-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 75%, transparent);
+}
+
+.audio-scrub-played {
+  position: absolute;
+  inset: auto auto auto 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: block;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.audio-scrub-input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.audio-scrub-input::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 4px var(--elevation-shadow);
+}
+
+.audio-scrub-input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.audio-scrub-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.audio-time-current,
+.audio-time-total {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.audio-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  color: var(--ink);
+}
+
+.audio-buttons button {
+  width: 28px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.audio-buttons button:hover,
+.audio-buttons button:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--accent) 9%, var(--paper-elevated));
+}
+
+.audio-buttons button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.audio-play {
+  width: 34px !important;
+  height: 32px !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+  background: var(--accent) !important;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.audio-spacer {
+  width: 10px;
+}
+
+.audio-volume {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.audio-volume input {
+  width: 0;
+  height: 3px;
+  margin: 0;
+  appearance: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 80%, transparent);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    width 140ms ease-out,
+    opacity 140ms ease-out;
+}
+
+.audio-volume:hover input,
+.audio-volume:focus-within input {
+  width: 58px;
+  opacity: 1;
+}
+
+.audio-volume input::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.audio-volume input::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.audio-rate-button {
+  width: auto !important;
+  padding: 0 9px !important;
+  gap: 5px !important;
+  align-items: center !important;
+}
+
+.audio-rate-caption {
+  color: var(--faint);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.audio-rate-value {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audio-art-ring,
+  .audio-art-disc[data-playing="true"],
+  .audio-volume input {
+    animation: none !important;
+    transition: none !important;
+  }
+}

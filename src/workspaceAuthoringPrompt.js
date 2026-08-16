@@ -27,7 +27,7 @@ Do not invent a newer portable version, do not invent new top-level fields as if
 - The index is the authoritative list. It carries: format='tactile', version=4, a stable workspace id, name, createdAt, updatedAt, homeObjectId, homePath, activeThemeId, settings, objects, and themes.
 - Use stable opaque IDs for the workspace, every object, every embed link, and every asset. IDs must never be derived from a title, cell address, array index, or display order; titles may change without changing IDs.
 - Store each canonical object exactly once. Aliases and embedded cell locations are LINKS to that object, never duplicate records or copies of its content.
-- Supported core object types: sheet (Tiles), markdown or document (Text), image, pdf, video, html, and svg. Use the narrowest type that matches the request.
+- Supported core object types: sheet (Tiles), markdown or document (Text), image, pdf, video, audio, html, and svg. Use the narrowest type that matches the request.
 
 2. TILES SHEETS AND SPARSE CELLS
 - A Tiles object is a spreadsheet-like spatial map with familiar A1 addressing. Default capacity is 256 rows by 64 columns, but authored/exported data must stay SPARSE: emit only cells that contain a value, formula, embed, style, note, validation, or another meaningful field.

@@ -1882,6 +1882,14 @@ body.code-resizing {
   min-height: 0;
 }
 
+/* Audio is owned by .audio-player (AudioPlayer.css), which fills the stage. */
+.file-stage > .audio-player {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
 .file-stage > iframe {
   width: 100%;
   height: 100%;
@@ -7484,6 +7492,21 @@ body.code-resizing {
 
 .files-is-pinned .workspace-shell {
   left: var(--files-sidebar-width);
+}
+
+/* The object status bar is the bottom row of the object surface. Whenever Files
+   is open (drawer or pinned) the Files panel sits at z 230 with a soft elevation
+   shadow; if the status bar stays in-flow at a lower z-index that shadow paints
+   over it as a gradient. Anchor it to the viewport bottom spanning the full
+   width, above the files layer (but below the bottom dock, z 240), so it reads
+   as clean chrome matching the dock in both modes. The surface's grid keeps its
+   32px status track reserved, so the sheet above does not grow. */
+.tactile-app:has(> .files-layer) .object-statusbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 235;
 }
 
 .files-is-resizing .workspace-shell,

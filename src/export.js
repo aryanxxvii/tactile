@@ -33,6 +33,7 @@ function extensionForObject(object, asset) {
     pdf: "pdf",
     image: "png",
     video: "mp4",
+    audio: "mp3",
     html: "html",
     svg: "svg",
   }[object.type] || "bin";
@@ -211,6 +212,12 @@ function mimeForExtension(extension) {
     svg: "image/svg+xml",
     mp4: "video/mp4",
     webm: "video/webm",
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    flac: "audio/flac",
+    m4a: "audio/mp4",
+    aac: "audio/aac",
     html: "text/html",
   }[extension] || "application/octet-stream";
 }

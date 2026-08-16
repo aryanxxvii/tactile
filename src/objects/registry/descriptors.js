@@ -4,6 +4,7 @@ import {
   IconFileTypePdf,
   IconLayoutGrid,
   IconMovie,
+  IconMusic,
   IconPhoto,
   IconTextCaption,
   IconVectorBezier,
@@ -24,8 +25,8 @@ const noAssetPolicy = Object.freeze({
 const fileAssetPolicy = Object.freeze({
   kind: "external-asset",
   acceptsBinary: true,
-  extensions: Object.freeze(["pdf", "png", "jpg", "jpeg", "gif", "webp", "mp4", "webm", "html", "svg"]),
-  mimePrefixes: Object.freeze(["application/", "image/", "video/", "text/"]),
+  extensions: Object.freeze(["pdf", "png", "jpg", "jpeg", "gif", "webp", "mp4", "webm", "mp3", "wav", "ogg", "flac", "m4a", "aac", "html", "svg"]),
+  mimePrefixes: Object.freeze(["application/", "image/", "video/", "audio/", "text/"]),
 });
 
 const noCommands = () => [];
@@ -98,6 +99,13 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
     type: "video",
     label: "Video",
     icon: IconMovie,
+    renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
+    assetPolicy: fileAssetPolicy,
+  }),
+  audio: descriptor({
+    type: "audio",
+    label: "Audio",
+    icon: IconMusic,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
   }),

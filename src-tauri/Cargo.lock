@@ -3753,7 +3753,7 @@ dependencies = [
 
 [[package]]
 name = "tactile"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "rfd",
  "rusqlite",
@@ -3762,6 +3762,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-updater",
+ "tauri-runtime",
 ]
 
 [[package]]
