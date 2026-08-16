@@ -60,6 +60,7 @@ export function SheetGridCanvas({
   onStartResize,
   onResizeAxisWithKeyboard,
   onResetAxisSize,
+  onAutoFitAxisSize,
   onRestoreSelectionScroll,
   onToggleRowGroup,
   onToggleColumnGroup,
@@ -241,7 +242,7 @@ export function SheetGridCanvas({
               <span className="column-resize-handle" role="separator" tabIndex={0} aria-label={`Resize column ${columnLabel(column)}`} onPointerDown={(event) => onStartResize(event, "column", column)} onDoubleClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                onResetAxisSize?.("column", column);
+                onAutoFitAxisSize?.("column", column);
               }} onKeyDown={(event) => {
                 if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
                   event.preventDefault();
@@ -338,7 +339,7 @@ export function SheetGridCanvas({
               <span className="row-resize-handle" role="separator" tabIndex={0} aria-label={`Resize row ${row + 1}`} onPointerDown={(event) => onStartResize(event, "row", row)} onDoubleClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                onResetAxisSize?.("row", row);
+                onAutoFitAxisSize?.("row", row);
               }} onKeyDown={(event) => {
                 if (event.key === "ArrowUp" || event.key === "ArrowDown") {
                   event.preventDefault();

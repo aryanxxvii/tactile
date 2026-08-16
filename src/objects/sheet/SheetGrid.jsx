@@ -96,6 +96,7 @@ export function SheetGrid({
     metrics: projection.metrics,
     rowIndexMap: projection.rowIndexMap,
     columnIndexMap: projection.columnIndexMap,
+    formulaValues: projection.formulaValues,
     columnPositionForIndex: projection.columnPositionForIndex,
     columnOffsetForPosition: projection.columnOffsetForPosition,
     columnSizeForPosition: projection.columnSizeForPosition,
@@ -184,6 +185,7 @@ export function SheetGrid({
         onStartResize={gestures.startResize}
         onResizeAxisWithKeyboard={gestures.resizeAxisWithKeyboard}
         onResetAxisSize={gestures.resetAxisSize}
+        onAutoFitAxisSize={gestures.autoFitAxisSize}
         onRestoreSelectionScroll={gestures.restoreSelectionScroll}
         onToggleRowGroup={(groupId) => gestures.toggleRowGroup(groupId, projection.rowGroups)}
         onToggleColumnGroup={(groupId) => gestures.toggleColumnGroup(groupId, projection.columnGroups)}

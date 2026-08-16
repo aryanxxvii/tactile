@@ -1,8 +1,58 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cellAddress } from "../../../sheet/coordinates.js";
+import { cellAddress, columnLabel, coordinatesFromCellId } from "../../../sheet/coordinates.js";
+import { formatCellValue } from "../../../sheet/formatting.js";
+import { formatFormulaResult } from "../../../sheet/formulas.js";
 import { fillChanges, fillRange } from "../../../sheet/ranges.js";
 import { rangeLabel } from "../../../sheet/ranges.js";
 import { rangeValues } from "./useSheetGridProjection.js";
+
+let textMeasureContext = null;
+function measureTextWidth(text, fontSize = 11.5, bold = false) {
+  const source = String(text ?? "");
+  if (typeof document === "undefined") return source.length * fontSize * 0.58;
+  if (!textMeasureContext) textMeasureContext = document.createElement("canvas").getContext("2d");
+  const context = textMeasureContext;
+  context.font = `${bold ? "700 " : "400 "}${fontSize}px "Public Sans Variable", "Segoe UI Variable", Arial, sans-serif`;
+  return context.measureText(source).width;
+}
+
+function naturalColumnWidth(object, column, formulaValues) {
+  const H_PADDING = 16;
+  const GAP = 10;
+  const DEFAULT_FONT = 11.5;
+  let max = 0;
+  Object.entries(object.cells || {}).forEach(([id, cell]) => {
+    const coordinates = coordinatesFromCellId(id);
+    if (!coordinates || coordinates.column !== column) return;
+    let text;
+    if (cell?.formula) {
+      text = formatFormulaResult(formulaValues?.get(cellAddress(coordinates.row, column)));
+    } else if (cell?.embed) {
+      text = cell.value || "";
+    } else {
+      text = formatCellValue(cell?.value, cell?.style);
+    }
+    const fontSize = Number(cell?.style?.fontSize) || DEFAULT_FONT;
+    const width = measureTextWidth(text, fontSize, Boolean(cell?.style?.bold));
+    if (width > max) max = width;
+  });
+  const headerWidth = measureTextWidth(columnLabel(column), 10);
+  return Math.ceil(H_PADDING + Math.max(max, headerWidth) + GAP);
+}
+
+function naturalRowHeight(object, row) {
+  const V_PADDING = 16;
+  const LINE_HEIGHT = 1.18;
+  const DEFAULT_FONT = 11.5;
+  let max = 0;
+  Object.entries(object.cells || {}).forEach(([id, cell]) => {
+    const coordinates = coordinatesFromCellId(id);
+    if (!coordinates || coordinates.row !== row) return;
+    const fontSize = Number(cell?.style?.fontSize) || DEFAULT_FONT;
+    if (fontSize > max) max = fontSize;
+  });
+  return Math.ceil((max || DEFAULT_FONT) * LINE_HEIGHT + V_PADDING);
+}
 import {
   CELL_EDIT_SEED_EVENT,
   dispatchCellEditCommitAny,
@@ -79,6 +129,7 @@ export function useSheetGridGestures({
   metrics,
   rowIndexMap,
   columnIndexMap,
+  formulaValues,
   columnPositionForIndex,
   columnOffsetForPosition,
   columnSizeForPosition,
@@ -717,6 +768,20 @@ export function useSheetGridGestures({
     onUpdateObject?.(axis === "column" ? { columnWidths: next } : { rowHeights: next });
   }, [axisResizeTargets, object.columnWidths, object.rowHeights, onUpdateObject]);
 
+  const autoFitAxisSize = useCallback((axis, index) => {
+    const targets = axisResizeTargets(axis, index);
+    const minimum = axis === "column" ? 56 : 24;
+    const maximum = axis === "column" ? 420 : 96;
+    const nextSizes = { ...(axis === "column" ? object.columnWidths : object.rowHeights) };
+    targets.forEach((target) => {
+      const fit = axis === "column"
+        ? naturalColumnWidth(object, target, formulaValues)
+        : naturalRowHeight(object, target);
+      nextSizes[target] = Math.max(minimum, Math.min(maximum, fit));
+    });
+    onUpdateObject?.(axis === "column" ? { columnWidths: nextSizes } : { rowHeights: nextSizes });
+  }, [axisResizeTargets, formulaValues, object.columnWidths, object.rowHeights, onUpdateObject]);
+
   const startAxisDrag = useCallback((event, axis, index) => {
     if (event.button !== 0 || event.target.closest(".column-resize-handle, .row-resize-handle, .column-group-toggle, .row-group-toggle")) return;
     event.preventDefault();
@@ -823,6 +888,7 @@ export function useSheetGridGestures({
     startResize,
     resizeAxisWithKeyboard,
     resetAxisSize,
+    autoFitAxisSize,
     startAxisDrag,
     startCornerSelection,
     restoreSelectionScroll,
