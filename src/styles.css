@@ -4560,6 +4560,20 @@ kbd {
   white-space: nowrap;
 }
 
+/* Highlighted matches inside the rendered preview (read-only view has no
+   textarea to select into). The active match gets a stronger rust treatment. */
+.markdown-preview mark.find-mark {
+  border-radius: 3px;
+  color: inherit;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.markdown-preview mark.find-mark.is-active {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
 .markdown-editor {
   font-size: 14px;
   line-height: 1.8;

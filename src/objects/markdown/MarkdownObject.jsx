@@ -290,18 +290,85 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
     editor.scrollTop = Math.max(0, top - editor.clientHeight / 2 + lineHeight);
   };
 
-  const revealFindMatch = (match) => {
+  const revealFindMatch = (match, { stealFocus = true } = {}) => {
     if (!match) return;
     const editor = editorForSelection();
     if (!editor) return;
     activeEditorRef.current = editor;
     selectionRef.current = { start: match.start, end: match.end };
     window.requestAnimationFrame(() => {
-      editor.focus();
+      if (stealFocus) editor.focus();
       editor.setSelectionRange(match.start, match.end);
       scrollEditorToIndex(editor, match.start);
     });
   };
+
+  // As the user types a query, surface the first match immediately. We avoid
+  // stealing focus so the Find field keeps receiving keystrokes; the editor
+  // merely gets its selection + scroll updated behind it.
+  useEffect(() => {
+    if (!findOpen || !findMatches.length) return;
+    const idx = activeFindIndex >= 0 ? Math.min(activeFindIndex, findMatches.length - 1) : 0;
+    revealFindMatch(findMatches[idx], { stealFocus: false });
+  }, [findQuery, findCaseSensitive, findOpen]);
+
+  // In Preview / Split, there is no textarea to select into, so highlight
+  // matches by wrapping the rendered text nodes in <mark class="find-mark"> and
+  // scroll the active match into view. Only the preview subtree is mutated;
+  // React re-renders it on content changes and this effect re-applies the marks.
+  useEffect(() => {
+    const preview = previewRef.current;
+    if (!preview) return;
+    preview.querySelectorAll("mark.find-mark").forEach((mark) => {
+      const parent = mark.parentNode;
+      mark.replaceWith(...mark.childNodes);
+      parent?.normalize();
+    });
+    if (!findOpen || !findQuery || (mode !== "preview" && mode !== "split")) return;
+    const marks = [];
+    const wrapTextNode = (node) => {
+      const text = node.nodeValue || "";
+      const needle = findQuery;
+      if (!text || !needle) return;
+      const positions = [];
+      if (findCaseSensitive) {
+        let i = text.indexOf(needle);
+        while (i !== -1) { positions.push(i); i = text.indexOf(needle, i + needle.length); }
+      } else {
+        const lower = text.toLocaleLowerCase();
+        const lowerNeedle = needle.toLocaleLowerCase();
+        let i = lower.indexOf(lowerNeedle);
+        while (i !== -1) { positions.push(i); i = lower.indexOf(lowerNeedle, i + lowerNeedle.length); }
+      }
+      if (!positions.length) return;
+      const fragment = document.createDocumentFragment();
+      let last = 0;
+      positions.forEach((pos) => {
+        const before = text.slice(last, pos);
+        const match = text.slice(pos, pos + needle.length);
+        const mark = document.createElement("mark");
+        mark.className = "find-mark";
+        mark.textContent = match;
+        if (before) fragment.appendChild(document.createTextNode(before));
+        fragment.appendChild(mark);
+        marks.push(mark);
+        last = pos + needle.length;
+      });
+      const after = text.slice(last);
+      if (after) fragment.appendChild(document.createTextNode(after));
+      node.replaceWith(fragment);
+    };
+    const textNodes = [];
+    const walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT);
+    let walkerNode;
+    while ((walkerNode = walker.nextNode())) textNodes.push(walkerNode);
+    textNodes.forEach(wrapTextNode);
+    if (marks.length) {
+      const active = activeFindIndex >= 0 ? Math.min(activeFindIndex, marks.length - 1) : 0;
+      marks[active].classList.add("is-active");
+      marks[active].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [findOpen, findQuery, findCaseSensitive, activeFindIndex, mode, deferredContent]);
 
   const goFindMatch = (nextIndex) => {
     const clamped = findMatches.length ? ((nextIndex % findMatches.length) + findMatches.length) % findMatches.length : -1;
@@ -658,7 +725,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         onReparentObject={onReparentObject}
       />
 
-      <main className={`markdown-workspace${mode === "split" ? " is-split" : ""}${findOpen && mode !== "preview" ? " has-find" : ""}`}>
+      <main className={`markdown-workspace${mode === "split" ? " is-split" : ""}${findOpen ? " has-find" : ""}`}>
         <div className="markdown-toolbar cell-format-toolbar" aria-label="Text commands">
           <div className="markdown-mode-switch cell-format-group" role="group" aria-label="Text view">
             <button className={mode === "write" ? "is-active" : ""} type="button" onClick={() => setMode("write")}>
@@ -719,7 +786,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
           </div>
         </div>
 
-        {findOpen && mode !== "preview" ? (
+        {findOpen ? (
           <div className="markdown-find-bar" role="search" aria-label="Find and replace">
             <div className="markdown-find-fields">
               <input
