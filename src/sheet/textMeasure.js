@@ -97,20 +97,32 @@ export function autoRowHeight(object, row, columnWidthForIndex) {
 
 /**
  * Compute auto heights only for rows that contain wrapped or multi-line cells.
- * Returns a sparse map keyed by row index.
+ * Returns a sparse map keyed by row index. `liveDrafts` is an optional map of
+ * cellId -> { value, formula, displayValue } so rows can grow while a cell is
+ * being edited inline, before the value is committed to the object.
  */
-export function autoRowHeights(object, columnWidthForIndex) {
+export function autoRowHeights(object, columnWidthForIndex, liveDrafts = null) {
   const heights = {};
-  Object.entries(object.cells || {}).forEach(([id, cell]) => {
-    if (!cell?.style?.wrap && !String(cell?.value ?? "").includes("\n")) return;
+  const consider = (id, value, wrap) => {
+    if (!wrap && !String(value ?? "").includes("\n")) return;
     const coordinates = coordinatesFromCellId(id);
     if (!coordinates) return;
+    const cell = object.cells?.[id] || {};
     const fontSize = Number(cell?.style?.fontSize) || DEFAULT_CELL_FONT;
     const columnWidth = columnWidthForIndex?.(coordinates.column) || 0;
-    const lines = wrappedLineCount(cell?.value, columnWidth, fontSize, Boolean(cell?.style?.bold));
+    const lines = wrappedLineCount(value, columnWidth, fontSize, Boolean(cell?.style?.bold));
     if (lines <= 1) return;
     const height = Math.ceil(lines * DEFAULT_CELL_FONT * CELL_LINE_HEIGHT + CELL_V_PADDING);
     if (height > (heights[coordinates.row] || 0)) heights[coordinates.row] = height;
+  };
+  Object.entries(object.cells || {}).forEach(([id, cell]) => {
+    consider(id, cell?.value, cell?.style?.wrap);
   });
+  if (liveDrafts) {
+    liveDrafts.forEach((draft, id) => {
+      const value = draft?.formula ? draft.displayValue || draft.formula : draft?.value;
+      consider(id, value, true);
+    });
+  }
   return heights;
 }

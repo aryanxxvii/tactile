@@ -293,6 +293,15 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
     setActiveIndex(0);
   }, [address]);
 
+  // Auto-grow the value editor so multi-line cell content stays visible as the
+  // user types (Shift+Enter). Capped so a very tall value still scrolls.
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.style.height = "auto";
+    editor.style.height = `${Math.min(140, editor.scrollHeight)}px`;
+  }, [session.draft]);
+
   const inspectCaret = (target) => {
     const next = formulaQuery(target.value, target.selectionStart);
     setQuery(next);
@@ -317,9 +326,10 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
 
   return (
     <div className="formula-editor-shell">
-      <input
+      <textarea
         ref={editorRef}
         className="formula-editor"
+        rows={1}
         value={session.draft}
         data-formula-preview={formulaPreview || undefined}
         onChange={(event) => {
@@ -362,12 +372,22 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
             editorRef.current?.blur();
             return;
           }
-          if (!listOpen && (event.key === "Enter" || event.key === "Escape")) {
+          if (!listOpen && event.key === "Escape") {
             event.preventDefault();
-            commitDraft(event.key === "Enter" ? { immediate: true } : undefined);
+            commitDraft();
             onFormulaModeChange?.(false);
             editorRef.current?.blur();
-            if (event.key === "Enter") onCommit?.();
+            return;
+          }
+          // Shift+Enter (or Alt+Enter) inserts a newline so a cell value can be
+          // multi-line; a plain Enter commits and moves below.
+          if (!listOpen && event.key === "Enter" && !event.shiftKey && !event.altKey) {
+            event.preventDefault();
+            commitDraft({ immediate: true });
+            onFormulaModeChange?.(false);
+            editorRef.current?.blur();
+            onCommit?.();
+            return;
           }
         }}
         onBlur={() => {

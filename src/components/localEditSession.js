@@ -26,6 +26,24 @@ export function setLocalCellDraft(surface, cellId, draft) {
   if (draft) state.drafts.set(key, draft);
   else state.drafts.delete(key);
   state.listeners.get(key)?.forEach((listener) => listener());
+  state.surfaceListeners?.forEach((listener) => listener());
+}
+
+export function getSurfaceCellDrafts(surface) {
+  const state = stateForSurface(surface);
+  return state ? state.drafts : null;
+}
+
+export function subscribeSurfaceCellDrafts(surface, listener) {
+  const state = stateForSurface(surface);
+  if (!state) return () => {};
+  const listeners = state.surfaceListeners || new Set();
+  listeners.add(listener);
+  state.surfaceListeners = listeners;
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size) delete state.surfaceListeners;
+  };
 }
 
 export function dispatchCellEditSeed(sourceElement, value) {

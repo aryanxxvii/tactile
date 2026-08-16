@@ -1,7 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cellId } from "../../../sheet/coordinates.js";
 import { fillRange } from "../../../sheet/ranges.js";
 import { autoRowHeights } from "../../../sheet/textMeasure.js";
+import {
+  getSurfaceCellDrafts,
+  subscribeSurfaceCellDrafts,
+} from "../../../components/localEditSession.js";
 import { boundedAxisEntries, canonicalSheetSelection } from "./selectionGeometry.js";
 import { useFormulaProjection } from "./useFormulaProjection.js";
 import { useVirtualSheet } from "../useVirtualSheet.js";
@@ -99,9 +103,14 @@ export function useSheetGridProjection({
     () => (column) => object.columnWidths?.[column] || defaultColumnWidth,
     [defaultColumnWidth, object.columnWidths],
   );
-  const autoRowHeightsMap = useMemo(
-    () => autoRowHeights(object, columnWidthForIndex),
-    [object, columnWidthForIndex],
+  // Grow rows live while a cell is edited inline (its value is held in the
+  // surface draft store, not yet committed to the object). Without this a
+  // Shift+Enter newline stays clipped until the edit commits.
+  const [draftTick, setDraftTick] = useState(0);
+  const [surfaceDrafts, setSurfaceDrafts] = useState(null);
+  const liveAutoRowHeightsMap = useMemo(
+    () => autoRowHeights(object, columnWidthForIndex, surfaceDrafts),
+    [object, columnWidthForIndex, surfaceDrafts, draftTick],
   );
   const virtualSheet = useVirtualSheet(
     object.rows,
@@ -113,7 +122,7 @@ export function useSheetGridProjection({
       // Explicit/manual row heights (including a live resize preview) must win
       // over content auto-height, so a drag-resize isn't fought back to the
       // measured wrap height. Auto-height only fills rows without an override.
-      rowHeights: { ...autoRowHeightsMap, ...(effectiveSheetMetrics?.rowHeights || object.rowHeights) },
+      rowHeights: { ...liveAutoRowHeightsMap, ...(effectiveSheetMetrics?.rowHeights || object.rowHeights) },
       columnWidths: effectiveSheetMetrics?.columnWidths || object.columnWidths,
       viewStateKey: object.id,
     },
@@ -121,6 +130,16 @@ export function useSheetGridProjection({
     visibleColumnIndexMap,
     object.id,
   );
+  const sheetScrollRef = virtualSheet.scrollRef;
+  useEffect(() => {
+    const surface = sheetScrollRef?.current?.closest?.(".object-surface");
+    if (!surface) return undefined;
+    setSurfaceDrafts(getSurfaceCellDrafts(surface));
+    return subscribeSurfaceCellDrafts(surface, () => {
+      setSurfaceDrafts(getSurfaceCellDrafts(surface));
+      setDraftTick((tick) => tick + 1);
+    });
+  }, [sheetScrollRef]);
   const visibleRows = useMemo(
     () => boundedAxisEntries(
       virtualSheet.rowIndexMap,
