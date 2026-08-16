@@ -2049,6 +2049,20 @@ kbd {
   color: var(--faint);
 }
 
+.markdown-workspace.is-no-wrap .markdown-editor {
+  white-space: pre;
+  overflow: auto;
+}
+
+.markdown-workspace.is-no-wrap .markdown-preview {
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.markdown-workspace.is-no-wrap .markdown-preview > * {
+  min-width: max-content;
+}
+
 .markdown-preview {
   font-family: var(--font-body);
 }

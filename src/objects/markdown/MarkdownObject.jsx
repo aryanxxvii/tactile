@@ -19,6 +19,7 @@ import {
   IconStrikethrough,
   IconTable,
   IconUnderline,
+  IconArrowAutofitWidth,
 } from "@tabler/icons-react";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { PaperPortal } from "../../components/PaperPortal.jsx";
@@ -199,6 +200,7 @@ function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
 
 export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
   const [mode, setMode] = useState("write");
+  const [wrapEnabled, setWrapEnabled] = useState(true);
   const editorRef = useRef(null);
   const activeEditorRef = useRef(null);
   const selectionRef = useRef({ start: 0, end: 0 });
@@ -437,6 +439,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       }}
       className="markdown-editor"
       value={content}
+      wrap={wrapEnabled ? "soft" : "off"}
       onChange={(event) => updateContent(event.target.value)}
       onFocus={(event) => {
         activeEditorRef.current = event.currentTarget;
@@ -475,7 +478,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         onReparentObject={onReparentObject}
       />
 
-      <main className={mode === "split" ? "markdown-workspace is-split" : "markdown-workspace"}>
+      <main className={mode === "split" ? `markdown-workspace is-split ${wrapEnabled ? "" : "is-no-wrap"}` : `markdown-workspace ${wrapEnabled ? "" : "is-no-wrap"}`}>
         <div className="markdown-toolbar cell-format-toolbar" aria-label="Text commands">
           <div className="markdown-mode-switch cell-format-group" role="group" aria-label="Text view">
             <button className={mode === "write" ? "is-active" : ""} type="button" onClick={() => setMode("write")}>
@@ -486,6 +489,12 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
             </button>
             <button className={mode === "split" ? "is-active" : ""} type="button" onClick={() => setMode("split")}>
               <IconColumns2 size={14} stroke={1.6} /> Split
+            </button>
+          </div>
+          <span className="markdown-toolbar-separator" />
+          <div className="markdown-block-group cell-format-group" role="group" aria-label="Word wrap">
+            <button type="button" className={wrapEnabled ? "is-active" : ""} data-tooltip={wrapEnabled ? "Word wrap on" : "Word wrap off"} aria-pressed={wrapEnabled} onClick={() => setWrapEnabled((current) => !current)}>
+              <IconArrowAutofitWidth size={15} stroke={1.7} />
             </button>
           </div>
           <span className="markdown-toolbar-separator" />
