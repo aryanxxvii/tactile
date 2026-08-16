@@ -600,10 +600,8 @@ input:focus-visible,
 .formula-editor {
   min-width: 0;
   width: 100%;
-  height: auto;
-  min-height: 26px;
-  max-height: 140px;
-  padding: 5px 8px;
+  height: 26px;
+  padding: 0 8px;
   outline: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -614,11 +612,6 @@ input:focus-visible,
   font-weight: 420;
   letter-spacing: -0.012em;
   font-variant-ligatures: contextual;
-  line-height: 16px;
-  resize: none;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
   box-shadow: inset 0 1px 1px color-mix(in srgb, var(--elevation-shadow) 24%, transparent);
 }
 
@@ -1207,19 +1200,6 @@ input:focus-visible,
   opacity: 0.62;
 }
 
-.cell-menu-item.is-active {
-  color: var(--accent);
-}
-
-.cell-menu-item.is-active > svg {
-  color: var(--accent);
-}
-
-.cell-menu-check {
-  color: var(--accent);
-  font-size: 10px;
-}
-
 .cell-menu-separator {
   height: 1px;
   margin: 4px 5px;
@@ -1344,6 +1324,18 @@ input:focus-visible,
   justify-content: flex-start;
 }
 
+.sheet-cell.align-top {
+  align-items: flex-start;
+}
+
+.sheet-cell.align-middle {
+  align-items: center;
+}
+
+.sheet-cell.align-bottom {
+  align-items: flex-end;
+}
+
 .sheet-cell.is-bold .cell-value {
   font-weight: 680;
 }
@@ -1386,14 +1378,9 @@ input:focus-visible,
 
 .cell-content {
   min-width: 0;
-  min-height: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1 1 auto;
-  align-self: stretch;
-  overflow: hidden;
-  border-radius: var(--cell-radius);
 }
 
 .embed-icon {
@@ -1416,32 +1403,6 @@ input:focus-visible,
 .cell-value::selection {
   color: var(--selection-foreground, var(--ink)) !important;
   background: var(--selection-background, var(--accent-soft)) !important;
-}
-
-.sheet-cell.is-wrap .cell-value,
-.sheet-cell.is-multiline .cell-value {
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  text-overflow: clip;
-}
-
-.sheet-cell.is-wrap .cell-content,
-.sheet-cell.is-multiline .cell-content {
-  align-items: flex-start;
-}
-
-/* Explicit vertical alignment overrides the multiline/wrap top-align default. */
-.sheet-cell.align-top .cell-content {
-  align-items: flex-start;
-}
-
-.sheet-cell.align-middle .cell-content {
-  align-items: center;
-}
-
-.sheet-cell.align-bottom .cell-content {
-  align-items: flex-end;
 }
 
 .object-statusbar {
@@ -2082,17 +2043,24 @@ kbd {
   font-size: 13px;
   line-height: 1.72;
   tab-size: 2;
-  user-select: text;
-  cursor: text;
-}
-
-.markdown-preview::selection {
-  color: var(--selection-foreground, var(--ink)) !important;
-  background: var(--selection-background, var(--accent-soft)) !important;
 }
 
 .markdown-editor::placeholder {
   color: var(--faint);
+}
+
+.markdown-workspace.is-no-wrap .markdown-editor {
+  white-space: pre;
+  overflow: auto;
+}
+
+.markdown-workspace.is-no-wrap .markdown-preview {
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.markdown-workspace.is-no-wrap .markdown-preview > * {
+  min-width: max-content;
 }
 
 .markdown-preview {
@@ -3543,13 +3511,11 @@ kbd {
 
 .cell-inline-editor {
   width: 100%;
-  height: 100%;
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
   outline: 0;
-  resize: none;
   color: inherit;
   background: transparent;
   font: inherit;
@@ -4046,8 +4012,8 @@ kbd {
 }
 
 .object-statusbar {
-  height: 30px;
-  min-height: 30px;
+  height: 32px;
+  min-height: 32px;
   box-sizing: border-box;
   align-items: center;
   gap: 8px;
@@ -4420,7 +4386,7 @@ kbd {
 }
 
 .object-statusbar {
-  min-height: 30px;
+  min-height: 32px;
   padding: 0 12px;
   gap: 10px;
 }
@@ -4494,94 +4460,6 @@ kbd {
 .markdown-editor,
 .markdown-preview {
   padding: 38px clamp(28px, 6vw, 92px) 66px;
-}
-
-.markdown-find-bar {
-  min-height: 34px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-bottom: 1px solid var(--line);
-  background: var(--paper);
-}
-
-.markdown-find-fields {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.markdown-find-input {
-  min-width: 0;
-  width: clamp(120px, 24vw, 240px);
-  height: 24px;
-  padding: 0 8px;
-  outline: 0;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink);
-  background: var(--paper);
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-variant-ligatures: contextual;
-  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--elevation-shadow) 20%, transparent);
-}
-
-.markdown-find-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
-}
-
-.markdown-find-input::selection {
-  color: var(--selection-foreground, var(--ink));
-  background: var(--selection-background, var(--accent-soft));
-}
-
-.markdown-find-bar button {
-  min-width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 7px;
-  outline: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: var(--ink);
-  background: transparent;
-  font-family: var(--font-body);
-  font-size: 11.5px;
-}
-
-.markdown-find-bar button:hover:not(:disabled),
-.markdown-find-bar button:focus-visible,
-.markdown-find-bar button.is-active {
-  outline: 0;
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
-  background: var(--accent-soft);
-}
-
-.markdown-find-bar button:disabled {
-  opacity: 0.42;
-  cursor: default;
-}
-
-.markdown-find-case {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.markdown-find-count {
-  min-width: 64px;
-  padding: 0 4px;
-  color: var(--faint);
-  font-size: 10.5px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .markdown-editor {
@@ -5439,10 +5317,11 @@ kbd {
    Keep the dock in that lane instead of floating a second panel above it. */
 .app-bottom-bar {
   position: fixed;
+  /*padding: "5px";*/
   inset: auto 0 0;
   z-index: 240;
-  height: 30px;
-  display: flex;
+  height: 31px;
+  /*display: flex;*/
   align-items: center;
   transform: translate3d(0, 0, 0);
   pointer-events: none;
@@ -7002,6 +6881,20 @@ kbd {
 
 .files-context-menu-item:hover > svg,
 .files-context-menu-item:focus-visible > svg {
+  color: var(--accent);
+}
+
+.files-context-menu-item.is-checked {
+  color: var(--accent);
+}
+
+.files-context-menu-item.is-checked > svg {
+  color: var(--accent);
+}
+
+.files-context-menu-item .files-context-menu-check {
+  flex: 0 0 auto;
+  font-size: 9px;
   color: var(--accent);
 }
 

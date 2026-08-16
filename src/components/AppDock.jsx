@@ -317,7 +317,7 @@ export function AppDock({
   return (
     <div
       className={`app-dock ${pathPresent ? "has-path" : "no-path"}`}
-      style={{ justifyContent: "flex-start", borderRadius: "0 7px 0 0", paddingRight: "4px", paddingBottom:"2px"}}
+      style={{ justifyContent: "flex-start", borderRadius: "0 7px 0 0", paddingRight: "4px", paddingBottom: "1px"}}
       aria-label="Tactile app controls"
     >
       <span className="app-dock-brand">
