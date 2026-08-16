@@ -2047,6 +2047,36 @@ kbd {
   font-size: 13px;
   line-height: 1.72;
   tab-size: 2;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+.markdown-editor::-webkit-scrollbar,
+.markdown-preview::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.markdown-editor::-webkit-scrollbar-track,
+.markdown-preview::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.markdown-editor::-webkit-scrollbar-thumb,
+.markdown-preview::-webkit-scrollbar-thumb {
+  border: 2px solid var(--scrollbar-track);
+  border-radius: 6px;
+  background: var(--scrollbar-thumb);
+}
+
+.markdown-editor::-webkit-scrollbar-thumb:hover,
+.markdown-preview::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.markdown-editor::-webkit-scrollbar-corner,
+.markdown-preview::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
 }
 
 .markdown-editor::placeholder {
