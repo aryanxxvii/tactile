@@ -593,6 +593,7 @@ input:focus-visible,
 
 .formula-editor-shell {
   min-width: 0;
+  min-height: 30px;
   position: relative;
   flex: 1;
 }
@@ -601,7 +602,8 @@ input:focus-visible,
   min-width: 0;
   width: 100%;
   height: 26px;
-  padding: 0 8px;
+  min-height: 26px;
+  padding: 6px 8px;
   outline: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
