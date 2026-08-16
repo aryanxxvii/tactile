@@ -179,7 +179,8 @@ export function App() {
         }));
         return;
       }
-      if ((event.key === "Control" || event.key === "Meta") && gridSurface && !nativeTypingTarget && (!currentShell.filesOpen || gridShortcutsAvailable) && !currentShell.settingsOpen) {
+      const inMarkdownPreview = Boolean(event.target?.closest?.(".markdown-preview"));
+      if ((event.key === "Control" || event.key === "Meta") && gridSurface && !nativeTypingTarget && !inMarkdownPreview && (!currentShell.filesOpen || gridShortcutsAvailable) && !currentShell.settingsOpen) {
         pasteProxyRef.current?.focus({ preventScroll: true });
         return;
       }

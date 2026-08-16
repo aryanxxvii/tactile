@@ -14,6 +14,7 @@ import {
   IconMinus,
   IconPhoto,
   IconQuote,
+  IconSelectAll,
   IconStrikethrough,
   IconTable,
   IconTrash,
@@ -161,6 +162,37 @@ export function MarkdownContextMenu({ menu, onClose, onAction, textColors, highl
   };
   const fallbackLeft = clamp(menu.anchorRect?.left ?? menu.x, 8, Math.max(8, window.innerWidth - 284));
   const fallbackTop = clamp(menu.anchorRect?.bottom ?? menu.y, 8, Math.max(8, window.innerHeight - 8));
+
+  if (menu.readOnly) {
+    return (
+      <PaperPortal className="tactile-context-menu-layer" themeSource={menu.sourceElement}>
+        <div
+          ref={menuRef}
+          className="files-context-menu markdown-context-menu"
+          role="menu"
+          tabIndex={-1}
+          aria-label="Markdown preview commands"
+          style={{
+            left: position?.left ?? fallbackLeft,
+            top: position?.top ?? fallbackTop,
+            visibility: position ? "visible" : "hidden",
+          }}
+          onContextMenu={(event) => event.preventDefault()}
+          onKeyDown={(event) => handleMenuKeyDown(event, {
+            root: menuRef.current,
+            onClose,
+            restoreFocus: menu.sourceElement,
+          })}
+        >
+          <div className="files-context-menu-heading">
+            <span>Preview</span>
+          </div>
+          <MenuItem icon={IconCopy} label="Copy" shortcut="Ctrl C" disabled={!menu.hasSelection} onSelect={invoke("copy")} />
+          <MenuItem icon={IconSelectAll} label="Select all" shortcut="Ctrl A" onSelect={invoke("select-all")} />
+        </div>
+      </PaperPortal>
+    );
+  }
 
   return (
     <PaperPortal className="tactile-context-menu-layer" themeSource={menu.sourceElement}>

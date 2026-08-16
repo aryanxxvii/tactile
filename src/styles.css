@@ -2082,6 +2082,13 @@ kbd {
   font-size: 13px;
   line-height: 1.72;
   tab-size: 2;
+  user-select: text;
+  cursor: text;
+}
+
+.markdown-preview::selection {
+  color: var(--selection-foreground, var(--ink)) !important;
+  background: var(--selection-background, var(--accent-soft)) !important;
 }
 
 .markdown-editor::placeholder {
@@ -4487,6 +4494,94 @@ kbd {
 .markdown-editor,
 .markdown-preview {
   padding: 38px clamp(28px, 6vw, 92px) 66px;
+}
+
+.markdown-find-bar {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.markdown-find-fields {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.markdown-find-input {
+  min-width: 0;
+  width: clamp(120px, 24vw, 240px);
+  height: 24px;
+  padding: 0 8px;
+  outline: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-variant-ligatures: contextual;
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--elevation-shadow) 20%, transparent);
+}
+
+.markdown-find-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.markdown-find-input::selection {
+  color: var(--selection-foreground, var(--ink));
+  background: var(--selection-background, var(--accent-soft));
+}
+
+.markdown-find-bar button {
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 7px;
+  outline: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--ink);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+}
+
+.markdown-find-bar button:hover:not(:disabled),
+.markdown-find-bar button:focus-visible,
+.markdown-find-bar button.is-active {
+  outline: 0;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: var(--accent-soft);
+}
+
+.markdown-find-bar button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.markdown-find-case {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.markdown-find-count {
+  min-width: 64px;
+  padding: 0 4px;
+  color: var(--faint);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .markdown-editor {

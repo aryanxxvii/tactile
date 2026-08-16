@@ -19,6 +19,8 @@ import {
   IconStrikethrough,
   IconTable,
   IconUnderline,
+  IconChevronUp,
+  IconX,
 } from "@tabler/icons-react";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { PaperPortal } from "../../components/PaperPortal.jsx";
@@ -204,7 +206,16 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   const selectionRef = useRef({ start: 0, end: 0 });
   const contextMenuOpenRef = useRef(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [previewMenu, setPreviewMenu] = useState(null);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState("");
+  const [replaceQuery, setReplaceQuery] = useState("");
+  const [findCaseSensitive, setFindCaseSensitive] = useState(false);
+  const [activeFindIndex, setActiveFindIndex] = useState(-1);
+  const findInputRef = useRef(null);
+  const replaceInputRef = useRef(null);
   const surfaceRef = useRef(null);
+  const previewRef = useRef(null);
   const canonicalContent = object.content || "";
   const contentSession = useLocalDraft(canonicalContent, (next) => onUpdateObject({ content: next }));
   const content = contentSession.draft;
@@ -225,6 +236,106 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
 
   const currentContent = () => contentSession.draftRef.current;
   const updateContent = (next) => contentSession.updateDraft(next);
+
+  const buildFindMatches = (source, needle, caseSensitive) => {
+    if (!needle) return [];
+    const list = [];
+    if (caseSensitive) {
+      let index = source.indexOf(needle);
+      while (index !== -1) {
+        list.push({ start: index, end: index + needle.length });
+        index = source.indexOf(needle, index + 1);
+      }
+    } else {
+      const lower = source.toLocaleLowerCase();
+      const lowerNeedle = needle.toLocaleLowerCase();
+      let index = lower.indexOf(lowerNeedle);
+      while (index !== -1) {
+        list.push({ start: index, end: index + needle.length });
+        index = lower.indexOf(lowerNeedle, index + 1);
+      }
+    }
+    return list;
+  };
+
+  const findMatches = useMemo(
+    () => buildFindMatches(content, findQuery, findCaseSensitive),
+    [content, findCaseSensitive, findQuery],
+  );
+
+  const revealFindMatch = (match) => {
+    if (!match) return;
+    const editor = editorForSelection();
+    if (!editor) return;
+    activeEditorRef.current = editor;
+    selectionRef.current = { start: match.start, end: match.end };
+    window.requestAnimationFrame(() => {
+      editor.focus();
+      editor.setSelectionRange(match.start, match.end);
+    });
+  };
+
+  const goFindMatch = (nextIndex) => {
+    const clamped = findMatches.length ? ((nextIndex % findMatches.length) + findMatches.length) % findMatches.length : -1;
+    setActiveFindIndex(clamped);
+    revealFindMatch(clamped >= 0 ? findMatches[clamped] : null);
+  };
+
+  const openFind = () => {
+    setFindOpen(true);
+    const selection = selectedText();
+    if (selection && !selection.includes("\n")) setFindQuery(selection);
+    window.requestAnimationFrame(() => {
+      findInputRef.current?.focus();
+      findInputRef.current?.select();
+    });
+  };
+
+  const closeFind = () => {
+    setFindOpen(false);
+    setActiveFindIndex(-1);
+    const editor = editorForSelection();
+    if (editor) {
+      window.requestAnimationFrame(() => {
+        editor.focus();
+        const { start, end } = selectionRef.current;
+        editor.setSelectionRange(start, end);
+      });
+    }
+  };
+
+  const replaceCurrentMatch = () => {
+    const match = findMatches[activeFindIndex];
+    if (!match) return;
+    const current = currentContent();
+    const next = `${current.slice(0, match.start)}${replaceQuery}${current.slice(match.end)}`;
+    updateContent(next);
+    const cursor = match.start + replaceQuery.length;
+    const fresh = buildFindMatches(next, findQuery, findCaseSensitive);
+    const relative = fresh.findIndex((candidate) => candidate.start >= cursor);
+    setActiveFindIndex(relative);
+    if (relative >= 0) revealFindMatch(fresh[relative]);
+  };
+
+  const replaceAllMatches = () => {
+    if (!findQuery) return;
+    const escaped = findQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const flags = findCaseSensitive ? "g" : "gi";
+    const next = currentContent().replace(new RegExp(escaped, flags), () => replaceQuery);
+    updateContent(next);
+    setActiveFindIndex(-1);
+  };
+
+  const handleFindKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeFind();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const delta = event.shiftKey ? -1 : 1;
+      goFindMatch(activeFindIndex + delta);
+    }
+  };
 
   const editorForSelection = () => activeEditorRef.current || editorRef.current;
 
@@ -349,6 +460,40 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
     window.requestAnimationFrame(() => restoreEditorSelection(editor, start, end));
   };
 
+  const openPreviewContextMenu = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const selection = window.getSelection?.();
+    const hasSelection = Boolean(selection && !selection.isCollapsed && selection.toString().trim());
+    const rect = event.currentTarget.getBoundingClientRect();
+    setPreviewMenu({
+      readOnly: true,
+      x: event.clientX,
+      y: event.clientY,
+      anchorRect: { left: event.clientX, top: event.clientY, bottom: event.clientY },
+      sourceElement: event.currentTarget,
+      hasSelection,
+      focusMenu: false,
+      rect,
+    });
+  };
+
+  const closePreviewContextMenu = () => setPreviewMenu(null);
+
+  const handlePreviewContextAction = (action) => {
+    if (action === "copy") {
+      window.requestAnimationFrame(() => document.execCommand?.("copy"));
+    } else if (action === "select-all") {
+      const element = previewRef.current;
+      if (!element) return;
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const selection = window.getSelection?.();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  };
+
   const openMarkdownContextMenu = (event, editor = event.currentTarget, fromKeyboard = false) => {
     event.preventDefault();
     event.stopPropagation();
@@ -370,6 +515,11 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
 
   const handleKeyDown = (event) => {
     const command = event.ctrlKey || event.metaKey;
+    if (command && event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      openFind();
+      return;
+    }
     if (command && (event.key === "]" || event.code === "BracketRight")) {
       openMarkdownContextMenu(event, event.currentTarget, true);
       return;
@@ -455,7 +605,12 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   );
 
   const preview = (suffix = "") => (
-    <div className="markdown-preview" aria-label={`${object.title} preview${suffix}`}>
+    <div
+      ref={previewRef}
+      className="markdown-preview"
+      aria-label={`${object.title} preview${suffix}`}
+      onContextMenu={openPreviewContextMenu}
+    >
       {deferredContent ? renderMarkdownBlocks(deferredContent) : (
         <p className="markdown-preview-empty">Nothing to preview yet.</p>
       )}
@@ -524,6 +679,64 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
           </div>
         </div>
 
+        {findOpen && mode !== "preview" ? (
+          <div className="markdown-find-bar" role="search" aria-label="Find and replace">
+            <div className="markdown-find-fields">
+              <input
+                ref={findInputRef}
+                className="markdown-find-input"
+                value={findQuery}
+                placeholder="Find"
+                spellCheck="false"
+                onChange={(event) => {
+                  setFindQuery(event.target.value);
+                  setActiveFindIndex(-1);
+                }}
+                onKeyDown={handleFindKeyDown}
+                aria-label="Find"
+              />
+              <input
+                ref={replaceInputRef}
+                className="markdown-find-input"
+                value={replaceQuery}
+                placeholder="Replace with"
+                spellCheck="false"
+                onChange={(event) => setReplaceQuery(event.target.value)}
+                onKeyDown={handleFindKeyDown}
+                aria-label="Replace with"
+              />
+            </div>
+            <button
+              type="button"
+              className={findCaseSensitive ? "is-active" : ""}
+              aria-pressed={findCaseSensitive}
+              data-tooltip="Match case"
+              onClick={() => setFindCaseSensitive((value) => !value)}
+            >
+              <span className="markdown-find-case">Aa</span>
+            </button>
+            <button type="button" aria-label="Previous match" disabled={!findMatches.length} onClick={() => goFindMatch(activeFindIndex - 1)}>
+              <IconChevronUp size={14} stroke={1.7} />
+            </button>
+            <button type="button" aria-label="Next match" disabled={!findMatches.length} onClick={() => goFindMatch(activeFindIndex + 1)}>
+              <IconChevronDown size={14} stroke={1.7} />
+            </button>
+            <span className="markdown-find-count">
+              {findMatches.length
+                ? (activeFindIndex >= 0
+                  ? `${Math.min(activeFindIndex, findMatches.length - 1) + 1} of ${findMatches.length}`
+                  : `${findMatches.length} match${findMatches.length === 1 ? "" : "es"}`)
+                : "No matches"}
+            </span>
+            <span className="markdown-toolbar-separator" />
+            <button type="button" disabled={!findMatches.length || activeFindIndex < 0} onClick={replaceCurrentMatch}>Replace</button>
+            <button type="button" disabled={!findMatches.length} onClick={replaceAllMatches}>Replace all</button>
+            <button type="button" aria-label="Close find" data-tooltip="Close · Esc" onClick={closeFind}>
+              <IconX size={14} stroke={1.7} />
+            </button>
+          </div>
+        ) : null}
+
         {mode === "write" ? editor() : null}
         {mode === "preview" ? preview() : null}
         {mode === "split" ? <div className="markdown-split">{editor(" split view")}{preview(" split view")}</div> : null}
@@ -537,6 +750,13 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         menu={contextMenu}
         onClose={closeMarkdownContextMenu}
         onAction={handleMarkdownContextAction}
+        textColors={TEXT_COLORS}
+        highlightColors={HIGHLIGHT_COLORS}
+      />
+      <MarkdownContextMenu
+        menu={previewMenu}
+        onClose={closePreviewContextMenu}
+        onAction={handlePreviewContextAction}
         textColors={TEXT_COLORS}
         highlightColors={HIGHLIGHT_COLORS}
       />
