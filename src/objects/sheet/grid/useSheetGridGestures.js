@@ -3,6 +3,10 @@ import { cellAddress } from "../../../sheet/coordinates.js";
 import { fillChanges, fillRange } from "../../../sheet/ranges.js";
 import { rangeLabel } from "../../../sheet/ranges.js";
 import { naturalColumnWidth, naturalRowHeight } from "../../../sheet/textMeasure.js";
+import {
+  CELL_EDIT_SEED_EVENT,
+  dispatchCellEditCommitAny,
+} from "../../../components/localEditSession.js";
 import { rangeValues } from "./useSheetGridProjection.js";
 
 function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, coordinate) {

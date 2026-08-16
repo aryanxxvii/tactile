@@ -110,7 +110,10 @@ export function useSheetGridProjection({
       ...(effectiveSheetMetrics || {}),
       rowHeight: object.rowHeight || effectiveSheetMetrics?.rowHeight,
       columnWidth: object.columnWidth || effectiveSheetMetrics?.columnWidth,
-      rowHeights: { ...(effectiveSheetMetrics?.rowHeights || object.rowHeights), ...autoRowHeightsMap },
+      // Explicit/manual row heights (including a live resize preview) must win
+      // over content auto-height, so a drag-resize isn't fought back to the
+      // measured wrap height. Auto-height only fills rows without an override.
+      rowHeights: { ...autoRowHeightsMap, ...(effectiveSheetMetrics?.rowHeights || object.rowHeights) },
       columnWidths: effectiveSheetMetrics?.columnWidths || object.columnWidths,
       viewStateKey: object.id,
     },
