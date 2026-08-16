@@ -1,4 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ObjectHeader,
+  PaperPortal,
+  React,
+  codeLanguageForExtension,
+  resolveTauriInvoke,
+  useEffect,
+  useLocalDraft,
+  useMemo,
+  useRef,
+  useState,
+} from "tactile:host";
 import {
   IconBrackets,
   IconChevronDown,
@@ -8,11 +19,6 @@ import {
   IconTerminal2,
   IconTrash,
 } from "@tabler/icons-react";
-import { ObjectHeader } from "../../components/ObjectHeader.jsx";
-import { PaperPortal } from "../../components/PaperPortal.jsx";
-import { useLocalDraft } from "../../components/localEditSession.js";
-import { codeLanguageForExtension } from "../../model.js";
-import { resolveTauriInvoke } from "../../platform/tauri/runtime.ts";
 
 const LANGUAGE_LABELS = {
   javascript: "JavaScript", jsx: "JSX", typescript: "TypeScript", tsx: "TSX",

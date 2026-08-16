@@ -1,21 +1,24 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useSyncExternalStore } from "react";
 import {
   getObjectTypeDefinition,
   listObjectTypeDefinitions,
   loadObjectRenderer,
+  objectTypeRegistryVersion,
+  subscribeObjectTypeDefinitions,
 } from "./index.js";
 
 const loadedRenderers = new Map();
 const lazyRenderers = new Map();
 
-function lazyObjectRenderer(type) {
-  if (lazyRenderers.has(type)) return lazyRenderers.get(type);
+function lazyObjectRenderer(type, version = objectTypeRegistryVersion()) {
+  const key = `${type}:${version}`;
+  if (lazyRenderers.has(key)) return lazyRenderers.get(key);
   const Renderer = lazy(async () => {
     const Renderer = await loadObjectRenderer(type);
-    loadedRenderers.set(type, Renderer);
+    loadedRenderers.set(key, Renderer);
     return { default: Renderer };
   });
-  lazyRenderers.set(type, Renderer);
+  lazyRenderers.set(key, Renderer);
   return Renderer;
 }
 
@@ -31,10 +34,18 @@ export function registerObjectRenderer(type, renderer) {
 }
 
 export function ObjectRenderer({ object, ...props }) {
+  const version = useSyncExternalStore(
+    subscribeObjectTypeDefinitions,
+    objectTypeRegistryVersion,
+    objectTypeRegistryVersion,
+  );
   const definition = getObjectTypeDefinition(object.type);
-  const LoadedRenderer = loadedRenderers.get(definition.type);
+  const key = `${definition.type}:${version}`;
+  const LoadedRenderer = loadedRenderers.get(key);
   if (LoadedRenderer) return <LoadedRenderer object={object} {...props} />;
-  const Renderer = OBJECT_RENDERERS[definition.type] || lazyObjectRenderer(definition.type);
+  const Renderer = version === 0
+    ? OBJECT_RENDERERS[definition.type] || lazyObjectRenderer(definition.type, version)
+    : lazyObjectRenderer(definition.type, version);
   return (
     <Suspense fallback={null}>
       <Renderer object={object} {...props} />
@@ -44,9 +55,10 @@ export function ObjectRenderer({ object, ...props }) {
 
 export function preloadObjectRenderer(type) {
   const definition = getObjectTypeDefinition(type);
+  const key = `${definition.type}:${objectTypeRegistryVersion()}`;
   return loadObjectRenderer(type)
     .then((Renderer) => {
-      loadedRenderers.set(definition.type, Renderer);
+      loadedRenderers.set(key, Renderer);
       return Renderer;
     })
     .catch(() => null);

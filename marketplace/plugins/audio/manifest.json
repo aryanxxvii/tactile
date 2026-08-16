@@ -1,0 +1,1 @@
+{"schemaVersion":1,"packageId":"tactile.audio","type":"audio","name":"Audio","description":"A locally attached audio file.","version":"1.0.0","tactile":">=1.1.0","permissions":["media.playback"],"entry":"plugin.jsx","extensions":["mp3","wav","ogg","flac","m4a","aac"],"mimePrefixes":["audio/"]}

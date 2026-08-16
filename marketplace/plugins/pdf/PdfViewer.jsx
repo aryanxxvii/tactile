@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { React, pluginAssetUrl, useEffect, useRef, useState } from "tactile:host";
 import { IconChevronLeft, IconChevronRight, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 let pdfjsPromise;
 
@@ -8,7 +7,7 @@ function loadPdfjs() {
   pdfjsPromise ||= import("pdfjs-dist").then((module) => {
     const library = module.default || module;
     if (!library.GlobalWorkerOptions.workerSrc) {
-      library.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+      library.GlobalWorkerOptions.workerSrc = pluginAssetUrl("pdf.worker.min.mjs");
     }
     return library;
   });

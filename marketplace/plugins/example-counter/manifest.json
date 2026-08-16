@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "packageId": "tactile.example-counter",
+  "type": "example-counter",
+  "name": "Counter",
+  "description": "A small first-party counter cell object used to verify runtime installation.",
+  "version": "1.0.0",
+  "tactile": ">=1.1.0",
+  "permissions": [],
+  "entry": "plugin.js"
+}

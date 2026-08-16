@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "packageId": "tactile.code",
+  "type": "code",
+  "name": "Code",
+  "description": "A local source file with language-aware presentation.",
+  "version": "1.0.0",
+  "tactile": ">=1.1.0",
+  "permissions": ["code.execute"],
+  "entry": "plugin.jsx"
+}

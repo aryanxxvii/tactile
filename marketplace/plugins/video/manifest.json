@@ -1,0 +1,1 @@
+{"schemaVersion":1,"packageId":"tactile.video","type":"video","name":"Video","description":"A locally attached video.","version":"1.0.0","tactile":">=1.1.0","permissions":["media.playback","media.picture-in-picture","media.fullscreen"],"entry":"plugin.jsx","extensions":["mp4","webm"],"mimePrefixes":["video/"]}

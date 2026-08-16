@@ -1,5 +1,7 @@
 node_modules/
 dist/
+!marketplace/dist/
+!marketplace/dist/**
 *.png
 !src-tauri/icons/*.png
 *.xlsx

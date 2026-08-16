@@ -1,0 +1,1 @@
+{"schemaVersion":1,"packageId":"tactile.html","type":"html","name":"HTML","description":"A local HTML document.","version":"1.0.0","tactile":">=1.1.0","permissions":["native.html-preview"],"entry":"plugin.jsx","extensions":["html","htm"],"mimePrefixes":["text/html"]}

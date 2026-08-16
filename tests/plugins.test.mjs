@@ -6,6 +6,7 @@ import { counterPlugin } from "../src/objects/registry/template/counterPlugin.js
 import {
   getObjectTypeDefinition,
   listObjectTypeDefinitions,
+  loadObjectRenderer,
   projectObjectCell,
   registerObjectTypeDefinition,
   subscribeObjectTypeDefinitions,
@@ -86,4 +87,27 @@ test("the generic template installs as a creatable menu object and preserves plu
 
   uninstall();
   assert.equal(listObjectTypeDefinitions().some((definition) => definition.type === counterPlugin.type), false);
+});
+
+test("installing a new version for the same type replaces its renderer", async () => {
+  const definition = (version) => ({
+    type: "runtime-update",
+    label: "Runtime update",
+    icon: () => null,
+    create: () => ({ id: "update", type: "runtime-update", title: "Update" }),
+    validate: () => ({ valid: true, errors: [] }),
+    migrate: (object) => object,
+    serialize: (object) => object,
+    deserialize: (object) => object,
+    renderer: { load: async () => function RuntimeRenderer() { return version; } },
+    cell: { project: () => ({ displayValue: version }) },
+  });
+  const uninstallFirst = registerObjectTypeDefinition(definition("v1"));
+  const first = await loadObjectRenderer("runtime-update");
+  const uninstallSecond = registerObjectTypeDefinition(definition("v2"));
+  const second = await loadObjectRenderer("runtime-update");
+  assert.equal(first(), "v1");
+  assert.equal(second(), "v2");
+  uninstallFirst();
+  uninstallSecond();
 });

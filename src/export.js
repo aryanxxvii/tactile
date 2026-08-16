@@ -45,6 +45,11 @@ function stripBinaryData(asset) {
   return metadata;
 }
 
+function pluginObjectData(object) {
+  const core = new Set(["id", "type", "title", "description", "parent", "iconEmoji", "iconColor", "assetId", "source"]);
+  return Object.fromEntries(Object.entries(object || {}).filter(([key]) => !core.has(key)));
+}
+
 function sheetMetadata(object) {
   const cellMetadata = {};
   Object.values(object.cells || {}).forEach((cell) => {
@@ -106,6 +111,8 @@ export function buildPortablePackage(workspaceInput) {
       record.file = `${folder}/content.${extension}`;
       record.assetId = object.assetId || null;
       record.source = object.source || "";
+      const data = pluginObjectData(object);
+      if (Object.keys(data).length) record.data = data;
       record.asset = stripBinaryData(asset);
       if (asset?.dataUrl) files[record.file] = { dataUrl: asset.dataUrl };
       else if (typeof object.source === "string") files[record.file] = object.source;
@@ -129,6 +136,12 @@ export function buildPortablePackage(workspaceInput) {
     updatedAt: workspace.updatedAt,
     activeThemeId: workspace.activeThemeId,
     settings: workspace.settings,
+    pluginRequirements: [...new Set(Object.values(workspace.objects)
+      .map((object) => object.type)
+      .filter((type) => !["sheet", "markdown", "document", "link"].includes(type)))].map((type) => ({
+      packageId: `tactile.${type}`,
+      type,
+    })),
     objects,
     themes: themeRecords,
   };
@@ -300,6 +313,7 @@ export async function workspaceFromZip(input) {
         };
       }
       objects[record.id] = {
+        ...(record.data && typeof record.data === "object" ? record.data : {}),
         id: record.id,
         type: record.type,
         title: record.title,

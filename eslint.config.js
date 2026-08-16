@@ -10,6 +10,7 @@ export default tseslint.config(
   {
     ignores: [
       "dist/**",
+      "marketplace/dist/**",
       "node_modules/**",
       "tmp/**",
       "coverage/**",

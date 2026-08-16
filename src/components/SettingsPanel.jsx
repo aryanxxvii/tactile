@@ -465,12 +465,14 @@ onChangeWorkspaceFolder,
                     <h3 id="cell-objects-title">Cell Objects</h3>
                     <p>Active objects appear in the create menu. Existing cells remain readable when an object is disabled.</p>
                   </div>
-                  <strong>{plugins.enabledTypes.size} active</strong>
+                  <strong>{plugins.definitions.filter((definition) => plugins.isEnabled(definition.type)).length} active</strong>
                 </div>
                 <div className="plugin-list">
                   {plugins.definitions.map((definition) => {
                     const Icon = definition.icon;
                     const enabled = plugins.isEnabled(definition.type);
+                    const packageId = definition.package?.id;
+                    const installedRecord = packageId ? plugins.installed[packageId] : null;
                     return (
                       <div className="plugin-row" key={definition.type}>
                         <span className="plugin-icon"><Icon size={17} stroke={1.5} /></span>
@@ -482,7 +484,10 @@ onChangeWorkspaceFolder,
                         <Switch
                           label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
                           checked={enabled}
-                          onChange={(checked) => plugins.setEnabled(definition.type, checked)}
+                          onChange={(checked) => {
+                            if (installedRecord) void plugins.setInstalledEnabled(packageId, checked);
+                            else plugins.setEnabled(definition.type, checked);
+                          }}
                         />
                       </div>
                     );
@@ -495,12 +500,40 @@ onChangeWorkspaceFolder,
                   <div>
                     <span>Discover</span>
                     <h3 id="marketplace-title">Marketplace</h3>
+                    <p>Optional first-party cell objects are downloaded, verified, and cached locally.</p>
                   </div>
+                  <button type="button" onClick={() => void plugins.refreshCatalog()} data-tooltip="Refresh marketplace"><IconRefresh size={14} /></button>
                 </div>
-                <div className="marketplace-empty">
-                  <IconPlugConnected size={24} stroke={1.35} />
-                  <strong>No marketplace source connected</strong>
-                  <p>Installable cell objects will appear here when a trusted repository or host is configured.</p>
+                {plugins.marketplaceError ? <p className="is-error" role="alert">{plugins.marketplaceError}</p> : null}
+                <div className="plugin-list">
+                  {plugins.catalog.map((entry) => {
+                    const record = plugins.installed[entry.packageId];
+                    return (
+                      <div className="plugin-row" key={entry.packageId}>
+                        <span className="plugin-icon"><IconPlugConnected size={17} stroke={1.5} /></span>
+                        <span className="plugin-copy">
+                          <strong>{entry.name}</strong>
+                          <small>{entry.description}</small>
+                        </span>
+                        <span className="plugin-source">{entry.status === "available" ? entry.version : "Coming later"}</span>
+                        <span>
+                          {record ? (
+                            <>
+                              <Switch
+                                label={`${record.enabled === false ? "Enable" : "Disable"} ${entry.name}`}
+                                checked={record.enabled !== false}
+                                onChange={(checked) => void plugins.setInstalledEnabled(entry.packageId, checked)}
+                              />
+                              <button className="settings-close" type="button" aria-label={`Uninstall ${entry.name}`} data-tooltip={`Uninstall ${entry.name}`} onClick={() => void plugins.uninstallMarketplacePlugin(entry.packageId)}><IconTrash size={14} /></button>
+                            </>
+                          ) : (
+                            <button className="settings-close" type="button" aria-label={`Install ${entry.name}`} data-tooltip={`Install ${entry.name}`} disabled={entry.status !== "available"} onClick={() => void plugins.installFromMarketplace(entry)}><IconDownload size={14} /></button>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {plugins.marketplaceState === "loading" && !plugins.catalog.length ? <p className="marketplace-empty">Loading marketplace…</p> : null}
                 </div>
               </section>
             </div>

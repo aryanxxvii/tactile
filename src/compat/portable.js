@@ -31,6 +31,7 @@ const CORE_WORKSPACE_INDEX_FIELDS = new Set([
   "updatedAt",
   "activeThemeId",
   "settings",
+  "pluginRequirements",
   "objects",
   "themes",
 ]);
@@ -60,6 +61,7 @@ const CORE_OBJECT_FIELDS = new Set([
   "frozenColumns",
   "assetId",
   "source",
+  "data",
 ]);
 
 const CORE_CELL_FIELDS = new Set(["id", "address", "row", "column", "value", "formula", "embed"]);

@@ -1,7 +1,6 @@
-import { OBJECT_TYPE_DEFINITIONS } from "./builtins.js";
+import { MISSING_PLUGIN_DEFINITION, OBJECT_TYPE_DEFINITIONS } from "./builtins.js";
 import { defineObjectPlugin } from "./defineObjectPlugin.js";
 
-const FALLBACK_TYPE = "document";
 const rendererPromises = new Map();
 const registryListeners = new Set();
 let registryVersion = 0;
@@ -14,7 +13,11 @@ const customDefinitions = new Map();
  * @returns {Object}
  */
 export function getObjectTypeDefinition(type) {
-  return customDefinitions.get(type) || OBJECT_TYPE_DEFINITIONS[type] || OBJECT_TYPE_DEFINITIONS[FALLBACK_TYPE];
+  return customDefinitions.get(type) || OBJECT_TYPE_DEFINITIONS[type] || MISSING_PLUGIN_DEFINITION;
+}
+
+export function hasObjectTypeDefinition(type) {
+  return customDefinitions.has(type) || Boolean(OBJECT_TYPE_DEFINITIONS[type]);
 }
 
 /**

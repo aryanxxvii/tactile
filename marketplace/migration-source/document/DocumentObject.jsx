@@ -1,5 +1,5 @@
 import { IconBrackets, IconFileText } from "@tabler/icons-react";
-import { ObjectHeader } from "../../components/ObjectHeader.jsx";
+import { ObjectHeader } from "../../../src/components/ObjectHeader.jsx";
 
 export function DocumentObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
   return (

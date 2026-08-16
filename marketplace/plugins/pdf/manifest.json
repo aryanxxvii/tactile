@@ -1,0 +1,1 @@
+{"schemaVersion":1,"packageId":"tactile.pdf","type":"pdf","name":"PDF","description":"A locally attached PDF document.","version":"1.0.0","tactile":">=1.1.0","permissions":["worker.create"],"entry":"plugin.jsx","extensions":["pdf"],"mimePrefixes":["application/pdf"],"assets":[{"source":"pdfjs-dist/build/pdf.worker.min.mjs","file":"pdf.worker.min.mjs"}]}

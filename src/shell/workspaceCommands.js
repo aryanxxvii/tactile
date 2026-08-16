@@ -91,7 +91,9 @@ export function useWorkspaceCommands({
       const asset = await readLocalFile(file);
       const type = inferFileObjectType(asset);
       if (!plugins.isEnabled(type)) {
-        showNotice(`Enable ${type} in Settings → Plugins before attaching this file`);
+        const catalogEntry = plugins.catalog.find((entry) => entry.type === type);
+        const action = catalogEntry?.status === "available" ? "Install" : "This file type needs";
+        showNotice(`${action} the ${catalogEntry?.name || type} plugin in Settings → Plugins before attaching this file`);
         return;
       }
       const created = createEmbeddedFile(parentObjectId, cell.id, asset);

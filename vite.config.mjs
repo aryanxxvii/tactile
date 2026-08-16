@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import path from "node:path";
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -18,6 +20,22 @@ const tactileDirty = Boolean(
   gitValue(["status", "--porcelain", "--untracked-files=no", "--", "src", "tests", "public", "vite.config.mjs"], ""),
 );
 
+function marketplaceDevServer() {
+  return {
+    name: "tactile-marketplace-dev-server",
+    configureServer(server) {
+      server.middlewares.use("/marketplace", (request, response, next) => {
+        const relative = decodeURIComponent((request.url || "/").split("?")[0]).replace(/^\/+/, "");
+        const file = path.resolve("marketplace", "dist", relative || "catalog.json");
+        const root = path.resolve("marketplace", "dist");
+        if (!file.startsWith(root) || !existsSync(file) || !statSync(file).isFile()) return next();
+        response.setHeader("Content-Type", file.endsWith(".json") ? "application/json" : "text/javascript");
+        createReadStream(file).pipe(response);
+      });
+    },
+  };
+}
+
 export default defineConfig({
   define: {
     "import.meta.env.VITE_TACTILE_COMMIT": JSON.stringify(tactileCommit),
@@ -36,5 +54,5 @@ export default defineConfig({
       clientFiles: ["./src/main.jsx"],
     },
   },
-  plugins: [react()],
+  plugins: [marketplaceDevServer(), react()],
 });

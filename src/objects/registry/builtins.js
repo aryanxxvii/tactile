@@ -1,13 +1,8 @@
 import {
-  IconCode,
   IconExternalLink,
-  IconFileTypePdf,
   IconLayoutGrid,
-  IconMovie,
-  IconMusic,
-  IconPhoto,
+  IconPlugOff,
   IconTextCaption,
-  IconVectorBezier,
 } from "@tabler/icons-react";
 import {
   createObjectCompat,
@@ -21,13 +16,6 @@ import { defineObjectPlugin } from "./defineObjectPlugin.js";
 const noAssetPolicy = Object.freeze({
   kind: "none",
   acceptsBinary: false,
-});
-
-const fileAssetPolicy = Object.freeze({
-  kind: "external-asset",
-  acceptsBinary: true,
-  extensions: Object.freeze(["pdf", "png", "jpg", "jpeg", "gif", "webp", "mp4", "webm", "mp3", "wav", "ogg", "flac", "m4a", "aac", "html", "svg"]),
-  mimePrefixes: Object.freeze(["application/", "image/", "video/", "audio/", "text/"]),
 });
 
 const noCommands = () => [];
@@ -50,6 +38,7 @@ function descriptor({
   renderer: rendererDefinition,
   assetPolicy = noAssetPolicy,
   creatable = false,
+  manageInSettings = true,
 }) {
   return defineObjectPlugin({
     type,
@@ -59,6 +48,7 @@ function descriptor({
     source: "built-in",
     defaultEnabled: true,
     creatable,
+    manageInSettings,
     renderer: rendererDefinition,
     cell: Object.freeze({ project: defaultCellProjection }),
     create: (options = {}) => createObjectCompat(type, options),
@@ -93,75 +83,37 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
     creatable: true,
     renderer: renderer("../markdown/MarkdownObject.jsx", () => import("../markdown/MarkdownObject.jsx").then((module) => module.MarkdownObject)),
   }),
-  code: descriptor({
-    type: "code",
-    label: "Code",
-    description: "A local source file with language-aware presentation.",
-    icon: IconCode,
-    creatable: true,
-    renderer: renderer("../code/CodeObject.jsx", () => import("../code/CodeObject.jsx").then((module) => module.CodeObject)),
-  }),
-  document: descriptor({
-    type: "document",
-    label: "Document",
-    description: "Compatibility renderer for legacy document objects.",
-    icon: IconTextCaption,
-    renderer: renderer("../document/DocumentObject.jsx", () => import("../document/DocumentObject.jsx").then((module) => module.DocumentObject)),
-  }),
-  pdf: descriptor({
-    type: "pdf",
-    label: "PDF",
-    description: "A locally attached PDF document.",
-    icon: IconFileTypePdf,
-    renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
-    assetPolicy: fileAssetPolicy,
-  }),
-  image: descriptor({
-    type: "image",
-    label: "Image",
-    description: "A locally attached image.",
-    icon: IconPhoto,
-    renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
-    assetPolicy: fileAssetPolicy,
-  }),
-  video: descriptor({
-    type: "video",
-    label: "Video",
-    description: "A locally attached video.",
-    icon: IconMovie,
-    renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
-    assetPolicy: fileAssetPolicy,
-  }),
-  audio: descriptor({
-    type: "audio",
-    label: "Audio",
-    description: "A locally attached audio file.",
-    icon: IconMusic,
-    renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
-    assetPolicy: fileAssetPolicy,
-  }),
-  html: descriptor({
-    type: "html",
-    label: "HTML",
-    description: "A local HTML document.",
-    icon: IconCode,
-    renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
-    assetPolicy: fileAssetPolicy,
-  }),
-  svg: descriptor({
-    type: "svg",
-    label: "SVG",
-    description: "A locally attached vector image.",
-    icon: IconVectorBezier,
-    renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
-    assetPolicy: fileAssetPolicy,
-  }),
   link: descriptor({
     type: "link",
     label: "Link",
     description: "An external web address opened as an object.",
     icon: IconExternalLink,
+    manageInSettings: false,
     renderer: renderer("../link/LinkObject.jsx", () => import("../link/LinkObject.jsx").then((module) => module.LinkObject)),
     assetPolicy: noAssetPolicy,
   }),
+});
+
+export const MISSING_PLUGIN_DEFINITION = defineObjectPlugin({
+  type: "missing-plugin",
+  label: "Plugin required",
+  description: "This object needs an optional cell-object plugin.",
+  icon: IconPlugOff,
+  source: "built-in",
+  defaultEnabled: true,
+  creatable: false,
+  manageInSettings: false,
+  renderer: renderer("./MissingPluginObject.jsx", () => import("./MissingPluginObject.jsx").then((module) => module.MissingPluginObject)),
+  cell: {
+    project: ({ object, fallbackValue = "" }) => ({
+      displayValue: object?.title || fallbackValue || "Plugin required",
+    }),
+  },
+  create: (options = {}) => ({ ...options, type: options.type || "missing-plugin" }),
+  validate: () => ({ valid: true, errors: [] }),
+  migrate: (object) => object,
+  serialize: (object) => object,
+  deserialize: (input) => input,
+  assetPolicy: noAssetPolicy,
+  commands: noCommands,
 });
