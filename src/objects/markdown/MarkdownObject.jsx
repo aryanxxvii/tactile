@@ -264,6 +264,32 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
     [content, findCaseSensitive, findQuery],
   );
 
+  const scrollEditorToIndex = (editor, index) => {
+    if (!editor || editor.clientHeight <= 0) return;
+    const computed = window.getComputedStyle(editor);
+    const lineHeight = parseFloat(computed.lineHeight) || 21;
+    const mirror = document.createElement("div");
+    const mirrorStyle = mirror.style;
+    mirrorStyle.cssText = computed.cssText;
+    mirrorStyle.position = "absolute";
+    mirrorStyle.visibility = "hidden";
+    mirrorStyle.top = "0";
+    mirrorStyle.left = "0";
+    mirrorStyle.height = "auto";
+    mirrorStyle.overflow = "hidden";
+    mirrorStyle.whiteSpace = "pre-wrap";
+    mirrorStyle.wordWrap = "break-word";
+    mirrorStyle.pointerEvents = "none";
+    document.body.appendChild(mirror);
+    mirror.textContent = editor.value.slice(0, index);
+    const marker = document.createElement("span");
+    marker.textContent = "\u200b";
+    mirror.appendChild(marker);
+    const top = marker.offsetTop;
+    document.body.removeChild(mirror);
+    editor.scrollTop = Math.max(0, top - editor.clientHeight / 2 + lineHeight);
+  };
+
   const revealFindMatch = (match) => {
     if (!match) return;
     const editor = editorForSelection();
@@ -273,6 +299,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
     window.requestAnimationFrame(() => {
       editor.focus();
       editor.setSelectionRange(match.start, match.end);
+      scrollEditorToIndex(editor, match.start);
     });
   };
 
