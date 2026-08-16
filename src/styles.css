@@ -2075,20 +2075,6 @@ kbd {
   color: var(--faint);
 }
 
-.markdown-workspace.is-no-wrap .markdown-editor {
-  white-space: pre;
-  overflow: auto;
-}
-
-.markdown-workspace.is-no-wrap .markdown-preview {
-  white-space: nowrap;
-  overflow-x: auto;
-}
-
-.markdown-workspace.is-no-wrap .markdown-preview > * {
-  min-width: max-content;
-}
-
 .markdown-preview {
   font-family: var(--font-body);
 }
@@ -6908,20 +6894,6 @@ kbd {
 
 .files-context-menu-item:hover > svg,
 .files-context-menu-item:focus-visible > svg {
-  color: var(--accent);
-}
-
-.files-context-menu-item.is-checked {
-  color: var(--accent);
-}
-
-.files-context-menu-item.is-checked > svg {
-  color: var(--accent);
-}
-
-.files-context-menu-item .files-context-menu-check {
-  flex: 0 0 auto;
-  font-size: 9px;
   color: var(--accent);
 }
 
