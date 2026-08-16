@@ -8,7 +8,7 @@ import {
 } from "@tabler/icons-react";
 import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
-import { objectTypeFor } from "../objectTypes.js";
+import { objectTypeFor } from "../registry/objectTypes.js";
 import { resolveTauriInvoke } from "../../platform/tauri/runtime.ts";
 import { PdfViewer } from "./PdfViewer.jsx";
 import { VideoPlayer } from "./VideoPlayer.jsx";

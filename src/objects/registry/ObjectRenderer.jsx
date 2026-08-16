@@ -3,16 +3,20 @@ import {
   getObjectTypeDefinition,
   listObjectTypeDefinitions,
   loadObjectRenderer,
-} from "./registry/index.js";
+} from "./index.js";
 
 const loadedRenderers = new Map();
+const lazyRenderers = new Map();
 
 function lazyObjectRenderer(type) {
-  return lazy(async () => {
+  if (lazyRenderers.has(type)) return lazyRenderers.get(type);
+  const Renderer = lazy(async () => {
     const Renderer = await loadObjectRenderer(type);
     loadedRenderers.set(type, Renderer);
     return { default: Renderer };
   });
+  lazyRenderers.set(type, Renderer);
+  return Renderer;
 }
 
 // This map preserves the old synchronous lookup surface for callers that
@@ -30,7 +34,7 @@ export function ObjectRenderer({ object, ...props }) {
   const definition = getObjectTypeDefinition(object.type);
   const LoadedRenderer = loadedRenderers.get(definition.type);
   if (LoadedRenderer) return <LoadedRenderer object={object} {...props} />;
-  const Renderer = OBJECT_RENDERERS[definition.type] || OBJECT_RENDERERS.document;
+  const Renderer = OBJECT_RENDERERS[definition.type] || lazyObjectRenderer(definition.type);
   return (
     <Suspense fallback={null}>
       <Renderer object={object} {...props} />

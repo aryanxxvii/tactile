@@ -11,6 +11,7 @@ import {
   IconLayoutList,
 IconMoon,
   IconPalette,
+  IconPlugConnected,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -23,6 +24,7 @@ import { allThemes } from "../themes.js";
 import { ColorControl } from "./controls/ColorControl.jsx";
 import { SelectMenu } from "./controls/SelectMenu.jsx";
 import { Switch } from "./controls/Switch.jsx";
+import { useObjectPlugins } from "../objects/registry/ObjectPluginProvider.jsx";
 import {
   WORKSPACE_AUTHORING_PROMPT,
   WORKSPACE_AUTHORING_PROMPT_VERSION,
@@ -120,6 +122,7 @@ onChangeWorkspaceFolder,
   onOpenGuide,
   onClose,
 }) {
+  const plugins = useObjectPlugins();
   const [tab, setTab] = useState("appearance");
   const [themeFilter, setThemeFilter] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -244,6 +247,7 @@ onChangeWorkspaceFolder,
           <SettingTab id="settings-tab-appearance" controls="settings-panel-appearance" active={tab === "appearance"} icon={IconPalette} onClick={() => setTab("appearance")}>Appearance</SettingTab>
 <SettingTab id="settings-tab-files" controls="settings-panel-files" active={tab === "files"} icon={IconFileTypeCsv} onClick={() => setTab("files")}>Files &amp; ownership</SettingTab>
           <SettingTab id="settings-tab-keyboard" controls="settings-panel-keyboard" active={tab === "keyboard"} icon={IconKeyboard} onClick={() => setTab("keyboard")}>Keyboard</SettingTab>
+          <SettingTab id="settings-tab-plugins" controls="settings-panel-plugins" active={tab === "plugins"} icon={IconPlugConnected} onClick={() => setTab("plugins")}>Plugins</SettingTab>
           {onCheckForUpdate ? (
             <SettingTab id="settings-tab-updates" controls="settings-panel-updates" active={tab === "updates"} icon={IconRefresh} onClick={() => setTab("updates")}>Updates</SettingTab>
           ) : null}
@@ -449,6 +453,56 @@ onChangeWorkspaceFolder,
                   <IconRefresh size={14} /> Check again
                 </button>
               </div>
+            </div>
+          ) : null}
+
+          {tab === "plugins" ? (
+            <div className="plugins-settings" id="settings-panel-plugins" role="tabpanel" aria-labelledby="settings-tab-plugins">
+              <section className="plugins-section" aria-labelledby="cell-objects-title">
+                <div className="plugins-section-heading">
+                  <div>
+                    <span>Installed</span>
+                    <h3 id="cell-objects-title">Cell Objects</h3>
+                    <p>Active objects appear in the create menu. Existing cells remain readable when an object is disabled.</p>
+                  </div>
+                  <strong>{plugins.enabledTypes.size} active</strong>
+                </div>
+                <div className="plugin-list">
+                  {plugins.definitions.map((definition) => {
+                    const Icon = definition.icon;
+                    const enabled = plugins.isEnabled(definition.type);
+                    return (
+                      <div className="plugin-row" key={definition.type}>
+                        <span className="plugin-icon"><Icon size={17} stroke={1.5} /></span>
+                        <span className="plugin-copy">
+                          <strong>{definition.label}</strong>
+                          <small>{definition.description || `${definition.type} cell object`}</small>
+                        </span>
+                        <span className="plugin-source">{definition.source === "built-in" ? "Offline" : "Installed"}</span>
+                        <Switch
+                          label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
+                          checked={enabled}
+                          onChange={(checked) => plugins.setEnabled(definition.type, checked)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="plugins-section marketplace-section" aria-labelledby="marketplace-title">
+                <div className="plugins-section-heading">
+                  <div>
+                    <span>Discover</span>
+                    <h3 id="marketplace-title">Marketplace</h3>
+                  </div>
+                </div>
+                <div className="marketplace-empty">
+                  <IconPlugConnected size={24} stroke={1.35} />
+                  <strong>No marketplace source connected</strong>
+                  <p>Installable cell objects will appear here when a trusted repository or host is configured.</p>
+                </div>
+              </section>
             </div>
           ) : null}
 

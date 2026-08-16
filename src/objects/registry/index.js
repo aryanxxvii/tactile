@@ -1,7 +1,10 @@
-import { OBJECT_TYPE_DEFINITIONS } from "./descriptors.js";
+import { OBJECT_TYPE_DEFINITIONS } from "./builtins.js";
+import { defineObjectPlugin } from "./defineObjectPlugin.js";
 
 const FALLBACK_TYPE = "document";
 const rendererPromises = new Map();
+const registryListeners = new Set();
+let registryVersion = 0;
 
 /** @type {Map<string, Object>} */
 const customDefinitions = new Map();
@@ -21,6 +24,20 @@ export function listObjectTypeDefinitions() {
   return Object.values(OBJECT_TYPE_DEFINITIONS).concat([...customDefinitions.values()]);
 }
 
+export function subscribeObjectTypeDefinitions(listener) {
+  registryListeners.add(listener);
+  return () => registryListeners.delete(listener);
+}
+
+export function objectTypeRegistryVersion() {
+  return registryVersion;
+}
+
+function notifyRegistryChanged() {
+  registryVersion += 1;
+  registryListeners.forEach((listener) => listener());
+}
+
 /**
  * Register a plugin or future object type without changing the workspace
  * shell. Existing built-in keys are replaceable only through this explicit
@@ -30,19 +47,21 @@ export function listObjectTypeDefinitions() {
  * @returns {() => void}
  */
 export function registerObjectTypeDefinition(definition) {
-  if (!definition?.type || typeof definition.type !== "string") {
-    throw new Error("Object type definitions need a type key.");
-  }
-  if (typeof definition.create !== "function" || typeof definition.renderer?.load !== "function") {
-    throw new Error(`Object type ${definition.type} needs creation and lazy renderer contracts.`);
-  }
-  customDefinitions.set(definition.type, Object.freeze(definition));
-  return () => customDefinitions.delete(definition.type);
+  const installed = defineObjectPlugin(definition);
+  customDefinitions.set(definition.type, installed);
+  rendererPromises.delete(definition.type);
+  notifyRegistryChanged();
+  return () => {
+    if (customDefinitions.get(definition.type) !== installed) return;
+    customDefinitions.delete(definition.type);
+    rendererPromises.delete(definition.type);
+    notifyRegistryChanged();
+  };
 }
 
 /**
  * Resolve a renderer only when the caller explicitly asks for one. The
- * synchronous objectRegistry adapter remains available for the current UI.
+ * synchronous renderer adapter remains available for the current UI.
  *
  * @param {string} type
  * @returns {Promise<Function>}
@@ -73,6 +92,15 @@ export function loadObjectRenderer(type) {
  */
 export function preloadObjectRenderer(type) {
   return loadObjectRenderer(type).catch(() => null);
+}
+
+export function projectObjectCell(type, input = {}) {
+  const definition = getObjectTypeDefinition(type);
+  try {
+    return definition.cell?.project?.(input) || {};
+  } catch {
+    return { displayValue: input.object?.title || input.fallbackValue || "Embedded object" };
+  }
 }
 
 export { OBJECT_TYPE_DEFINITIONS };

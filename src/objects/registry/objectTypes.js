@@ -1,4 +1,4 @@
-import { getObjectTypeDefinition, listObjectTypeDefinitions } from "./registry/index.js";
+import { getObjectTypeDefinition, listObjectTypeDefinitions } from "./index.js";
 
 export const OBJECT_TYPES = Object.freeze(
   Object.fromEntries(listObjectTypeDefinitions().map((definition) => [definition.type, {

@@ -8,12 +8,15 @@ Each object type registers:
 
 - a stable type key
 - label and monochrome icon
-- renderer
+- lazy expanded renderer
+- synchronous compact cell projection
 - file serializer and parser
 - default-title generator
 - commands and context-menu contributions
 
 This lets later types such as Gantt charts join the same navigation and file model without rewriting the workspace shell.
+
+Built-ins and runtime marketplace packages use the same `defineObjectPlugin` contract. Runtime registration is observable, so an enabled install appears immediately in Settings and the empty-cell creation menu without restarting. The registry, provider, renderer adapter, built-in catalog, SDK contract, and copyable implementation template live together in `src/objects/registry/`; installation and enablement are app-session state and are not written into portable workspaces.
 
 ## Performance rules
 

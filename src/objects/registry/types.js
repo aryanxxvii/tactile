@@ -3,7 +3,7 @@
  * The JSDoc shapes are consumed by editors and can be promoted to TypeScript
  * without changing the object-type boundary.
  *
- * @typedef {"sheet" | "markdown" | "document" | "pdf" | "image" | "video" | "audio" | "html" | "svg" | "link"} ObjectTypeKey
+ * @typedef {string} ObjectTypeKey Built-in key or package-qualified marketplace key.
  *
  * @typedef {Object} RendererDefinition
  * @property {() => Promise<{default?: Function, [key: string]: Function}>} load
@@ -25,8 +25,13 @@
  * @typedef {Object} ObjectTypeDefinition
  * @property {ObjectTypeKey} type
  * @property {string} label
+ * @property {string} [description]
  * @property {Function} icon
+ * @property {"built-in" | "runtime"} source
+ * @property {boolean} defaultEnabled
+ * @property {boolean} creatable
  * @property {RendererDefinition} renderer
+ * @property {{project: (context: {object?: Object, cell?: Object, sheet?: Object, fallbackValue?: string}) => {displayValue?: string}}} cell
  * @property {(options?: Object) => Object} create
  * @property {(object: unknown) => {valid: boolean, errors: string[]}} validate
  * @property {(object: unknown, fallbackId?: string) => Object} migrate

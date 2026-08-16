@@ -29,6 +29,7 @@ import { loadWorkspace, loadWorkspaceCache, saveWorkspace } from "../storage.js"
 import { createWave2Shadow } from "../core/engine/shadow.js";
 import { recordCellChanges } from "../objects/sheet/grid/cellChangeJournal.js";
 import { isTauriRuntime } from "../platform/tauri/runtime.ts";
+import { getObjectTypeDefinition } from "../objects/registry/index.js";
 
 function initialWorkspace() {
   const cached = loadWorkspaceCache();
@@ -390,7 +391,9 @@ export function useLocalWorkspace() {
     const coordinates = coordinatesFromCellId(parentCellId);
     if (!coordinates) return null;
     const address = cellAddress(coordinates.row, coordinates.column);
-    const created = createObjectForType(type, {
+    const definition = getObjectTypeDefinition(type);
+    if (definition.type !== type) return null;
+    const created = definition.create({
       title: generatedObjectTitle(type, address),
     });
     const linkId = createId("link");

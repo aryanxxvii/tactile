@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./fonts.css";
 import "./styles.css";
 import { StartupLoader } from "./components/StartupLoader.jsx";
+import { ObjectPluginProvider } from "./objects/registry/ObjectPluginProvider.jsx";
 
 const nativeStartup = Boolean(window.__TAURI_INTERNALS__ || window.__TAURI__);
 let startupTheme = nativeStartup ? "dark" : "light";
@@ -20,7 +21,9 @@ const App = lazy(() => import("./App.jsx").then(({ App: Component }) => ({ defau
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <StartupLoader holdUntilReady minimumDuration={startupDuration} />
-    <Suspense fallback={null}><App /></Suspense>
+    <ObjectPluginProvider>
+      <StartupLoader holdUntilReady minimumDuration={startupDuration} />
+      <Suspense fallback={null}><App /></Suspense>
+    </ObjectPluginProvider>
   </React.StrictMode>,
 );

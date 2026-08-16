@@ -16,6 +16,7 @@ import {
   serializeObjectCompat,
   validateObjectCompat,
 } from "./compatibility.js";
+import { defineObjectPlugin } from "./defineObjectPlugin.js";
 
 const noAssetPolicy = Object.freeze({
   kind: "none",
@@ -31,16 +32,35 @@ const fileAssetPolicy = Object.freeze({
 
 const noCommands = () => [];
 
+function defaultCellProjection({ object, fallbackValue = "" }) {
+  return {
+    displayValue: object?.title || fallbackValue || "Embedded object",
+  };
+}
+
 function renderer(modulePath, load) {
   return Object.freeze({ modulePath, load });
 }
 
-function descriptor({ type, label, icon, renderer: rendererDefinition, assetPolicy = noAssetPolicy }) {
-  return Object.freeze({
+function descriptor({
+  type,
+  label,
+  description,
+  icon,
+  renderer: rendererDefinition,
+  assetPolicy = noAssetPolicy,
+  creatable = false,
+}) {
+  return defineObjectPlugin({
     type,
     label,
+    description,
     icon,
+    source: "built-in",
+    defaultEnabled: true,
+    creatable,
     renderer: rendererDefinition,
+    cell: Object.freeze({ project: defaultCellProjection }),
     create: (options = {}) => createObjectCompat(type, options),
     validate: (object) => validateObjectCompat(type, object),
     migrate: (object, fallbackId) => migrateObjectCompat(type, object, fallbackId),
@@ -48,7 +68,7 @@ function descriptor({ type, label, icon, renderer: rendererDefinition, assetPoli
     deserialize: deserializeObjectCompat,
     assetPolicy,
     commands: noCommands,
-  });
+  }, { source: "built-in", defaultEnabled: true, creatable });
 }
 
 /**
@@ -59,31 +79,39 @@ function descriptor({ type, label, icon, renderer: rendererDefinition, assetPoli
 export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
   sheet: descriptor({
     type: "sheet",
-    label: "Sheet",
+    label: "Tiles",
+    description: "A sparse, virtualized grid that can contain other objects.",
     icon: IconLayoutGrid,
+    creatable: true,
     renderer: renderer("../sheet/SheetObject.jsx", () => import("../sheet/SheetObject.jsx").then((module) => module.SheetObject)),
   }),
   markdown: descriptor({
     type: "markdown",
     label: "Text",
+    description: "Local Markdown text with editing and preview modes.",
     icon: IconTextCaption,
+    creatable: true,
     renderer: renderer("../markdown/MarkdownObject.jsx", () => import("../markdown/MarkdownObject.jsx").then((module) => module.MarkdownObject)),
   }),
   code: descriptor({
     type: "code",
     label: "Code",
+    description: "A local source file with language-aware presentation.",
     icon: IconCode,
+    creatable: true,
     renderer: renderer("../code/CodeObject.jsx", () => import("../code/CodeObject.jsx").then((module) => module.CodeObject)),
   }),
   document: descriptor({
     type: "document",
     label: "Document",
+    description: "Compatibility renderer for legacy document objects.",
     icon: IconTextCaption,
     renderer: renderer("../document/DocumentObject.jsx", () => import("../document/DocumentObject.jsx").then((module) => module.DocumentObject)),
   }),
   pdf: descriptor({
     type: "pdf",
     label: "PDF",
+    description: "A locally attached PDF document.",
     icon: IconFileTypePdf,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
@@ -91,6 +119,7 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
   image: descriptor({
     type: "image",
     label: "Image",
+    description: "A locally attached image.",
     icon: IconPhoto,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
@@ -98,6 +127,7 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
   video: descriptor({
     type: "video",
     label: "Video",
+    description: "A locally attached video.",
     icon: IconMovie,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
@@ -105,6 +135,7 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
   audio: descriptor({
     type: "audio",
     label: "Audio",
+    description: "A locally attached audio file.",
     icon: IconMusic,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
@@ -112,6 +143,7 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
   html: descriptor({
     type: "html",
     label: "HTML",
+    description: "A local HTML document.",
     icon: IconCode,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
@@ -119,6 +151,7 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
   svg: descriptor({
     type: "svg",
     label: "SVG",
+    description: "A locally attached vector image.",
     icon: IconVectorBezier,
     renderer: renderer("../file/FileObject.jsx", () => import("../file/FileObject.jsx").then((module) => module.FileObject)),
     assetPolicy: fileAssetPolicy,
@@ -126,6 +159,7 @@ export const OBJECT_TYPE_DEFINITIONS = Object.freeze({
   link: descriptor({
     type: "link",
     label: "Link",
+    description: "An external web address opened as an object.",
     icon: IconExternalLink,
     renderer: renderer("../link/LinkObject.jsx", () => import("../link/LinkObject.jsx").then((module) => module.LinkObject)),
     assetPolicy: noAssetPolicy,
