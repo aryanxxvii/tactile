@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  IconArrowAutofitWidth,
   IconArrowBarDown,
   IconArrowBarRight,
   IconClipboard,
@@ -172,6 +173,8 @@ export function CellContextMenu({
   onAttachFile,
   onOpenFloating,
   onOpenFull,
+  wrapEnabled,
+  onToggleWrap,
   canCopy = true,
   canPaste = true,
   canClear,
@@ -300,6 +303,21 @@ export function CellContextMenu({
           </>
         )}
         <div className="cell-menu-separator" role="separator" />
+        <button
+          className={`cell-menu-item ${wrapEnabled ? "is-active" : ""}`}
+          type="button"
+          role="menuitemcheckbox"
+          aria-checked={Boolean(wrapEnabled)}
+          aria-label="Word wrap text"
+          onClick={() => {
+            onToggleWrap?.();
+            onClose();
+          }}
+        >
+          <IconArrowAutofitWidth size={14} stroke={1.55} aria-hidden="true" />
+          <span>{wrapEnabled ? "Turn off word wrap" : "Word wrap text"}</span>
+          {wrapEnabled ? <span className="cell-menu-check" aria-hidden="true">✓</span> : null}
+        </button>
         <MenuItem icon={IconCopy} label="Copy" shortcut="Ctrl C" disabled={!canCopy} onSelect={invoke(onCopy)} />
         <MenuItem icon={IconClipboard} label="Paste" shortcut="Ctrl V" disabled={!canPaste} onSelect={invoke(onPaste)} />
         <MenuItem icon={IconTrash} label="Clear contents" shortcut="Del" disabled={!canClear} onSelect={invoke(onClear)} />

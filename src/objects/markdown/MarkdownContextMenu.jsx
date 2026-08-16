@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  IconArrowAutofitWidth,
   IconBold,
   IconBrush,
   IconClipboard,
@@ -67,7 +68,7 @@ function ColorRow({ label, icon: Icon, colors, onSelect }) {
   );
 }
 
-export function MarkdownContextMenu({ menu, onClose, onAction, textColors, highlightColors }) {
+export function MarkdownContextMenu({ menu, onClose, onAction, textColors, highlightColors, wrapEnabled, onToggleWrap }) {
   const menuRef = useRef(null);
   const [position, setPosition] = useState(null);
 
@@ -185,6 +186,23 @@ export function MarkdownContextMenu({ menu, onClose, onAction, textColors, highl
         <div className="files-context-menu-heading">
           <span>Markdown</span>
         </div>
+
+        <button
+          className={`files-context-menu-item ${wrapEnabled ? "is-checked" : ""}`}
+          type="button"
+          role="menuitemcheckbox"
+          aria-checked={Boolean(wrapEnabled)}
+          aria-label="Word wrap"
+          onClick={() => {
+            onToggleWrap?.();
+            onClose();
+          }}
+        >
+          <IconArrowAutofitWidth size={14} stroke={1.65} aria-hidden="true" />
+          <span>Word wrap</span>
+          {wrapEnabled ? <span className="files-context-menu-check" aria-hidden="true">✓</span> : null}
+        </button>
+        <div className="files-context-menu-divider" role="separator" />
 
         <MenuItem icon={IconTrash} label="Clear content" shortcut="Del" disabled={!menu.hasSelection} onSelect={invoke("clear")} />
         <MenuItem icon={IconCopy} label="Copy" shortcut="Ctrl C" disabled={!menu.hasSelection} onSelect={invoke("copy")} />

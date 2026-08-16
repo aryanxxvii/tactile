@@ -239,7 +239,7 @@ export function SheetGridCanvas({
               }}
             >
               <span>{columnLabel(column)}</span>
-              <span className="column-resize-handle" role="separator" tabIndex={0} aria-label={`Resize column ${columnLabel(column)}`} onPointerDown={(event) => onStartResize(event, "column", column)} onDoubleClick={(event) => {
+              <span className="column-resize-handle" role="separator" tabIndex={0} aria-label={`Resize column ${columnLabel(column)}`} onPointerDown={(event) => onStartResize(event, "column", column)} onClick={(event) => event.stopPropagation()} onDoubleClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 onAutoFitAxisSize?.("column", column);
@@ -336,7 +336,7 @@ export function SheetGridCanvas({
                 </button>
               ) : null}
               <span>{row + 1}</span>
-              <span className="row-resize-handle" role="separator" tabIndex={0} aria-label={`Resize row ${row + 1}`} onPointerDown={(event) => onStartResize(event, "row", row)} onDoubleClick={(event) => {
+              <span className="row-resize-handle" role="separator" tabIndex={0} aria-label={`Resize row ${row + 1}`} onPointerDown={(event) => onStartResize(event, "row", row)} onClick={(event) => event.stopPropagation()} onDoubleClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 onAutoFitAxisSize?.("row", row);
@@ -390,6 +390,7 @@ export function SheetGridCanvas({
               linkUrl={linkUrl}
               role={cell?.role || ""}
               styleBold={Boolean(cell?.style?.bold)}
+              styleWrap={Boolean(cell?.style?.wrap)}
               styleHighlight={cell?.style?.highlight || ""}
               styleTextColor={cell?.style?.textColor || ""}
               styleAlign={cell?.style?.align || ""}

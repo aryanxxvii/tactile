@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { cellId } from "../../../sheet/coordinates.js";
 import { fillRange } from "../../../sheet/ranges.js";
+import { autoRowHeights } from "../../../sheet/textMeasure.js";
 import { boundedAxisEntries, canonicalSheetSelection } from "./selectionGeometry.js";
 import { useFormulaProjection } from "./useFormulaProjection.js";
 import { useVirtualSheet } from "../useVirtualSheet.js";
@@ -93,6 +94,15 @@ export function useSheetGridProjection({
     }
     return next;
   }, [object.columnWidths, object.rowHeights, resizePreview, sheetMetrics]);
+  const defaultColumnWidth = object.columnWidth || sheetMetrics?.columnWidth || 126;
+  const columnWidthForIndex = useMemo(
+    () => (column) => object.columnWidths?.[column] || defaultColumnWidth,
+    [defaultColumnWidth, object.columnWidths],
+  );
+  const autoRowHeightsMap = useMemo(
+    () => autoRowHeights(object, columnWidthForIndex),
+    [object, columnWidthForIndex],
+  );
   const virtualSheet = useVirtualSheet(
     object.rows,
     object.columns,
@@ -100,7 +110,7 @@ export function useSheetGridProjection({
       ...(effectiveSheetMetrics || {}),
       rowHeight: object.rowHeight || effectiveSheetMetrics?.rowHeight,
       columnWidth: object.columnWidth || effectiveSheetMetrics?.columnWidth,
-      rowHeights: effectiveSheetMetrics?.rowHeights || object.rowHeights,
+      rowHeights: { ...(effectiveSheetMetrics?.rowHeights || object.rowHeights), ...autoRowHeightsMap },
       columnWidths: effectiveSheetMetrics?.columnWidths || object.columnWidths,
       viewStateKey: object.id,
     },

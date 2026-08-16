@@ -69,6 +69,7 @@ export const SheetCell = memo(function SheetCell({
   linkUrl,
   role,
   styleBold,
+  styleWrap,
   styleHighlight,
   styleTextColor,
   styleAlign,
@@ -121,10 +122,11 @@ const localDraft = useLocalCellDraft(cellRef, cellId);
     return [...starts, ...contains].slice(0, 7);
   }, [inlineQuery]);
   const inlineListOpen = Boolean(inlineQuery && inlineSuggestions.length);
-  const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
+const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).replace(/,/g, "")));
   const shownFormula = localDraft?.formula || formula;
   const formulaError = Boolean(shownFormula && String(shownValue).startsWith("#"));
   const hasFontSize = Number.isFinite(styleFontSize);
+  const isMultiline = Boolean(styleWrap) || String(shownValue).includes("\n");
   const selectionPaintActive = selected || multiSelected || inRange || inSelectedRow || inSelectedColumn;
   const cellStyle = hasFontSize || selectionPaintActive
     ? {
@@ -188,7 +190,7 @@ const localDraft = useLocalCellDraft(cellRef, cellId);
   return (
     <div
       ref={cellRef}
-      className={`sheet-cell ${selected ? "is-selected" : ""} ${multiSelected ? "is-multi-selected" : ""} ${dropTarget ? "is-object-drop-target" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${hasEmbed ? "is-embedded" : ""} ${role === "heading" ? "is-table-heading" : ""} ${role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${styleBold ? "is-bold" : ""} ${styleHighlight ? `highlight-${styleHighlight}` : ""} ${styleTextColor ? `text-${styleTextColor}` : ""} ${styleAlign ? `align-${styleAlign}` : ""} ${styleVerticalAlign ? `align-${styleVerticalAlign}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
+      className={`sheet-cell ${selected ? "is-selected" : ""} ${multiSelected ? "is-multi-selected" : ""} ${dropTarget ? "is-object-drop-target" : ""} ${inRange && !selected ? "is-in-range" : ""} ${inFormulaRange ? "is-formula-reference" : ""} ${fillPreview ? "is-fill-preview" : ""} ${inSelectedRow ? "is-selected-row" : ""} ${inSelectedColumn ? "is-selected-column" : ""} ${hasEmbed ? "is-embedded" : ""} ${role === "heading" ? "is-table-heading" : ""} ${role === "label" ? "is-row-label" : ""} ${numeric ? "is-numeric" : ""} ${styleBold ? "is-bold" : ""} ${styleWrap ? "is-wrap" : ""} ${isMultiline ? "is-multiline" : ""} ${styleHighlight ? `highlight-${styleHighlight}` : ""} ${styleTextColor ? `text-${styleTextColor}` : ""} ${styleAlign ? `align-${styleAlign}` : ""} ${styleVerticalAlign ? `align-${styleVerticalAlign}` : ""} ${conditionalTone ? `conditional-${conditionalTone}` : ""} ${formulaError ? "has-formula-error" : ""}`}
       role="gridcell"
       aria-selected={selected}
       aria-label={`${address}${shownValue ? `, ${shownValue}` : ""}${hasEmbed ? (isLinkCell ? ", link" : ", embedded object") : ""}`}
@@ -300,9 +302,10 @@ const localDraft = useLocalCellDraft(cellRef, cellId);
         ) : null}
         {inlineEditing ? (
           <>
-            <input
+<textarea
               ref={inlineEditorRef}
               className="cell-inline-editor"
+              rows={1}
               value={inlineValue}
               onChange={(event) => {
                 dispatchCellEditUpdate(event.currentTarget, event.currentTarget.value);
@@ -315,6 +318,9 @@ const localDraft = useLocalCellDraft(cellRef, cellId);
               }}
               onKeyDown={(event) => {
                 event.stopPropagation();
+                if (event.key === "Enter" && event.shiftKey && !inlineListOpen) {
+                  return;
+                }
                 if (inlineListOpen && event.key === "ArrowDown") {
                   event.preventDefault();
                   setInlineActiveIndex((current) => (current + 1) % inlineSuggestions.length);

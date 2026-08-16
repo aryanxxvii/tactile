@@ -4,6 +4,7 @@ import { SheetGridContextMenu } from "./grid/SheetGridContextMenu.jsx";
 import { useSheetGridContextMenu } from "./grid/useSheetGridContextMenu.js";
 import { useSheetGridGestures } from "./grid/useSheetGridGestures.js";
 import { useSheetGridProjection } from "./grid/useSheetGridProjection.js";
+import { cellIdsInRange } from "../../sheet/ranges.js";
 import {
   isObjectDragEvent,
   readObjectDragData,
@@ -116,13 +117,23 @@ export function SheetGrid({
     setFillTarget,
     onResizePreview: setResizePreview,
   });
-  const contextMenu = useSheetGridContextMenu({
+const contextMenu = useSheetGridContextMenu({
     object,
     normalizedSelection: projection.normalizedSelection,
     onCellsChange: stableOnCellsChange,
     onSelectRange: stableOnSelectRange,
     onCreateFile: stableOnCreateFile,
   });
+  const wrapEnabled = Boolean(contextMenu.menu?.cell?.style?.wrap);
+  const handleToggleWrap = useCallback(() => {
+    const next = !wrapEnabled;
+    const ids = cellIdsInRange(projection.normalizedSelection);
+    const changes = ids.map((targetCellId) => {
+      const currentStyle = object.cells?.[targetCellId]?.style || {};
+      return { cellId: targetCellId, patch: { style: { ...currentStyle, wrap: next } } };
+    });
+    if (changes.length) stableOnCellsChange?.(changes, "format");
+  }, [object.cells, projection.normalizedSelection, stableOnCellsChange, wrapEnabled]);
 
   return (
     <div className="sheet-grid-shell">
@@ -213,6 +224,8 @@ export function SheetGrid({
         onPaste={contextMenu.pasteCell}
         canCopy={contextMenu.canCopy}
         canPaste={contextMenu.canPaste}
+        wrapEnabled={wrapEnabled}
+        onToggleWrap={handleToggleWrap}
       />
     </div>
   );

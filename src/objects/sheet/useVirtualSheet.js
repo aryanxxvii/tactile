@@ -274,11 +274,11 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     [columnIndexMap],
   );
   const rowGeometry = useMemo(
-    () => buildAxisGeometry(rowIndexMap, customMetrics?.rowHeights, metrics.rowHeight, 24, 96),
+    () => buildAxisGeometry(rowIndexMap, customMetrics?.rowHeights, metrics.rowHeight, 24, 8000),
     [customMetrics?.rowHeights, metrics.rowHeight, rowIndexMap],
   );
   const columnGeometry = useMemo(
-    () => buildAxisGeometry(columnIndexMap, customMetrics?.columnWidths, metrics.columnWidth, 56, 420),
+    () => buildAxisGeometry(columnIndexMap, customMetrics?.columnWidths, metrics.columnWidth, 56, 8000),
     [columnIndexMap, customMetrics?.columnWidths, metrics.columnWidth],
   );
   const scrollRef = useRef(null);

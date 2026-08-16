@@ -548,6 +548,8 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         onAction={handleMarkdownContextAction}
         textColors={TEXT_COLORS}
         highlightColors={HIGHLIGHT_COLORS}
+        wrapEnabled={wrapEnabled}
+        onToggleWrap={() => setWrapEnabled((current) => !current)}
       />
     </article>
   );

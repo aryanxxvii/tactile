@@ -3,6 +3,7 @@ import {
   IconAlignCenter,
   IconAlignLeft,
   IconAlignRight,
+  IconArrowAutofitWidth,
   IconBold,
   IconEraser,
   IconHash,
@@ -201,6 +202,7 @@ export function CellFormatMenu({ style = {}, onChange, onConditionalChange, hasC
     <div className="cell-format-toolbar" aria-label="Cell formatting">
       <div className="cell-format-group" role="group" aria-label="Text style">
         <FormatButton icon={IconBold} label={style.bold ? "Remove bold" : "Bold"} selected={Boolean(style.bold)} onSelect={() => onChange?.({ bold: !style.bold })} />
+        <FormatButton icon={IconArrowAutofitWidth} label={style.wrap ? "Turn off word wrap" : "Word wrap text"} selected={Boolean(style.wrap)} onSelect={() => onChange?.({ wrap: !style.wrap })} />
       </div>
       <TextSizeGroup selected={style.fontSize} onSelect={(value) => onChange?.({ fontSize: value })} />
       <ColorGroup label="Fill color" icon={IconHighlight} colors={FILL_COLORS} selected={currentFill} onSelect={(value) => onChange?.({ highlight: value })} />

@@ -22,6 +22,7 @@ const CellSlot = memo(function CellSlot({
   linkUrl,
   role,
   styleBold,
+  styleWrap,
   styleHighlight,
   styleTextColor,
   styleAlign,
@@ -76,6 +77,7 @@ const CellSlot = memo(function CellSlot({
         linkUrl={linkUrl}
         role={role}
         styleBold={styleBold}
+        styleWrap={styleWrap}
         styleHighlight={styleHighlight}
         styleTextColor={styleTextColor}
         styleAlign={styleAlign}

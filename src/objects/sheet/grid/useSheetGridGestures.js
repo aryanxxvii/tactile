@@ -1,62 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cellAddress, columnLabel, coordinatesFromCellId } from "../../../sheet/coordinates.js";
-import { formatCellValue } from "../../../sheet/formatting.js";
-import { formatFormulaResult } from "../../../sheet/formulas.js";
+import { cellAddress } from "../../../sheet/coordinates.js";
 import { fillChanges, fillRange } from "../../../sheet/ranges.js";
 import { rangeLabel } from "../../../sheet/ranges.js";
+import { naturalColumnWidth, naturalRowHeight } from "../../../sheet/textMeasure.js";
 import { rangeValues } from "./useSheetGridProjection.js";
-
-let textMeasureContext = null;
-function measureTextWidth(text, fontSize = 11.5, bold = false) {
-  const source = String(text ?? "");
-  if (typeof document === "undefined") return source.length * fontSize * 0.58;
-  if (!textMeasureContext) textMeasureContext = document.createElement("canvas").getContext("2d");
-  const context = textMeasureContext;
-  context.font = `${bold ? "700 " : "400 "}${fontSize}px "Public Sans Variable", "Segoe UI Variable", Arial, sans-serif`;
-  return context.measureText(source).width;
-}
-
-function naturalColumnWidth(object, column, formulaValues) {
-  const H_PADDING = 16;
-  const GAP = 10;
-  const DEFAULT_FONT = 11.5;
-  let max = 0;
-  Object.entries(object.cells || {}).forEach(([id, cell]) => {
-    const coordinates = coordinatesFromCellId(id);
-    if (!coordinates || coordinates.column !== column) return;
-    let text;
-    if (cell?.formula) {
-      text = formatFormulaResult(formulaValues?.get(cellAddress(coordinates.row, column)));
-    } else if (cell?.embed) {
-      text = cell.value || "";
-    } else {
-      text = formatCellValue(cell?.value, cell?.style);
-    }
-    const fontSize = Number(cell?.style?.fontSize) || DEFAULT_FONT;
-    const width = measureTextWidth(text, fontSize, Boolean(cell?.style?.bold));
-    if (width > max) max = width;
-  });
-  const headerWidth = measureTextWidth(columnLabel(column), 10);
-  return Math.ceil(H_PADDING + Math.max(max, headerWidth) + GAP);
-}
-
-function naturalRowHeight(object, row) {
-  const V_PADDING = 16;
-  const LINE_HEIGHT = 1.18;
-  const DEFAULT_FONT = 11.5;
-  let max = 0;
-  Object.entries(object.cells || {}).forEach(([id, cell]) => {
-    const coordinates = coordinatesFromCellId(id);
-    if (!coordinates || coordinates.row !== row) return;
-    const fontSize = Number(cell?.style?.fontSize) || DEFAULT_FONT;
-    if (fontSize > max) max = fontSize;
-  });
-  return Math.ceil((max || DEFAULT_FONT) * LINE_HEIGHT + V_PADDING);
-}
-import {
-  CELL_EDIT_SEED_EVENT,
-  dispatchCellEditCommitAny,
-} from "../../../components/localEditSession.js";
 
 function axisPositionAtCoordinate(indexMap, offsetForPosition, sizeForPosition, coordinate) {
   if (!Number.isFinite(coordinate) || coordinate < 0 || !indexMap.length) return null;
@@ -710,7 +657,7 @@ export function useSheetGridGestures({
         ? moveEvent.clientX - active.start
         : moveEvent.clientY - active.start;
       const minimum = active.axis === "column" ? 56 : 24;
-      const maximum = active.axis === "column" ? 420 : 96;
+      const maximum = active.axis === "column" ? 8000 : 8000;
       const nextSizes = { ...active.baseMap };
       active.targets.forEach((target) => {
         nextSizes[target] = Math.max(minimum, Math.min(maximum, active.values[target] + delta));
@@ -750,7 +697,7 @@ export function useSheetGridGestures({
   const resizeAxisWithKeyboard = useCallback((axis, index, delta) => {
     const targets = axisResizeTargets(axis, index);
     const minimum = axis === "column" ? 56 : 24;
-    const maximum = axis === "column" ? 420 : 96;
+    const maximum = axis === "column" ? 8000 : 8000;
     const nextSizes = { ...(axis === "column" ? object.columnWidths : object.rowHeights) };
     targets.forEach((target) => {
       const current = axis === "column" ? columnSizeForIndex(target) : rowSizeForIndex(target);
@@ -771,7 +718,7 @@ export function useSheetGridGestures({
   const autoFitAxisSize = useCallback((axis, index) => {
     const targets = axisResizeTargets(axis, index);
     const minimum = axis === "column" ? 56 : 24;
-    const maximum = axis === "column" ? 420 : 96;
+    const maximum = axis === "column" ? 8000 : 8000;
     const nextSizes = { ...(axis === "column" ? object.columnWidths : object.rowHeights) };
     targets.forEach((target) => {
       const fit = axis === "column"
