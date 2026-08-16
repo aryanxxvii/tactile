@@ -134,8 +134,10 @@ export function useSheetGridGestures({
     metrics,
     rowIndexMap,
     columnIndexMap,
+    columnPositionForIndex,
     columnOffsetForPosition,
     columnSizeForPosition,
+    rowPositionForIndex,
     rowOffsetForPosition,
     rowSizeForPosition,
   };
@@ -169,15 +171,16 @@ export function useSheetGridGestures({
     // virtual cell happened to render first. Edge scrolling below is the
     // only scroll path during a range gesture.
     if (selectionDragRef.current || selectionViewportLockRef.current) return;
-    const { rowHeaderWidth, columnHeaderHeight, bodyLeftInset, bodyTopInset } = metrics;
-    const selectedColumnPosition = columnPositionForIndex(selectedCoordinates.column);
+    const geometry = gestureGeometryRef.current;
+    const { rowHeaderWidth, columnHeaderHeight, bodyLeftInset, bodyTopInset } = geometry.metrics;
+    const selectedColumnPosition = geometry.columnPositionForIndex(selectedCoordinates.column);
     if (!Number.isInteger(selectedColumnPosition)) return;
-    const left = rowHeaderWidth + bodyLeftInset + columnOffsetForPosition(selectedColumnPosition);
-    const right = left + columnSizeForPosition(selectedColumnPosition);
-    const selectedRowPosition = rowPositionForIndex(selectedCoordinates.row);
+    const left = rowHeaderWidth + bodyLeftInset + geometry.columnOffsetForPosition(selectedColumnPosition);
+    const right = left + geometry.columnSizeForPosition(selectedColumnPosition);
+    const selectedRowPosition = geometry.rowPositionForIndex(selectedCoordinates.row);
     if (!Number.isInteger(selectedRowPosition)) return;
-    const top = columnHeaderHeight + bodyTopInset + rowOffsetForPosition(selectedRowPosition);
-    const bottom = top + rowSizeForPosition(selectedRowPosition);
+    const top = columnHeaderHeight + bodyTopInset + geometry.rowOffsetForPosition(selectedRowPosition);
+    const bottom = top + geometry.rowSizeForPosition(selectedRowPosition);
     let nextLeft = scroller.scrollLeft;
     let nextTop = scroller.scrollTop;
     if (left < scroller.scrollLeft + rowHeaderWidth + bodyLeftInset) nextLeft = Math.max(0, left - rowHeaderWidth - bodyLeftInset);
@@ -206,7 +209,7 @@ export function useSheetGridGestures({
         focusFrameRef.current = null;
       }
     };
-  }, [columnOffsetForPosition, columnPositionForIndex, columnSizeForPosition, formulaEditingCellId, metrics, object.id, rowOffsetForPosition, rowPositionForIndex, rowSizeForPosition, scrollRef, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
+  }, [formulaEditingCellId, selectedAddress, selectedCoordinates.column, selectedCoordinates.row]);
 
   const cellAddressAtPoint = useCallback((event) => {
     const geometry = gestureGeometryRef.current;
