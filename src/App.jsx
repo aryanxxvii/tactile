@@ -144,6 +144,13 @@ export function App() {
       if (!currentState) return;
       const { inOut: currentInOut, selection: currentSelection, shell: currentShell } = currentState;
       const command = event.ctrlKey || event.metaKey;
+      const nativeSelection = typeof window !== "undefined" ? window.getSelection() : null;
+      const selectionInMarkdownPreview = Boolean(
+        nativeSelection
+        && !nativeSelection.isCollapsed
+        && nativeSelection.anchorNode?.parentElement?.closest?.(".markdown-preview"),
+      );
+      const inMarkdownPreview = Boolean(event.target?.closest?.(".markdown-preview")) || selectionInMarkdownPreview;
       if (command && event.key.toLowerCase() === "p") {
         event.preventDefault();
         if (currentShell.filesOpen) currentShell.closeFiles();
@@ -179,7 +186,6 @@ export function App() {
         }));
         return;
       }
-      const inMarkdownPreview = Boolean(event.target?.closest?.(".markdown-preview"));
       if ((event.key === "Control" || event.key === "Meta") && gridSurface && !nativeTypingTarget && !inMarkdownPreview && (!currentShell.filesOpen || gridShortcutsAvailable) && !currentShell.settingsOpen) {
         pasteProxyRef.current?.focus({ preventScroll: true });
         return;
@@ -198,6 +204,11 @@ export function App() {
         void currentSelection.clipboardSelectedCell("paste", request);
         return;
       }
+      // The markdown preview is read-only and not a sheet: let the browser keep
+      // ownership of copy/select-all and its text selection. Never route these
+      // keys through the sheet command surface or the paste proxy, which would
+      // drop the preview's highlight.
+      if (inMarkdownPreview) return;
       currentSelection.handleKeyboard(
         event,
         currentShell.settingsOpen,

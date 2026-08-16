@@ -16,6 +16,7 @@ import {
   IconPhoto,
   IconPencil,
   IconPalette,
+  IconSearch,
   IconStrikethrough,
   IconTable,
   IconUnderline,
@@ -630,7 +631,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         onReparentObject={onReparentObject}
       />
 
-      <main className={mode === "split" ? "markdown-workspace is-split" : "markdown-workspace"}>
+      <main className={`markdown-workspace${mode === "split" ? " is-split" : ""}${findOpen && mode !== "preview" ? " has-find" : ""}`}>
         <div className="markdown-toolbar cell-format-toolbar" aria-label="Text commands">
           <div className="markdown-mode-switch cell-format-group" role="group" aria-label="Text view">
             <button className={mode === "write" ? "is-active" : ""} type="button" onClick={() => setMode("write")}>
@@ -676,6 +677,18 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
           <button type="button" data-tooltip="Insert table" onClick={() => insertAtSelection("| Column | Column |\n| --- | --- |\n| Value | Value |\n")}><IconTable size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Insert image" onClick={() => insertAtSelection("![Alt text](https://)" )}><IconPhoto size={15} stroke={1.7} /></button>
           <button type="button" data-tooltip="Divider" onClick={() => insertBlock("---\n")}><IconMinus size={15} stroke={1.7} /></button>
+          </div>
+          <span className="markdown-toolbar-separator" />
+          <div className="markdown-style-group cell-format-group" role="group" aria-label="Find and replace">
+            <button
+              type="button"
+              className={findOpen ? "is-active" : ""}
+              aria-pressed={findOpen}
+              data-tooltip="Find & replace · Ctrl+F"
+              onClick={() => (findOpen ? closeFind() : openFind())}
+            >
+              <IconSearch size={15} stroke={1.7} />
+            </button>
           </div>
         </div>
 

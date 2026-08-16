@@ -1483,6 +1483,10 @@ kbd {
   box-shadow: 0 9px 22px color-mix(in srgb, var(--elevation-shadow) 38%, transparent);
 }
 
+.markdown-workspace.has-find {
+  grid-template-rows: 32px auto minmax(0, 1fr);
+}
+
 .file-workspace {
   width: calc(100% - 12px);
   min-height: 0;
