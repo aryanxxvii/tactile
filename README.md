@@ -22,9 +22,17 @@ graph LR
 
 KaTeX loads only when a preview contains math. Mermaid loads only when a diagram approaches the viewport, and rendered diagrams are cached for the current app session. Workspaces continue to store portable Markdown source rather than generated HTML or SVG.
 
+To try it, create or open a Text object, paste the example above, and select **Preview**. The equation renders as accessible KaTeX HTML/MathML and the diagram appears when its block approaches the preview viewport.
+
 ```bash
 npm install
 npm run dev
+```
+
+Contributors can verify the combined rendered output with:
+
+```bash
+npx playwright test tests/e2e/markdown-object.e2e.spec.mjs --config playwright.e2e.config.mjs --grep "visible LaTeX and Mermaid"
 ```
 
 Desktop shell:

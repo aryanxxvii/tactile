@@ -55,6 +55,8 @@ Markdown parsing and ordinary React rendering are part of the Text object. Heavy
 
 The portable boundary remains source-only: Markdown objects store the original text, while generated KaTeX markup, Mermaid SVG, cache keys, and render state are ephemeral. Persistent render caches and workspace-format changes require a separate architecture decision.
 
+Browser certification includes a user-shaped Markdown document containing headings, inline and display math, and a Mermaid flowchart. The test requires visible KaTeX geometry, two MathML annotations, and a decoded Blob-backed Mermaid image with nonzero intrinsic dimensions; this catches blank output that DOM-presence checks alone would miss.
+
 ## Data boundaries
 
 - `workspace`: identity, home object, object index, themes, and settings.

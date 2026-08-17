@@ -2,6 +2,20 @@ import { expect, test } from "@playwright/test";
 
 import { createBlankWorkspace, createCellRecord, createMarkdownObject } from "../../src/model.js";
 
+const RICH_MARKDOWN_SAMPLE = `# Project architecture
+
+The equation is $E = mc^2$.
+
+$$
+\\int_0^1 x^2 dx
+$$
+
+\`\`\`mermaid
+graph LR
+  A[Input] --> B[Parser]
+  B --> C[Renderer]
+\`\`\``;
+
 function markdownWorkspace() {
   const workspace = createBlankWorkspace({ id: "markdown-object-e2e", name: "Markdown object" });
   const root = workspace.objects.home;
@@ -178,6 +192,32 @@ test("lazily renders accessible inline and display math without blocking edits",
   await surface.getByRole("button", { name: "Preview" }).click();
   await expect(surface.locator(".markdown-math.is-inline .katex")).toHaveCount(1);
   await expect(surface.getByRole("note", { name: "Invalid math expression" })).toContainText("$\\frac{$");
+});
+
+test("renders a Markdown document with visible LaTeX and Mermaid output", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownObject(page);
+  const surface = layer.locator(".markdown-object");
+  await surface.getByRole("textbox", { name: "Meeting notes Markdown editor" }).fill(RICH_MARKDOWN_SAMPLE);
+  await surface.getByRole("button", { name: "Preview" }).click();
+
+  await expect(surface.getByRole("heading", { name: "Project architecture" })).toBeVisible();
+  const math = surface.locator(".markdown-math-rendered .katex");
+  await expect(math).toHaveCount(2);
+  await expect(surface.locator(".markdown-math annotation[encoding='application/x-tex']")).toHaveCount(2);
+  expect(await math.evaluateAll((elements) => elements.every((element) => element.getBoundingClientRect().width > 0))).toBe(true);
+
+  const diagram = surface.locator(".markdown-mermaid img[alt='Mermaid diagram']");
+  await expect(diagram).toBeVisible({ timeout: 60_000 });
+  const renderedImage = await diagram.evaluate(async (image) => {
+    await image.decode();
+    return { src: image.src, width: image.naturalWidth, height: image.naturalHeight };
+  });
+  expect(renderedImage.src).toMatch(/^blob:/);
+  expect(renderedImage.width).toBeGreaterThan(0);
+  expect(renderedImage.height).toBeGreaterThan(0);
 });
 
 test("loads Mermaid near the viewport and reuses isolated session renders", async ({ page }) => {
