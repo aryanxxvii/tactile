@@ -61,17 +61,55 @@ test("classifies only exact Mermaid fences as diagrams and never parses their so
 });
 
 test("uses strict Mermaid configuration and theme-aware normalized cache keys", async () => {
-  const light = { colorScheme: "light", paper: "#ffffff", ink: "#111111", accent: "#aa3300" };
+  const light = {
+    colorScheme: "light",
+    paper: "#ffffff",
+    paperElevated: "#fdfdfb",
+    tray: "#eeeeea",
+    cell: "#fafaf7",
+    ink: "#111111",
+    defaultInk: "#292925",
+    muted: "#666660",
+    lineStrong: "#c8c8c0",
+    accent: "#aa3300",
+    positive: "#447755",
+    negative: "#993322",
+    uiFont: '"Public Sans Variable", sans-serif',
+  };
   const dark = { ...light, colorScheme: "dark", paper: "#111111", ink: "#eeeeee" };
+  const config = mermaidConfig(light);
   assert.deepEqual(
     {
-      securityLevel: mermaidConfig(light).securityLevel,
-      htmlLabels: mermaidConfig(light).htmlLabels,
-      suppressErrorRendering: mermaidConfig(light).suppressErrorRendering,
-      startOnLoad: mermaidConfig(light).startOnLoad,
+      securityLevel: config.securityLevel,
+      htmlLabels: config.htmlLabels,
+      suppressErrorRendering: config.suppressErrorRendering,
+      startOnLoad: config.startOnLoad,
+      theme: config.theme,
+      fontFamily: config.fontFamily,
     },
-    { securityLevel: "strict", htmlLabels: false, suppressErrorRendering: true, startOnLoad: false },
+    {
+      securityLevel: "strict",
+      htmlLabels: false,
+      suppressErrorRendering: true,
+      startOnLoad: false,
+      theme: "base",
+      fontFamily: light.uiFont,
+    },
   );
+  assert.equal(config.themeVariables.primaryColor, light.cell);
+  assert.equal(config.themeVariables.primaryTextColor, light.ink);
+  assert.equal(config.themeVariables.primaryBorderColor, light.accent);
+  assert.equal(config.themeVariables.secondaryColor, light.tray);
+  assert.equal(config.themeVariables.cScale0, light.accent);
+  assert.equal(config.themeVariables.cScale1, light.positive);
+  assert.equal(config.themeVariables.cScale2, light.negative);
+  assert.deepEqual(config.flowchart, {
+    curve: "basis",
+    diagramPadding: 18,
+    nodeSpacing: 48,
+    rankSpacing: 56,
+    useMaxWidth: false,
+  });
   assert.equal(
     await mermaidCacheKey(" graph TD\r\n A --> B ", light),
     await mermaidCacheKey("graph TD\n A --> B", light),

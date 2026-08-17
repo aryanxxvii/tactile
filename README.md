@@ -20,7 +20,7 @@ graph LR
 ```
 ````
 
-KaTeX loads only when a preview contains math. Mermaid loads only when a diagram approaches the viewport, and rendered diagrams are cached for the current app session. Workspaces continue to store portable Markdown source rather than generated HTML or SVG.
+KaTeX loads only when a preview contains math. Mermaid loads only when a diagram approaches the viewport, follows the active Tactile theme in light and dark modes, and caches rendered diagrams for the current app session. Workspaces continue to store portable Markdown source rather than generated HTML or SVG.
 
 To try it, create or open a Text object, paste the example above, and select **Preview**. The equation renders as accessible KaTeX HTML/MathML and the diagram appears when its block approaches the preview viewport.
 

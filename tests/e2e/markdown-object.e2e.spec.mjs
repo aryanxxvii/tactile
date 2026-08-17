@@ -16,7 +16,7 @@ graph LR
   B --> C[Renderer]
 \`\`\``;
 
-function markdownWorkspace() {
+function markdownWorkspace({ activeThemeId } = {}) {
   const workspace = createBlankWorkspace({ id: "markdown-object-e2e", name: "Markdown object" });
   const root = workspace.objects.home;
   root.title = "Home";
@@ -42,14 +42,15 @@ function markdownWorkspace() {
   });
   workspace.objects = { [root.id]: root, [note.id]: note };
   workspace.settings.reduceMotion = true;
+  if (activeThemeId) workspace.activeThemeId = activeThemeId;
   return workspace;
 }
 
-async function importWorkspace(page) {
+async function importWorkspace(page, workspace = markdownWorkspace()) {
   await page.locator('input[type="file"][accept*=".json"]').setInputFiles({
     name: "markdown-object.json",
     mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(markdownWorkspace())),
+    buffer: Buffer.from(JSON.stringify(workspace)),
   });
   await expect(page.locator('[data-object-id="home"][data-cell-address="A1"]')).toHaveClass(/is-embedded/);
 }
@@ -218,6 +219,54 @@ test("renders a Markdown document with visible LaTeX and Mermaid output", async 
   expect(renderedImage.src).toMatch(/^blob:/);
   expect(renderedImage.width).toBeGreaterThan(0);
   expect(renderedImage.height).toBeGreaterThan(0);
+  const themedSvg = await diagram.evaluate(async (image) => fetch(image.src).then((response) => response.text()));
+  expect(themedSvg).toContain("#fbfaf6");
+  expect(themedSvg).toContain("#b34d35");
+  expect(themedSvg).toContain("#181816");
+  expect(themedSvg).toContain("Public Sans Variable");
+});
+
+test("renders Mermaid with the active dark Tactile theme", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page, markdownWorkspace({ activeThemeId: "one-dark" }));
+
+  const layer = await openMarkdownObject(page);
+  const surface = layer.locator(".markdown-object");
+  await surface.getByRole("textbox", { name: "Meeting notes Markdown editor" }).fill(RICH_MARKDOWN_SAMPLE);
+  await surface.getByRole("button", { name: "Preview" }).click();
+
+  const diagram = surface.locator(".markdown-mermaid img[alt='Mermaid diagram']");
+  await expect(diagram).toBeVisible({ timeout: 60_000 });
+  const themedSvg = await diagram.evaluate(async (image) => fetch(image.src).then((response) => response.text()));
+  expect(themedSvg).toContain("#282c34");
+  expect(themedSvg).toContain("#61afef");
+  expect(themedSvg).toContain("#abb2bf");
+  expect(themedSvg).toContain("Public Sans Variable");
+});
+
+test("keeps themed Mermaid diagrams contained on a narrow viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 430, height: 900 });
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownObject(page);
+  const surface = layer.locator(".markdown-object");
+  await surface.getByRole("textbox", { name: "Meeting notes Markdown editor" }).fill(RICH_MARKDOWN_SAMPLE);
+  await surface.getByRole("button", { name: "Preview" }).click();
+
+  const diagram = surface.locator(".markdown-mermaid");
+  await expect(diagram.locator("img[alt='Mermaid diagram']")).toBeVisible({ timeout: 60_000 });
+  const geometry = await diagram.evaluate((element) => {
+    const preview = element.closest(".markdown-preview");
+    const diagramBox = element.getBoundingClientRect();
+    const previewBox = preview.getBoundingClientRect();
+    return {
+      leftContained: diagramBox.left >= previewBox.left,
+      rightContained: diagramBox.right <= previewBox.right,
+      scrollable: element.scrollWidth >= element.clientWidth,
+    };
+  });
+  expect(geometry).toEqual({ leftContained: true, rightContained: true, scrollable: true });
 });
 
 test("loads Mermaid near the viewport and reuses isolated session renders", async ({ page }) => {

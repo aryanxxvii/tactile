@@ -50,7 +50,7 @@ Markdown parsing and ordinary React rendering are part of the Text object. Heavy
 - KaTeX mounts through a lazy React boundary only when parsed `$...$`, `$$...$$`, `\(...\)`, or `\[...\]` nodes enter Preview or Split view. Rendering uses HTML plus MathML, `trust: false`, and a bounded in-memory expression cache.
 - Mermaid fences initially mount a lightweight placeholder. `IntersectionObserver` starts the dynamic Mermaid import and render when the block approaches the viewport, independently of editor input.
 - Mermaid runs with strict security, HTML labels and click bindings disabled, and no CSP expansion. Generated SVG is validated and displayed through a per-mount Blob image URL instead of being inserted as active application DOM.
-- Mermaid output uses a SHA-256 key over normalized source, renderer configuration, and active theme colors. The bounded LRU lasts for the current app session only; errors are not cached.
+- Mermaid starts from its neutral base theme, then maps the active Tactile Paper, cell, tray, ink, line, accent, status, and UI font tokens across diagram families. Output uses a SHA-256 key over normalized source, renderer configuration, and active theme colors. The bounded LRU lasts for the current app session only; errors are not cached.
 - Preview Find skips generated capability subtrees so text highlighting cannot mutate asynchronous renderer output.
 
 The portable boundary remains source-only: Markdown objects store the original text, while generated KaTeX markup, Mermaid SVG, cache keys, and render state are ephemeral. Persistent render caches and workspace-format changes require a separate architecture decision.
