@@ -5,13 +5,22 @@ const DATABASE_NAME = "tactile-plugin-cache";
 const DATABASE_VERSION = 1;
 const STORE_NAME = "plugins";
 const CATALOG_STORAGE_KEY = "tactile.marketplace.catalogUrl";
-const DEFAULT_CATALOG_PATH = "/marketplace/catalog.json";
+export const LOCAL_MARKETPLACE_CATALOG_URL = "/marketplace/catalog.json";
+export const HOSTED_MARKETPLACE_CATALOG_URL = "https://raw.githubusercontent.com/aryanxxvii/tactile/main/marketplace/dist/catalog.json";
 
-export function marketplaceCatalogUrl() {
+export function isLocalMarketplaceDevelopment(environment = import.meta.env) {
+  return environment?.DEV === true;
+}
+
+export function marketplaceCatalogUrl({
+  development = isLocalMarketplaceDevelopment(),
+  storage = globalThis.localStorage,
+} = {}) {
+  if (development) return LOCAL_MARKETPLACE_CATALOG_URL;
   try {
-    return localStorage.getItem(CATALOG_STORAGE_KEY) || DEFAULT_CATALOG_PATH;
+    return storage?.getItem(CATALOG_STORAGE_KEY) || HOSTED_MARKETPLACE_CATALOG_URL;
   } catch {
-    return DEFAULT_CATALOG_PATH;
+    return HOSTED_MARKETPLACE_CATALOG_URL;
   }
 }
 
@@ -73,6 +82,18 @@ export function updatedPluginRecord(currentRecord, catalogEntry, downloaded, upd
     enabled: currentRecord.enabled !== false,
     installedAt: currentRecord.installedAt,
     updatedAt,
+  };
+}
+
+export async function localDevelopmentPluginRecord(record, catalogEntry, downloader = downloadMarketplacePlugin) {
+  if (!catalogEntry) throw new Error(`Local marketplace entry not found for ${record.packageId}.`);
+  const downloaded = await downloader(catalogEntry);
+  return {
+    ...catalogEntry,
+    ...downloaded,
+    enabled: record.enabled !== false,
+    installedAt: record.installedAt,
+    developmentSource: true,
   };
 }
 

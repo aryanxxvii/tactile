@@ -1,0 +1,47 @@
+.html-source-control {
+  min-width: 0;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  background: var(--paper-elevated);
+  font-size: 8px;
+}
+
+.html-source-control > span {
+  color: var(--faint);
+}
+
+.html-source-control select {
+  width: min(230px, 24vw);
+  min-width: 90px;
+  height: 20px;
+  padding: 0 18px 0 4px;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.html-source-control:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+@media (max-width: 720px) {
+  .html-source-control > span,
+  .html-toolbar .file-meta {
+    display: none;
+  }
+
+  .html-source-control select {
+    width: min(180px, 38vw);
+  }
+}

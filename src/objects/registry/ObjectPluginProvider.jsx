@@ -11,13 +11,17 @@ import {
   deleteInstalledPlugin,
   downloadMarketplacePlugin,
   fetchMarketplaceCatalog,
+  isLocalMarketplaceDevelopment,
+  localDevelopmentPluginRecord,
   readInstalledPlugins,
   updatedPluginRecord,
   writeInstalledPlugin,
 } from "./marketplace.js";
 import { pluginHostServices } from "./pluginHostServices.jsx";
+import { buildPluginSettingsContributions } from "./settingsContributions.js";
 
 const ObjectPluginContext = createContext(null);
+const ObjectPluginCommandsContext = createContext(null);
 
 export function ObjectPluginProvider({ children }) {
   useSyncExternalStore(
@@ -51,11 +55,16 @@ export function ObjectPluginProvider({ children }) {
     ]).then(async ([records, nextCatalog]) => {
       if (!current) return;
       const restored = {};
+      const localDevelopment = isLocalMarketplaceDevelopment();
+      const catalogByPackage = new Map((nextCatalog.plugins || []).map((entry) => [entry.packageId, entry]));
       for (const record of records) {
         if (!current) return;
         try {
-          if (record.enabled !== false) await activateRecord(record);
-          restored[record.packageId] = record;
+          const activationRecord = localDevelopment
+            ? await localDevelopmentPluginRecord(record, catalogByPackage.get(record.packageId))
+            : record;
+          if (activationRecord.enabled !== false) await activateRecord(activationRecord);
+          restored[record.packageId] = activationRecord;
         } catch (error) {
           restored[record.packageId] = { ...record, error: error?.message || String(error) };
         }
@@ -79,10 +88,23 @@ export function ObjectPluginProvider({ children }) {
       .filter((definition) => enabledOverrides[definition.type] ?? definition.defaultEnabled !== false)
       .map((definition) => definition.type),
   ), [allDefinitions, enabledOverrides]);
+  const settingsContributions = useMemo(
+    () => buildPluginSettingsContributions(allDefinitions, enabledTypes),
+    [allDefinitions, enabledTypes],
+  );
+  const enabledTypesRef = useRef(enabledTypes);
+  const catalogRef = useRef(catalog);
+  enabledTypesRef.current = enabledTypes;
+  catalogRef.current = catalog;
+  const commandQueries = useMemo(() => Object.freeze({
+    isEnabled: (type) => enabledTypesRef.current.has(type),
+    catalogEntryForType: (type) => catalogRef.current.find((entry) => entry.type === type),
+  }), []);
   const value = useMemo(() => ({
     definitions,
     cellObjectDefinitions,
     enabledTypes,
+    settingsContributions,
     activeCreatableDefinitions: allDefinitions.filter((definition) => (
       definition.creatable && enabledTypes.has(definition.type)
     )),
@@ -156,13 +178,23 @@ export function ObjectPluginProvider({ children }) {
         return next;
       });
     },
-  }), [allDefinitions, catalog, cellObjectDefinitions, definitions, enabledTypes, installed, marketplaceError, marketplaceState]);
+  }), [allDefinitions, catalog, cellObjectDefinitions, definitions, enabledTypes, installed, marketplaceError, marketplaceState, settingsContributions]);
 
-  return <ObjectPluginContext.Provider value={value}>{children}</ObjectPluginContext.Provider>;
+  return (
+    <ObjectPluginCommandsContext.Provider value={commandQueries}>
+      <ObjectPluginContext.Provider value={value}>{children}</ObjectPluginContext.Provider>
+    </ObjectPluginCommandsContext.Provider>
+  );
 }
 
 export function useObjectPlugins() {
   const value = useContext(ObjectPluginContext);
   if (!value) throw new Error("useObjectPlugins must be used inside ObjectPluginProvider.");
+  return value;
+}
+
+export function useObjectPluginCommands() {
+  const value = useContext(ObjectPluginCommandsContext);
+  if (!value) throw new Error("useObjectPluginCommands must be used inside ObjectPluginProvider.");
   return value;
 }

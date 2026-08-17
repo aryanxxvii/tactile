@@ -1,30 +1,53 @@
+import "./CounterObject.css";
+
 export function activate(host) {
   const { React, createId } = host;
 
   function CounterIcon({ size = 16 }) {
-    return React.createElement("span", {
-      "aria-hidden": "true",
-      style: { fontSize: `${size}px`, lineHeight: 1 },
-    }, "#");
+    return React.createElement(
+      "span",
+      {
+        "aria-hidden": "true",
+        style: { fontSize: `${size}px`, lineHeight: 1 },
+      },
+      "#",
+    );
   }
 
   function CounterObject({ object, onUpdateObject, onOpenSettings }) {
     const count = Number(object.count) || 0;
-    return React.createElement("article", {
-      className: "object-surface document-object",
-      "data-object-type": object.type,
-    },
-    React.createElement("main", { className: "document-page" },
-      React.createElement("div", { className: "document-copy" },
-        React.createElement("h2", null, object.title || "Counter"),
-        React.createElement("p", null, `Count ${count}`),
-        React.createElement("div", { className: "files-actions", role: "group", "aria-label": "Counter controls" },
-          React.createElement("button", { type: "button", onClick: () => onUpdateObject({ count: count - 1 }) }, "Decrease"),
-          React.createElement("button", { type: "button", onClick: () => onUpdateObject({ count: count + 1 }) }, "Increase"),
-          React.createElement("button", { type: "button", onClick: onOpenSettings }, "Plugins"),
+    return React.createElement(
+      "article",
+      {
+        className: "object-surface counter-object",
+        "data-object-type": object.type,
+      },
+      React.createElement(
+        "main",
+        { className: "counter-workspace" },
+        React.createElement(
+          "div",
+          { className: "counter-panel" },
+          React.createElement("h2", null, object.title || "Counter"),
+          React.createElement("p", null, `Count ${count}`),
+          React.createElement(
+            "div",
+            { className: "counter-actions", role: "group", "aria-label": "Counter controls" },
+            React.createElement(
+              "button",
+              { type: "button", onClick: () => onUpdateObject({ count: count - 1 }) },
+              "Decrease",
+            ),
+            React.createElement(
+              "button",
+              { type: "button", onClick: () => onUpdateObject({ count: count + 1 }) },
+              "Increase",
+            ),
+            React.createElement("button", { type: "button", onClick: onOpenSettings }, "Plugins"),
+          ),
         ),
       ),
-    ));
+    );
   }
 
   return {

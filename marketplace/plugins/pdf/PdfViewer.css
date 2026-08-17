@@ -1,0 +1,134 @@
+.pdf-reader {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--tray) 55%, var(--paper-elevated));
+}
+
+.pdf-toolbar {
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper-elevated) 92%, transparent);
+}
+
+.pdf-toolbar button {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pdf-toolbar button:hover,
+.pdf-toolbar button:focus-visible {
+  outline: 0;
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--tray) 55%, transparent);
+}
+
+.pdf-toolbar button:disabled {
+  color: var(--line-strong);
+  cursor: default;
+  border-color: transparent;
+  background: transparent;
+}
+
+.pdf-page-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1;
+}
+
+.pdf-page-input {
+  width: 30px;
+  height: 21px;
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--paper-elevated);
+  font-size: 9.5px;
+  line-height: 1;
+  text-align: center;
+}
+
+.pdf-page-input:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.pdf-zoom-label {
+  min-width: 36px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdf-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 10px 26px;
+}
+
+.pdf-page {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.pdf-page canvas {
+  display: block;
+  border-radius: 3px;
+  box-shadow:
+    0 8px 30px color-mix(in srgb, var(--elevation-shadow) 58%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--line) 60%, transparent);
+  background: white;
+}
+
+.pdf-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.pdf-loading-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  animation: pdf-spin 0.7s linear infinite;
+}
+
+@keyframes pdf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

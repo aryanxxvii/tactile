@@ -26,8 +26,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.audio/1.0.0/plugin.js",
-      "sha256": "83d151bed8b4573917054999d32aa58a70e6b45df898cda8a0aff7667b821c28",
-      "size": 18858,
+      "sha256": "1f1b33e01314be60ad7e2ee3a1fe0c4d4be2d1cf2f0fe0c320a9f1158958b272",
+      "size": 23136,
       "assets": []
     },
     {
@@ -44,8 +44,8 @@
       "entry": "plugin.jsx",
       "status": "available",
       "artifact": "plugins/tactile.code/1.0.0/plugin.js",
-      "sha256": "d821caf46614091b940d908f7258ae8f4d35a9b0a6477340e4f7b97f504d9bf3",
-      "size": 21527,
+      "sha256": "ae715ae3f56bba42df033b1c6a93ab6ce92b0f01209679258ae4d97c211d4226",
+      "size": 1093952,
       "assets": []
     },
     {
@@ -60,8 +60,8 @@
       "entry": "plugin.js",
       "status": "available",
       "artifact": "plugins/tactile.example-counter/1.0.0/plugin.js",
-      "sha256": "c9c889c4e7a43cedc4a174a258d8899f842c45a0f09df55260ccba6799020fe6",
-      "size": 1512,
+      "sha256": "f83c54166de9900184ff50ce9c75a48e1625e7b31efd358c41e3e2a5fe01d3df",
+      "size": 3779,
       "assets": []
     },
     {
@@ -85,8 +85,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.html/1.0.0/plugin.js",
-      "sha256": "8f4ce6aa4c0b0e382d0a0ae45ccf1edea3dea2458aab226e5fdd622b706422da",
-      "size": 6400,
+      "sha256": "4e3bd6693b9bf10cc95246f4c7a95a27ced2995a715b1628b792b17e31590a0e",
+      "size": 12708,
       "assets": []
     },
     {
@@ -111,8 +111,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.image/1.0.0/plugin.js",
-      "sha256": "2f598a071694befdcac98cea387039b3a523abd7072801da4fdbab6cc22c76de",
-      "size": 6388,
+      "sha256": "8668b6b7e2aaeeafef39e3f20a4c6f0d3b3af66e40957577daea6c4ed4c11ac8",
+      "size": 10710,
       "assets": []
     },
     {
@@ -143,8 +143,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.pdf/1.0.0/plugin.js",
-      "sha256": "1d35ddd7375413ea54390483e2c775bab349d4224080b621d6ff83d87f83ef4b",
-      "size": 344380
+      "sha256": "3dcad97d173bf2a894255a08257bd7ca7665b2ec17bb3944d9a7bf553bc29ca3",
+      "size": 351286
     },
     {
       "schemaVersion": 1,
@@ -164,8 +164,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.svg/1.0.0/plugin.js",
-      "sha256": "ff1b9714d307bbcd325226c5f4a4e12274eaf37e73801d404a5fb8f4b3930a08",
-      "size": 6724,
+      "sha256": "a9f7a5ac2779fbb6b7f2c57ca6d1a7cbe1f44218baafd8bb1371632b60337522",
+      "size": 11046,
       "assets": []
     },
     {
@@ -191,8 +191,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.video/1.0.0/plugin.js",
-      "sha256": "91281560d9270deea8948df2780b6944e7b38f0789dfb8a0aeea172d0bd44230",
-      "size": 21873,
+      "sha256": "418057134c3d557416e2c789bd3c0f2235c48f23a1780ae826bdb95884b0fb51",
+      "size": 26150,
       "assets": []
     }
   ]

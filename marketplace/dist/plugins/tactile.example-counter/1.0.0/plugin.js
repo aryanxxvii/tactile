@@ -1,1 +1,67 @@
-function m(c){let{React:t,createId:a}=c;function l({size:e=16}){return t.createElement("span",{"aria-hidden":"true",style:{fontSize:`${e}px`,lineHeight:1}},"#")}function u({object:e,onUpdateObject:r,onOpenSettings:o}){let n=Number(e.count)||0;return t.createElement("article",{className:"object-surface document-object","data-object-type":e.type},t.createElement("main",{className:"document-page"},t.createElement("div",{className:"document-copy"},t.createElement("h2",null,e.title||"Counter"),t.createElement("p",null,`Count ${n}`),t.createElement("div",{className:"files-actions",role:"group","aria-label":"Counter controls"},t.createElement("button",{type:"button",onClick:()=>r({count:n-1})},"Decrease"),t.createElement("button",{type:"button",onClick:()=>r({count:n+1})},"Increase"),t.createElement("button",{type:"button",onClick:o},"Plugins")))))}return{type:"example-counter",label:"Counter",description:"A runtime-installed counter cell object.",icon:l,package:{id:"tactile.example-counter",version:"1.0.0"},renderer:{load:async()=>u},cell:{project:({object:e})=>({displayValue:`Count ${Number(e?.count)||0}`})},create:(e={})=>({...e,id:e.id||a("counter"),type:"example-counter",title:e.title||"Counter",description:e.description||"",parent:e.parent||null,count:Number(e.count)||0}),validate:e=>({valid:e?.type==="example-counter"&&Number.isFinite(Number(e?.count)),errors:[]}),migrate:e=>({...e,type:"example-counter",count:Number(e?.count)||0}),serialize:e=>e,deserialize:e=>e}}export{m as activate};
+var e=globalThis.__TACTILE_PLUGIN_HOST__;if(!e)throw new Error("Tactile plugin host is unavailable.");var x=e.React,d=e.React,m=e.React.Children,f=e.React.Component,R=e.React.Fragment,b=e.React.PureComponent,g=e.React.cloneElement,y=e.React.createContext,C=e.React.createElement,E=e.React.createRef,v=e.React.forwardRef,h=e.React.isValidElement,T=e.React.lazy,w=e.React.memo,k=e.React.startTransition,P=e.React.useContext,I=e.createId,N=e.ObjectHeader,S=e.ObjectGlyph,O=e.PaperPortal,L=e.useLocalDraft,_=e.codeLanguageForExtension,j=e.resolveTauriInvoke,z=e.CODE_RUNTIME_TOOLS,D=e.getCodeRuntimeProfile,F=e.setCodeRuntimePath,V=e.subscribeCodeRuntimeProfile,A=e.objectTypeFor,H=e.pluginAssetUrl,c=e.installStyle,M=e.React.useCallback,U=e.React.useDeferredValue,G=e.React.useEffect,$=e.React.useId,q=e.React.useLayoutEffect,B=e.React.useMemo,J=e.React.useReducer,K=e.React.useRef,Q=e.React.useState,W=e.React.useSyncExternalStore,X=e.React.useTransition;c(`.counter-workspace {
+  width: calc(100% - 24px);
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  margin: 10px 12px 11px;
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper-elevated);
+  box-shadow: 0 9px 22px color-mix(in srgb, var(--elevation-shadow) 38%, transparent);
+}
+
+.counter-panel {
+  width: min(360px, 100%);
+  color: var(--default-ink);
+  text-align: center;
+}
+
+.counter-panel h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.counter-panel p {
+  margin: 0 0 18px;
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.counter-actions {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.counter-actions button {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--paper-elevated);
+  font-size: 8.5px;
+  cursor: pointer;
+}
+
+.counter-actions button:hover,
+.counter-actions button:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+@media (max-width: 900px) {
+  .counter-workspace {
+    width: calc(100% - 16px);
+    margin-inline: 8px;
+  }
+}
+`);function oe(s){let{React:n,createId:l}=s;function i({size:t=16}){return n.createElement("span",{"aria-hidden":"true",style:{fontSize:`${t}px`,lineHeight:1}},"#")}function u({object:t,onUpdateObject:r,onOpenSettings:p}){let o=Number(t.count)||0;return n.createElement("article",{className:"object-surface counter-object","data-object-type":t.type},n.createElement("main",{className:"counter-workspace"},n.createElement("div",{className:"counter-panel"},n.createElement("h2",null,t.title||"Counter"),n.createElement("p",null,`Count ${o}`),n.createElement("div",{className:"counter-actions",role:"group","aria-label":"Counter controls"},n.createElement("button",{type:"button",onClick:()=>r({count:o-1})},"Decrease"),n.createElement("button",{type:"button",onClick:()=>r({count:o+1})},"Increase"),n.createElement("button",{type:"button",onClick:p},"Plugins")))))}return{type:"example-counter",label:"Counter",description:"A runtime-installed counter cell object.",icon:i,package:{id:"tactile.example-counter",version:"1.0.0"},renderer:{load:async()=>u},cell:{project:({object:t})=>({displayValue:`Count ${Number(t?.count)||0}`})},create:(t={})=>({...t,id:t.id||l("counter"),type:"example-counter",title:t.title||"Counter",description:t.description||"",parent:t.parent||null,count:Number(t.count)||0}),validate:t=>({valid:t?.type==="example-counter"&&Number.isFinite(Number(t?.count)),errors:[]}),migrate:t=>({...t,type:"example-counter",count:Number(t?.count)||0}),serialize:t=>t,deserialize:t=>t}}export{oe as activate};

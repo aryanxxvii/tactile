@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { cloneTheme, downloadTheme, themeFromFile } from "../themes.js";
 import { inferFileObjectType, isBareUrlValue } from "../model.js";
 import { readLocalFile } from "./selectionCommands.js";
-import { useObjectPlugins } from "../objects/registry/ObjectPluginProvider.jsx";
+import { useObjectPluginCommands } from "../objects/registry/ObjectPluginProvider.jsx";
 
 let portableCommandsPromise;
 
@@ -33,7 +33,7 @@ export function useWorkspaceCommands({
   importInputRef,
   resetSelection,
 }) {
-  const plugins = useObjectPlugins();
+  const plugins = useObjectPluginCommands();
   const exportWorkspace = useCallback(async () => {
     setExportState("exporting");
     try {
@@ -91,7 +91,7 @@ export function useWorkspaceCommands({
       const asset = await readLocalFile(file);
       const type = inferFileObjectType(asset);
       if (!plugins.isEnabled(type)) {
-        const catalogEntry = plugins.catalog.find((entry) => entry.type === type);
+        const catalogEntry = plugins.catalogEntryForType(type);
         const action = catalogEntry?.status === "available" ? "Install" : "This file type needs";
         showNotice(`${action} the ${catalogEntry?.name || type} plugin in Settings → Plugins before attaching this file`);
         return;
