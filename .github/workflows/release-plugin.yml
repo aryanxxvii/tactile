@@ -1,0 +1,91 @@
+name: Release marketplace plugin
+
+on:
+  push:
+    tags:
+      - "tactile.*@*"
+
+concurrency:
+  group: release-plugin-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_AUDIT: "false"
+
+jobs:
+  release:
+    name: Build and publish plugin
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Validate plugin release version
+        run: node scripts/release/validate-release-version.mjs plugin "$GITHUB_REF_NAME"
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Resolve tagged plugin
+        id: plugin
+        shell: bash
+        run: node scripts/release/parse-plugin-tag.mjs "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Build tagged plugin
+        run: npm run marketplace:build -- '${{ steps.plugin.outputs.package_id }}'
+
+      - name: Verify generated marketplace files are committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- marketplace/dist
+          test -z "$(git ls-files --others --exclude-standard -- marketplace/dist)"
+
+      - name: Stage plugin artifacts
+        run: >-
+          node scripts/release/stage-marketplace-artifact.mjs
+          --package-id '${{ steps.plugin.outputs.package_id }}'
+          --output plugin-release-artifacts
+
+      - name: Generate SHA-256 checksums
+        run: >-
+          node scripts/release/create-checksums.mjs
+          --dir plugin-release-artifacts
+          --output plugin-release-artifacts/SHA256SUMS.txt
+
+      - name: Upload plugin artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactile-plugin-${{ github.ref_name }}
+          path: plugin-release-artifacts
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create or update draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_ID: ${{ steps.plugin.outputs.package_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" plugin-release-artifacts/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" plugin-release-artifacts/* \
+              --draft \
+              --generate-notes \
+              --title "$PACKAGE_ID ${{ steps.plugin.outputs.tag_version }}"
+          fi

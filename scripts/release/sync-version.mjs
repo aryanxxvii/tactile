@@ -1,0 +1,83 @@
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
+function fail(message) {
+  throw new Error(message);
+}
+
+async function readJson(filePath) {
+  return JSON.parse(await readFile(filePath, "utf8"));
+}
+
+function formatJson(value) {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function replacePackageVersion(contents, version, filePath) {
+  const pattern = /(\[\[?package\]?\][\s\S]*?^name\s*=\s*"tactile"\s*$[\s\S]*?^version\s*=\s*")[^"]+("\s*$)/m;
+  if (!pattern.test(contents)) fail(`Could not find the tactile package version in ${filePath}.`);
+  return contents.replace(pattern, `$1${version}$2`);
+}
+
+async function versionTargets(version) {
+  const packageJson = await readJson("package.json");
+  const packageJsonSynchronized = packageJson.version === version;
+  packageJson.version = version;
+
+  const packageLock = await readJson("package-lock.json");
+  if (!packageLock.packages?.[""]) fail("package-lock.json is missing its root package entry.");
+  const packageLockSynchronized = packageLock.version === version && packageLock.packages[""].version === version;
+  packageLock.version = version;
+  packageLock.packages[""].version = version;
+
+  const tauriConfigPath = path.join("src-tauri", "tauri.conf.json");
+  const tauriConfig = await readJson(tauriConfigPath);
+  const tauriConfigSynchronized = tauriConfig.version === version;
+  tauriConfig.version = version;
+
+  const cargoTomlPath = path.join("src-tauri", "Cargo.toml");
+  const cargoLockPath = path.join("src-tauri", "Cargo.lock");
+  const cargoToml = await readFile(cargoTomlPath, "utf8");
+  const cargoLock = await readFile(cargoLockPath, "utf8");
+  const expectedCargoToml = replacePackageVersion(cargoToml, version, cargoTomlPath);
+  const expectedCargoLock = replacePackageVersion(cargoLock, version, cargoLockPath);
+
+  return [
+    { filePath: "package.json", synchronized: packageJsonSynchronized, expected: formatJson(packageJson) },
+    { filePath: "package-lock.json", synchronized: packageLockSynchronized, expected: formatJson(packageLock) },
+    { filePath: tauriConfigPath, synchronized: tauriConfigSynchronized, expected: formatJson(tauriConfig) },
+    { filePath: cargoTomlPath, synchronized: cargoToml === expectedCargoToml, expected: expectedCargoToml },
+    { filePath: cargoLockPath, synchronized: cargoLock === expectedCargoLock, expected: expectedCargoLock },
+  ];
+}
+
+async function main() {
+  const checkOnly = process.argv[2] === "--check";
+  if (process.argv.length > (checkOnly ? 3 : 2)) fail("Usage: sync-version.mjs [--check]");
+
+  const version = String((await readJson("version.json")).version || "");
+  if (!VERSION_PATTERN.test(version))
+    fail(`version.json contains an invalid semantic version: ${version || "<missing>"}.`);
+
+  const stale = [];
+  for (const { filePath, synchronized, expected } of await versionTargets(version)) {
+    if (synchronized) continue;
+    stale.push(filePath);
+    if (!checkOnly) await writeFile(filePath, expected, "utf8");
+  }
+
+  if (checkOnly && stale.length) {
+    fail(`Run npm run version:sync to update: ${stale.join(", ")}`);
+  }
+
+  console.log(
+    stale.length ? `Synchronized ${version}: ${stale.join(", ")}` : `App version ${version} is synchronized.`,
+  );
+}
+
+main().catch((error) => {
+  console.error(`Version synchronization failed: ${error.message}`);
+  process.exitCode = 1;
+});

@@ -13,6 +13,8 @@
     "postcss": "8.5.26"
   },
   "scripts": {
+    "version:sync": "node scripts/release/sync-version.mjs",
+    "version:check": "node scripts/release/sync-version.mjs --check",
     "dev": "npm run marketplace:build && vite",
     "build": "npm run marketplace:build && vite build && node scripts/prepare-sites-build.mjs && node scripts/check-bundle-budget.mjs",
     "marketplace:build": "node scripts/build-marketplace.mjs",
@@ -27,7 +29,7 @@
     "test:component": "playwright test --pass-with-no-tests --config playwright.component.config.mjs",
     "test:e2e": "playwright test --pass-with-no-tests --config playwright.e2e.config.mjs",
     "bench:perf": "node tests/performance/run-browser.mjs",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:component && npm run test:e2e && npm run build && npm run test:sites"
+    "verify": "npm run version:check && npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:component && npm run test:e2e && npm run build && npm run test:sites"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

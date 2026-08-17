@@ -87,4 +87,4 @@ No security contact is evidenced by the repository at this time. The maintainer 
 
 ## Review and release ownership
 
-`CODEOWNERS` is intentionally unpopulated because no owner identities are evidenced in this repository. Protected branch rules and review requirements are therefore owner prerequisites, not an assumed control. Release gates, signing, artifact publication, and legal approval are described in `docs/release/release-policy.md` and remain open until named owners complete them.
+`CODEOWNERS` is intentionally unpopulated because no owner identities are evidenced in this repository. Protected branch rules and review requirements are therefore owner prerequisites, not an assumed control. Release tags, version alignment, gates, signing, artifact publication, and legal approval are described in `docs/release/release-policy.md` and remain open until named owners complete them. Read that policy before creating, deleting, or moving a release tag.

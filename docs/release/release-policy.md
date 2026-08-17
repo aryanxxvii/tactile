@@ -1,17 +1,55 @@
 # Release policy
 
-The current packaged release candidate is `v0.1.4`; its macOS workflow explicitly uses ad-hoc signing when Developer ID credentials are absent. The project is licensed under MIT; platform signing and notarization remain separate release concerns.
+Tactile has two tag-triggered release workflows. Workflows react to tags and build the referenced commit; they do not create tags or detect version changes. They validate tag and manifest versions before building.
 
-The current packaged release candidate is `v0.1.3`, following the `v0.1.0` source tag, the `v0.1.1` native-icon correction, and the `v0.1.2` macOS signing correction.
+## Build categories and tags
 
-Tactile `v0.1.2` was the first public packaged release candidate, following the `v0.1.0` source tag and the `v0.1.1` native-icon correction. The repository also contains a tag-triggered packaging workflow for Windows MSI, macOS DMG, and Linux AppImage/DEB artifacts. This policy does not declare a signing identity, notarization status, or a supported-platform promise beyond the artifacts and evidence attached to a specific release.
+The native app workflow accepts two tag forms:
+
+- `alpha@<version>` creates an alpha app build;
+- `release@<version>` creates an official release candidate.
+
+Both tags run the same Windows, macOS, and Linux build, signing, validation, checksum, updater-manifest, artifact-upload, and draft GitHub Release steps. Release builds retain the standard Tactile icon; alpha builds use the same mark in blue so installed builds are visually distinguishable. Staged installer names include `alpha` or `release`; macOS names also retain their `ad-hoc`, `signed-unnotarized`, or `signed-notarized` status. The tag category communicates release intent but does not weaken any build gate.
+
+The marketplace plugin workflow accepts `tactile.<name>@<version>`, where `tactile.<name>` exactly matches the plugin manifest's `packageId`. It builds only that package, verifies the generated marketplace output is committed, and creates a draft GitHub Release containing that plugin's bundle, manifest, and checksums.
+
+The former `v*` native release tag form is retired. Tags outside these patterns do not trigger release builds.
+
+## Tag operation rules
+
+Git permits multiple tags on one commit. An accepted promotion flow is to tag a commit as `alpha@<version>`, review its build, and then tag the same commit as `release@<version>`. Each tag triggers a separate workflow run and draft GitHub Release; the alpha build receives the blue icon and `alpha` artifact label, while the release build retains the standard icon and receives the `release` artifact label.
+
+The version after `@` must match the version declared by the tagged commit:
+
+- app tags must match `version.json` and every generated package version field;
+- plugin tags must match the selected plugin's `manifest.json` version.
+
+The workflows enforce this equality before installing dependencies or building. A mismatched app tag, stale generated app manifest, mismatched plugin tag, or incompatible plugin major version fails its release workflow.
+
+Tags do not require empty commits. Create them directly on the committed version change:
+
+```text
+git tag "alpha@1.1.0"
+git push origin "alpha@1.1.0"
+git tag "release@1.1.0"
+git push origin "release@1.1.0"
+```
+
+To correct or rerun an unpublished tag, delete it locally and remotely, fix or select the intended commit, then recreate and push it. Published release tags are immutable; correcting one requires a new version.
+
+```text
+git tag -d "alpha@1.1.0"
+git push origin ":refs/tags/alpha@1.1.0"
+git tag "alpha@1.1.0" <commit>
+git push origin "alpha@1.1.0"
+```
 
 ## Required release inputs
 
 Every release candidate must identify:
 
 - a source commit and clean-worktree record;
-- web/native version alignment and the intended platform matrix;
+- the matching app or plugin version manifest and intended platform matrix;
 - portable format compatibility statement and migration notes;
 - build/test logs for the relevant runtime and native targets;
 - normalized npm and Cargo SBOMs tied to the committed lockfile hashes;
@@ -35,7 +73,7 @@ npm audit --audit-level=high
 node docs/release/generate-inventory.mjs
 ```
 
-The native Windows/macOS/Ubuntu smoke matrix must run before claiming native release readiness. The current Wave 4 evidence records the SQLite/WAL service as implemented, while cross-platform smoke and full Tauri persistence integration remain open. The `v0.1.0` release workflow packages all three target families, but packaging is not the same as signed, notarized, or fully smoke-tested native support.
+The native Windows/macOS/Ubuntu smoke matrix must run before claiming native release readiness. The current Wave 4 evidence records the SQLite/WAL service as implemented, while cross-platform smoke and full Tauri persistence integration remain open. The app release workflow packages all three target families, but packaging is not the same as signed, notarized, or fully smoke-tested native support.
 
 ## Supply-chain and license posture
 
@@ -55,7 +93,13 @@ The inventory records lockfile SHA-256 hashes and uses deterministic SBOM serial
 
 ## Versioning and rollback
 
-Assign a version only after compatibility and migration behavior are reviewed. A release that changes the portable format must include an ADR, migration fixture, backup/restore test, and explicit handling of newer/older versions. Rollback means restoring the prior signed application and a known-good portable workspace; never require a user to discard the only local copy.
+The root `version.json` is the single source of truth for the complete Tactile app. Each marketplace plugin keeps its independent version in `marketplace/plugins/<name>/manifest.json`.
+
+After changing the app version in `version.json`, run `npm run version:sync`. This updates `package.json`, the root package-lock entries, Tauri configuration, Cargo manifest, and the root Cargo lock entry. Do not edit those mirrored version fields directly. `npm run version:check`, the repository verification command, and app release workflows reject stale mirrors or a mismatched release tag.
+
+Assign a version only after compatibility and migration behavior are reviewed. Commit each synchronized app or plugin version change before creating its matching tag, then push that tag so the corresponding workflow builds the same commit. Release workflows enforce tag and manifest alignment before building.
+
+A release that changes the portable format must include an ADR, migration fixture, backup/restore test, and explicit handling of newer/older versions. Rollback means restoring the prior signed application and a known-good portable workspace; never require a user to discard the only local copy.
 
 ## Owner/legal checklist
 

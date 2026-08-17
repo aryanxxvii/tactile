@@ -1,16 +1,10 @@
-name: Release packages
+name: Release app packages
 
 on:
   push:
     tags:
-      - "v*"
-  workflow_dispatch:
-    inputs:
-      publish_release:
-        description: Publish a draft GitHub release (only when dispatching from a v* tag)
-        required: true
-        default: false
-        type: boolean
+      - "alpha@*"
+      - "release@*"
 
 concurrency:
   group: release-${{ github.ref }}
@@ -65,6 +59,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+
+      - name: Validate app release version
+        run: node scripts/release/validate-release-version.mjs app "$GITHUB_REF_NAME"
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -188,6 +185,15 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      - name: Apply alpha app icon
+        if: startsWith(github.ref, 'refs/tags/alpha@')
+        shell: bash
+        run: |
+          set -euo pipefail
+          for icon in 32x32.png 128x128.png 128x128@2x.png icon.icns icon.ico; do
+            cp "src-tauri/icons-alpha/$icon" "src-tauri/icons/$icon"
+          done
+
       - name: Build signed Windows Tauri bundle
         if: matrix.platform == 'windows-x64' && steps.windows-prereqs.outputs.signing_ready == 'true'
         shell: pwsh
@@ -303,6 +309,24 @@ jobs:
           echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
           echo "macOS artifact label: $suffix" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Set artifact label
+        id: artifact-label
+        shell: bash
+        env:
+          MACOS_STATUS: ${{ steps.release-label.outputs.suffix }}
+        run: |
+          set -euo pipefail
+          build_type="${GITHUB_REF_NAME%%@*}"
+          if [[ "$build_type" != alpha && "$build_type" != release ]]; then
+            echo "Unsupported app release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          suffix="$build_type"
+          if [[ -n "${MACOS_STATUS:-}" ]]; then
+            suffix="$suffix-$MACOS_STATUS"
+          fi
+          echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
+
       - name: Stage release artifacts
         shell: bash
         run: |
@@ -311,7 +335,7 @@ jobs:
             --platform '${{ matrix.platform }}' \
             --source 'src-tauri/target/${{ matrix.rust-target }}/release/bundle' \
             --output release-artifacts \
-            --artifact-suffix '${{ steps.release-label.outputs.suffix }}'
+            --artifact-suffix '${{ steps.artifact-label.outputs.suffix }}'
 
       - name: Validate release artifacts
         shell: bash
@@ -328,8 +352,8 @@ jobs:
   publish:
     name: Publish release assets
     if: >-
-      startsWith(github.ref, 'refs/tags/v') &&
-      (github.event_name == 'push' || inputs.publish_release == true)
+      startsWith(github.ref, 'refs/tags/alpha@') ||
+      startsWith(github.ref, 'refs/tags/release@')
     needs: package
     runs-on: ubuntu-24.04
     permissions:
@@ -364,7 +388,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
+          version="${GITHUB_REF_NAME#*@}"
           node scripts/release/create-updater-manifest.mjs \
             --dir release-artifacts \
             --version "$version" \

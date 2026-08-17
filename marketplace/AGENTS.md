@@ -43,6 +43,14 @@ Production does not embed `marketplace/dist` in the client. It defaults to the v
    ```
 
 5. Commit package source plus all changed generated files under `marketplace/dist/`.
+6. Tag that commit with the manifest package ID and exact version, then push the tag:
+
+   ```bash
+   git tag "tactile.<type>@<version>"
+   git push origin "tactile.<type>@<version>"
+   ```
+
+The tag-triggered plugin workflow verifies that the tag version matches the manifest and that the plugin major version matches Tactile's `version.json` major version. Do not create an empty commit for a release tag, and do not move a published tag.
 
 Do not run or require a full Tactile build for a plugin-only release. Run `npm run build` only when the host SDK, loader, core app, or shared build infrastructure changes.
 
