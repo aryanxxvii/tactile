@@ -61,7 +61,10 @@ jobs:
           cache: npm
 
       - name: Validate app release version
-        run: node scripts/release/validate-release-version.mjs app "$GITHUB_REF_NAME"
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/release/validate-release-version.mjs app "$RELEASE_TAG"
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -190,7 +193,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for icon in 32x32.png 128x128.png 128x128@2x.png icon.icns icon.ico; do
+          required_icons=(32x32.png 128x128.png 128x128@2x.png icon.icns icon.ico)
+          for icon in "${required_icons[@]}"; do
+            if [[ ! -f "src-tauri/icons-alpha/$icon" ]]; then
+              echo "Missing required alpha icon: src-tauri/icons-alpha/$icon" >&2
+              exit 1
+            fi
+          done
+          for icon in "${required_icons[@]}"; do
             cp "src-tauri/icons-alpha/$icon" "src-tauri/icons/$icon"
           done
 

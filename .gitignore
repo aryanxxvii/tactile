@@ -4,6 +4,7 @@ dist/
 !marketplace/dist/**
 *.png
 !src-tauri/icons/*.png
+!src-tauri/icons-alpha/*.png
 *.xlsx
 audits/
 .cache/
