@@ -158,6 +158,28 @@ test("Markdown surfaces hide file metadata while linked editing and navigation s
   await expect(page).toHaveURL(/route=home-meeting-notes/);
 });
 
+test("lazily renders accessible inline and display math without blocking edits", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownObject(page);
+  const surface = layer.locator(".markdown-object");
+  const editor = surface.getByRole("textbox", { name: "Meeting notes Markdown editor" });
+  await editor.fill("Energy is $E=mc^2$.\n\n$$\n\\int_0^1 x^2 dx\n$$");
+  await expect(surface.locator(".katex")).toHaveCount(0);
+
+  await surface.getByRole("button", { name: "Preview" }).click();
+  await expect(surface.locator(".markdown-math.is-inline .katex")).toHaveCount(1);
+  await expect(surface.locator(".markdown-math.is-display .katex-display")).toHaveCount(1);
+  await expect(surface.locator(".markdown-math annotation[encoding='application/x-tex']")).toHaveCount(2);
+
+  await surface.getByRole("button", { name: "Write" }).click();
+  await editor.fill("Updated $x^2$.\n\n$\\frac{$");
+  await surface.getByRole("button", { name: "Preview" }).click();
+  await expect(surface.locator(".markdown-math.is-inline .katex")).toHaveCount(1);
+  await expect(surface.getByRole("note", { name: "Invalid math expression" })).toContainText("$\\frac{$");
+});
+
 test("continues Markdown lists intelligently when Enter is pressed", async ({ page }) => {
   await page.goto("/");
   await importWorkspace(page);

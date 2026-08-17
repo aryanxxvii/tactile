@@ -27,6 +27,7 @@ import { ObjectHeader } from "../../components/ObjectHeader.jsx";
 import { PaperPortal } from "../../components/PaperPortal.jsx";
 import { useLocalDraft } from "../../components/localEditSession.js";
 import { MarkdownContextMenu } from "./MarkdownContextMenu.jsx";
+import { parseMarkdownBlocks } from "./markdownParse.js";
 import { renderMarkdownBlocks } from "./markdownRender.jsx";
 
 const TEXT_COLORS = [
@@ -221,6 +222,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
   const contentSession = useLocalDraft(canonicalContent, (next) => onUpdateObject({ content: next }));
   const content = contentSession.draft;
   const deferredContent = useDeferredValue(content);
+  const parsedBlocks = useMemo(() => parseMarkdownBlocks(deferredContent), [deferredContent]);
   const editorPlaceholder = useMemo(() => markdownPlaceholderFor(object.id), [object.id]);
   const words = useMemo(() => deferredContent.trim().split(/\s+/).filter(Boolean).length, [deferredContent]);
   const lines = useMemo(() => deferredContent ? deferredContent.split(/\r?\n/).length : 0, [deferredContent]);
@@ -359,7 +361,11 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       node.replaceWith(fragment);
     };
     const textNodes = [];
-    const walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) => node.parentElement?.closest("[data-markdown-capability]")
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT,
+    });
     let walkerNode;
     while ((walkerNode = walker.nextNode())) textNodes.push(walkerNode);
     textNodes.forEach(wrapTextNode);
@@ -706,7 +712,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       aria-label={`${object.title} preview${suffix}`}
       onContextMenu={openPreviewContextMenu}
     >
-      {deferredContent ? renderMarkdownBlocks(deferredContent) : (
+      {deferredContent ? renderMarkdownBlocks(parsedBlocks) : (
         <p className="markdown-preview-empty">Nothing to preview yet.</p>
       )}
     </div>
