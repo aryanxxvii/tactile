@@ -26,6 +26,8 @@ The installed client bundles only Tiles and Text as user-managed object types. B
 
 Browser installations are stored in profile-level IndexedDB, separate from workspace records. Installed bundles are verified before activation and enabled plugins are restored on restart. Portable workspaces never contain executable plugin bytes; they preserve opaque plugin-owned object fields and declare non-executable `pluginRequirements` metadata.
 
+Installed and enabled are separate states. Cell Objects is the only enable/disable surface and continues to list disabled installed packages. Marketplace owns install, delete, and semantic-version updates; an update preserves the package's enabled state.
+
 Counter, Code, PDF, Image, Video, Audio, HTML, and SVG are independently compiled packages and remain absent from core production chunks. PDF owns its separately verified worker asset; Video and Audio own plugin-local player styles. Native allowlisted download/cache commands remain required before desktop marketplace delivery is release-complete. Build and GitHub release instructions are in [marketplace.md](marketplace.md).
 
 ## Performance rules

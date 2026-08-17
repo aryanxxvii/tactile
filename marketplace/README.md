@@ -8,4 +8,6 @@ Run `npm run marketplace:build` to compile every package. Run `npm run marketpla
 
 Code, HTML, SVG, Image, Video, Audio, and PDF are independent first-party packages. See `docs/marketplace.md` for package authoring, local testing, and GitHub publication instructions.
 
+Installed plugins are enabled or disabled only in the Cell Objects section. Marketplace rows provide Install, Delete, and a version-driven Update action when the catalog contains a newer semantic version.
+
 Generated `marketplace/dist` files are committed so GitHub raw content can act as a first-party static catalog during browser testing. The GitHub workflow recompiles all packages and rejects source/artifact drift.

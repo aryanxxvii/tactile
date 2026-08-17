@@ -19,6 +19,63 @@ function resolvedArtifactUrl(path, catalogUrl) {
   return new URL(path, new URL(catalogUrl, globalThis.location?.href || "http://localhost/")).href;
 }
 
+function versionParts(version) {
+  const [core, prerelease = ""] = String(version || "0.0.0").split("-", 2);
+  return {
+    core: core.split(".").map((part) => Number.parseInt(part, 10) || 0),
+    prerelease,
+  };
+}
+
+export function comparePluginVersions(left, right) {
+  const leftVersion = versionParts(left);
+  const rightVersion = versionParts(right);
+  const length = Math.max(leftVersion.core.length, rightVersion.core.length, 3);
+  for (let index = 0; index < length; index += 1) {
+    const difference = (leftVersion.core[index] || 0) - (rightVersion.core[index] || 0);
+    if (difference) return Math.sign(difference);
+  }
+  if (leftVersion.prerelease === rightVersion.prerelease) return 0;
+  if (!leftVersion.prerelease) return 1;
+  if (!rightVersion.prerelease) return -1;
+  return leftVersion.prerelease.localeCompare(rightVersion.prerelease);
+}
+
+export function isPluginUpdateAvailable(catalogEntry, installedRecord) {
+  return Boolean(
+    catalogEntry?.status === "available"
+    && installedRecord
+    && comparePluginVersions(catalogEntry.version, installedRecord.version) > 0,
+  );
+}
+
+export function buildCellObjectDefinitions(activeDefinitions, installedRecords) {
+  const activePackageIds = new Set(activeDefinitions.map((definition) => definition.package?.id).filter(Boolean));
+  return [
+    ...activeDefinitions,
+    ...Object.values(installedRecords || {})
+      .filter((record) => !activePackageIds.has(record.packageId))
+      .map((record) => ({
+        type: record.type,
+        label: record.name,
+        description: record.description,
+        source: "runtime",
+        package: { id: record.packageId, version: record.version },
+        installedPlaceholder: true,
+      })),
+  ];
+}
+
+export function updatedPluginRecord(currentRecord, catalogEntry, downloaded, updatedAt = new Date().toISOString()) {
+  return {
+    ...catalogEntry,
+    ...downloaded,
+    enabled: currentRecord.enabled !== false,
+    installedAt: currentRecord.installedAt,
+    updatedAt,
+  };
+}
+
 function openDatabase() {
   if (typeof indexedDB === "undefined") return Promise.reject(new Error("Plugin storage is unavailable."));
   return new Promise((resolve, reject) => {
@@ -137,6 +194,8 @@ export async function activatePluginSource(source, entry, hostServices = {}) {
     if (typeof module.activate !== "function") throw new Error("Plugin bundle does not export activate(hostApi)." );
     const definition = await module.activate(host);
     if (definition?.type !== entry.type) throw new Error("Plugin type does not match the catalog.");
+    if (definition?.package?.id !== entry.packageId) throw new Error("Plugin package id does not match the catalog.");
+    if (definition?.package?.version !== entry.version) throw new Error("Plugin version does not match the catalog.");
     return {
       definition,
       dispose: () => {

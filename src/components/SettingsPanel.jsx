@@ -25,6 +25,7 @@ import { ColorControl } from "./controls/ColorControl.jsx";
 import { SelectMenu } from "./controls/SelectMenu.jsx";
 import { Switch } from "./controls/Switch.jsx";
 import { useObjectPlugins } from "../objects/registry/ObjectPluginProvider.jsx";
+import { isPluginUpdateAvailable } from "../objects/registry/marketplace.js";
 import {
   WORKSPACE_AUTHORING_PROMPT,
   WORKSPACE_AUTHORING_PROMPT_VERSION,
@@ -465,14 +466,19 @@ onChangeWorkspaceFolder,
                     <h3 id="cell-objects-title">Cell Objects</h3>
                     <p>Active objects appear in the create menu. Existing cells remain readable when an object is disabled.</p>
                   </div>
-                  <strong>{plugins.definitions.filter((definition) => plugins.isEnabled(definition.type)).length} active</strong>
+                  <strong>{plugins.cellObjectDefinitions.filter((definition) => {
+                    const record = definition.package?.id ? plugins.installed[definition.package.id] : null;
+                    return record ? record.enabled !== false : plugins.isEnabled(definition.type);
+                  }).length} active</strong>
                 </div>
                 <div className="plugin-list">
-                  {plugins.definitions.map((definition) => {
-                    const Icon = definition.icon;
-                    const enabled = plugins.isEnabled(definition.type);
+                  {plugins.cellObjectDefinitions.map((definition) => {
+                    const Icon = definition.icon || IconPlugConnected;
                     const packageId = definition.package?.id;
                     const installedRecord = packageId ? plugins.installed[packageId] : null;
+                    const enabled = installedRecord
+                      ? installedRecord.enabled !== false
+                      : plugins.isEnabled(definition.type);
                     return (
                       <div className="plugin-row" key={definition.type}>
                         <span className="plugin-icon"><Icon size={17} stroke={1.5} /></span>
@@ -480,7 +486,7 @@ onChangeWorkspaceFolder,
                           <strong>{definition.label}</strong>
                           <small>{definition.description || `${definition.type} cell object`}</small>
                         </span>
-                        <span className="plugin-source">{definition.source === "built-in" ? "Offline" : "Installed"}</span>
+                        <span className="plugin-source">{definition.source === "built-in" ? "Offline" : definition.package?.version || "Installed"}</span>
                         <Switch
                           label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
                           checked={enabled}
@@ -508,23 +514,24 @@ onChangeWorkspaceFolder,
                 <div className="plugin-list">
                   {plugins.catalog.map((entry) => {
                     const record = plugins.installed[entry.packageId];
+                    const updateAvailable = isPluginUpdateAvailable(entry, record);
                     return (
-                      <div className="plugin-row" key={entry.packageId}>
+                      <div className="plugin-row" key={entry.packageId} style={{ gridTemplateColumns: "30px minmax(0, 1fr) auto auto" }}>
                         <span className="plugin-icon"><IconPlugConnected size={17} stroke={1.5} /></span>
                         <span className="plugin-copy">
                           <strong>{entry.name}</strong>
                           <small>{entry.description}</small>
                         </span>
-                        <span className="plugin-source">{entry.status === "available" ? entry.version : "Coming later"}</span>
-                        <span>
+                        <span className="plugin-source">
+                          {updateAvailable ? `${record.version} → ${entry.version}` : entry.status === "available" ? entry.version : "Coming later"}
+                        </span>
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                           {record ? (
                             <>
-                              <Switch
-                                label={`${record.enabled === false ? "Enable" : "Disable"} ${entry.name}`}
-                                checked={record.enabled !== false}
-                                onChange={(checked) => void plugins.setInstalledEnabled(entry.packageId, checked)}
-                              />
-                              <button className="settings-close" type="button" aria-label={`Uninstall ${entry.name}`} data-tooltip={`Uninstall ${entry.name}`} onClick={() => void plugins.uninstallMarketplacePlugin(entry.packageId)}><IconTrash size={14} /></button>
+                              {updateAvailable ? (
+                                <button className="settings-close" type="button" aria-label={`Update ${entry.name}`} data-tooltip={`Update ${entry.name}`} onClick={() => void plugins.updateMarketplacePlugin(entry)}><IconRefresh size={14} /></button>
+                              ) : null}
+                              <button className="settings-close" type="button" aria-label={`Delete ${entry.name}`} data-tooltip={`Delete ${entry.name}`} onClick={() => void plugins.uninstallMarketplacePlugin(entry.packageId)}><IconTrash size={14} /></button>
                             </>
                           ) : (
                             <button className="settings-close" type="button" aria-label={`Install ${entry.name}`} data-tooltip={`Install ${entry.name}`} disabled={entry.status !== "available"} onClick={() => void plugins.installFromMarketplace(entry)}><IconDownload size={14} /></button>

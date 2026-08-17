@@ -49,6 +49,13 @@ Declared assets are emitted beside `plugin.js`. The compiler minifies each packa
 5. Commit both source and generated `marketplace/dist` files.
 6. Push the branch. The marketplace workflow verifies that generated artifacts match source.
 
+Marketplace lifecycle ownership is intentionally split:
+
+- **Cell Objects** lists built-in and installed types, including disabled installed plugins, and owns Enable/Disable.
+- **Marketplace** owns Install, Delete, and Update. Update appears only when `catalog.version` is newer than the installed semantic version.
+
+When releasing an update, always bump `version` in the target `manifest.json`. Rebuilding changed source under the same version violates the immutable artifact contract and will not offer users an update.
+
 The simplest remote test uses GitHub raw content. In the browser console, point Tactile at the pushed catalog and reload:
 
 ```js
@@ -75,3 +82,15 @@ Direct GitHub raw testing currently applies to the browser build. The desktop We
 Tactile downloads plugin JavaScript and declared assets, verifies catalog sizes and SHA-256 hashes, stores them in profile-level IndexedDB, and activates the package through the host SDK. Enabled packages restore from cache after restart. Disable removes the type from creation surfaces; uninstall deletes the cached package. Workspace exports preserve plugin-owned object data but never embed executable bundles.
 
 Initial packages are trusted first-party code. Permissions are declared now for compatibility with future enforcement, but external/untrusted publisher sandboxing is outside the current scope.
+
+## Checklist for a new plugin
+
+1. Copy the package shape used by `marketplace/plugins/image/` or the registry template.
+2. Choose stable package and object type IDs.
+3. Add `manifest.json`, `plugin.jsx`, and an independent renderer. Do not import from another plugin or `src/`.
+4. Import approved services from `tactile:host` only.
+5. Declare file extensions, MIME prefixes, permissions, and runtime assets in the manifest.
+6. Add package-specific tests when behavior goes beyond the generic artifact/runtime contracts.
+7. Run the selective build and focused tests.
+8. Test Install, open/render, disable/re-enable from Cell Objects, Delete, restart restoration, and remote GitHub loading.
+9. Commit source and generated artifacts together.

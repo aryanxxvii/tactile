@@ -7,10 +7,12 @@ import {
 } from "./index.js";
 import {
   activatePluginSource,
+  buildCellObjectDefinitions,
   deleteInstalledPlugin,
   downloadMarketplacePlugin,
   fetchMarketplaceCatalog,
   readInstalledPlugins,
+  updatedPluginRecord,
   writeInstalledPlugin,
 } from "./marketplace.js";
 import { pluginHostServices } from "./pluginHostServices.jsx";
@@ -71,6 +73,7 @@ export function ObjectPluginProvider({ children }) {
   }, []);
   const allDefinitions = listObjectTypeDefinitions();
   const definitions = allDefinitions.filter((definition) => definition.manageInSettings !== false);
+  const cellObjectDefinitions = buildCellObjectDefinitions(definitions, installed);
   const enabledTypes = useMemo(() => new Set(
     allDefinitions
       .filter((definition) => enabledOverrides[definition.type] ?? definition.defaultEnabled !== false)
@@ -78,6 +81,7 @@ export function ObjectPluginProvider({ children }) {
   ), [allDefinitions, enabledOverrides]);
   const value = useMemo(() => ({
     definitions,
+    cellObjectDefinitions,
     enabledTypes,
     activeCreatableDefinitions: allDefinitions.filter((definition) => (
       definition.creatable && enabledTypes.has(definition.type)
@@ -116,6 +120,20 @@ export function ObjectPluginProvider({ children }) {
         setMarketplaceError(error?.message || String(error));
       }
     },
+    updateMarketplacePlugin: async (entry) => {
+      const currentRecord = installed[entry.packageId];
+      if (!currentRecord) return;
+      setMarketplaceError("");
+      try {
+        const downloaded = await downloadMarketplacePlugin(entry);
+        const record = updatedPluginRecord(currentRecord, entry, downloaded);
+        if (record.enabled) await activateRecord(record);
+        await writeInstalledPlugin(record);
+        setInstalled((current) => ({ ...current, [entry.packageId]: record }));
+      } catch (error) {
+        setMarketplaceError(error?.message || String(error));
+      }
+    },
     setInstalledEnabled: async (packageId, enabled) => {
       const record = installed[packageId];
       if (!record) return;
@@ -138,7 +156,7 @@ export function ObjectPluginProvider({ children }) {
         return next;
       });
     },
-  }), [allDefinitions, catalog, definitions, enabledTypes, installed, marketplaceError, marketplaceState]);
+  }), [allDefinitions, catalog, cellObjectDefinitions, definitions, enabledTypes, installed, marketplaceError, marketplaceState]);
 
   return <ObjectPluginContext.Provider value={value}>{children}</ObjectPluginContext.Provider>;
 }

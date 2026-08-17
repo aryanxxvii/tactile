@@ -5,9 +5,13 @@ import { OBJECT_TYPE_DEFINITIONS } from "../src/objects/registry/builtins.js";
 import { workspaceFromZip, workspaceToZipBlob } from "../src/export.js";
 import { createBlankWorkspace } from "../src/model.js";
 import {
+  buildCellObjectDefinitions,
+  comparePluginVersions,
   downloadMarketplacePlugin,
   fetchMarketplaceCatalog,
+  isPluginUpdateAvailable,
   sha256Hex,
+  updatedPluginRecord,
 } from "../src/objects/registry/marketplace.js";
 
 function response(body, options = {}) {
@@ -35,6 +39,48 @@ test("marketplace catalog validation accepts schema v1 and rejects malformed dat
     fetchMarketplaceCatalog(async () => response({ schemaVersion: 2, plugins: [] })),
     /catalog is invalid/,
   );
+});
+
+test("marketplace updates appear only for a newer catalog version", () => {
+  const installed = { packageId: "tactile.code", version: "1.2.3" };
+  assert.equal(isPluginUpdateAvailable({ status: "available", version: "1.2.4" }, installed), true);
+  assert.equal(isPluginUpdateAvailable({ status: "available", version: "1.2.3" }, installed), false);
+  assert.equal(isPluginUpdateAvailable({ status: "available", version: "1.1.9" }, installed), false);
+  assert.equal(isPluginUpdateAvailable({ status: "planned", version: "2.0.0" }, installed), false);
+  assert.equal(comparePluginVersions("2.0.0", "1.99.99"), 1);
+  assert.equal(comparePluginVersions("1.0.0", "1.0.0-beta.1"), 1);
+  assert.equal(comparePluginVersions("1.0.0-beta.1", "1.0.0"), -1);
+});
+
+test("disabled installed plugins remain available in the Cell Objects list", () => {
+  const core = [{ type: "sheet", label: "Tiles", source: "built-in" }];
+  const installed = {
+    "tactile.code": {
+      packageId: "tactile.code",
+      type: "code",
+      name: "Code",
+      description: "Code editor",
+      version: "1.2.3",
+      enabled: false,
+    },
+  };
+  const definitions = buildCellObjectDefinitions(core, installed);
+  assert.deepEqual(definitions.map((definition) => definition.type), ["sheet", "code"]);
+  assert.equal(definitions[1].installedPlaceholder, true);
+  assert.equal(definitions[1].package.version, "1.2.3");
+});
+
+test("plugin updates preserve the installed enablement state", () => {
+  const updated = updatedPluginRecord(
+    { packageId: "tactile.code", version: "1.0.0", enabled: false, installedAt: "installed" },
+    { packageId: "tactile.code", type: "code", version: "1.1.0" },
+    { source: "new bundle", assetSources: [] },
+    "updated",
+  );
+  assert.equal(updated.version, "1.1.0");
+  assert.equal(updated.enabled, false);
+  assert.equal(updated.installedAt, "installed");
+  assert.equal(updated.updatedAt, "updated");
 });
 
 test("a GitHub-hosted catalog resolves relative bundles and assets without recompiling Tactile", async () => {
