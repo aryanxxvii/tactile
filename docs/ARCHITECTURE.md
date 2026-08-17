@@ -8,12 +8,27 @@ Each object type registers:
 
 - a stable type key
 - label and monochrome icon
-- renderer
+- lazy expanded renderer
+- synchronous compact cell projection
 - file serializer and parser
 - default-title generator
 - commands and context-menu contributions
 
 This lets later types such as Gantt charts join the same navigation and file model without rewriting the workspace shell.
+
+Built-ins and runtime marketplace packages use the same `defineObjectPlugin` contract. Runtime registration is observable, so an enabled install appears immediately in Settings and the empty-cell creation menu without restarting. The registry, provider, renderer adapter, built-in catalog, SDK contract, and copyable implementation template live together in `src/objects/registry/`; marketplace installation and enablement are profile-level state and are not written into portable workspaces.
+
+## Marketplace boundary
+
+The installed client bundles only Tiles and Text as user-managed object types. Bare links and legacy Document-to-Text migration remain core compatibility behavior. Unknown optional types render through `MissingPluginObject`; their records and assets are not coerced into another type.
+
+`marketplace/` is independently buildable and publishable. `npm run marketplace:build` compiles all first-party manifests; `npm run marketplace:build -- <package-id>` compiles only one plugin without invoking the Tactile Vite build. It emits a static v1 catalog plus immutable versioned ESM bundles, declared assets, sizes, and SHA-256 hashes. Packages import approved APIs only through the compiler-resolved `tactile:host` module and do not import each other. Tactile supplies the shared React runtime and approved SDK functions. Publishing generated marketplace artifacts does not require rebuilding the Tactile client.
+
+Browser installations are stored in profile-level IndexedDB, separate from workspace records. Installed bundles are verified before activation and enabled plugins are restored on restart. Portable workspaces never contain executable plugin bytes; they preserve opaque plugin-owned object fields and declare non-executable `pluginRequirements` metadata.
+
+Installed and enabled are separate states. Cell Objects is the only enable/disable surface and continues to list disabled installed packages. Marketplace owns install, delete, and semantic-version updates; an update preserves the package's enabled state.
+
+Counter, Code, PDF, Image, Video, Audio, HTML, and SVG are independently compiled packages and remain absent from core production chunks. PDF owns its separately verified worker asset; Video and Audio own plugin-local player styles. Native allowlisted download/cache commands remain required before desktop marketplace delivery is release-complete. Build and GitHub release instructions are in [marketplace.md](marketplace.md).
 
 ## Performance rules
 

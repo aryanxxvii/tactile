@@ -34,6 +34,21 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 Run the narrowest relevant checks while iterating, then run the full gate before handoff. A passing local check is evidence for that environment, not cross-platform certification.
 
+## Marketplace plugins
+
+Tiles and Text ship with Tactile. Optional cell-object types live under `marketplace/plugins/` and compile independently of the application. Read [the marketplace release guide](docs/marketplace.md) and the scoped [`marketplace/AGENTS.md`](marketplace/AGENTS.md) before changing a plugin.
+
+For a plugin-only change, bump the package version and compile only that package:
+
+```text
+npm run marketplace:build -- tactile.image
+node --test tests/marketplace-build.test.mjs tests/marketplace.test.mjs tests/plugins.test.mjs
+```
+
+Commit the package source and regenerated `marketplace/dist` artifacts. Do not require `npm run build` or a new Tactile release for an ordinary plugin release. A full application build is required only when changing the host SDK, loader, core app, or shared compiler infrastructure.
+
+Marketplace owns Install, version-driven Update, and Delete. Settings > Plugins > Cell Objects owns Enable/Disable for installed and built-in types. A catalog version must be greater than the installed semantic version before Update is offered.
+
 ## Portable data and migrations
 
 The current portable workspace format is v4. Sheets are sparse CSV surfaces, text remains Markdown, and binary resources retain native files. Read [the compatibility guide](docs/compatibility/README.md) before changing serialized fields, link repair, object IDs, or migration behavior.

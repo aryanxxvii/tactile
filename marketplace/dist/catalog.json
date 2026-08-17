@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.audio",
+      "type": "audio",
+      "name": "Audio",
+      "description": "A locally attached audio file.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [
+        "media.playback"
+      ],
+      "entry": "plugin.jsx",
+      "extensions": [
+        "mp3",
+        "wav",
+        "ogg",
+        "flac",
+        "m4a",
+        "aac"
+      ],
+      "mimePrefixes": [
+        "audio/"
+      ],
+      "status": "available",
+      "artifact": "plugins/tactile.audio/1.0.0/plugin.js",
+      "sha256": "83d151bed8b4573917054999d32aa58a70e6b45df898cda8a0aff7667b821c28",
+      "size": 18858,
+      "assets": []
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.code",
+      "type": "code",
+      "name": "Code",
+      "description": "A local source file with language-aware presentation.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [
+        "code.execute"
+      ],
+      "entry": "plugin.jsx",
+      "status": "available",
+      "artifact": "plugins/tactile.code/1.0.0/plugin.js",
+      "sha256": "d821caf46614091b940d908f7258ae8f4d35a9b0a6477340e4f7b97f504d9bf3",
+      "size": 21527,
+      "assets": []
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.example-counter",
+      "type": "example-counter",
+      "name": "Counter",
+      "description": "A small first-party counter cell object used to verify runtime installation.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [],
+      "entry": "plugin.js",
+      "status": "available",
+      "artifact": "plugins/tactile.example-counter/1.0.0/plugin.js",
+      "sha256": "c9c889c4e7a43cedc4a174a258d8899f842c45a0f09df55260ccba6799020fe6",
+      "size": 1512,
+      "assets": []
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.html",
+      "type": "html",
+      "name": "HTML",
+      "description": "A local HTML document.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [
+        "native.html-preview"
+      ],
+      "entry": "plugin.jsx",
+      "extensions": [
+        "html",
+        "htm"
+      ],
+      "mimePrefixes": [
+        "text/html"
+      ],
+      "status": "available",
+      "artifact": "plugins/tactile.html/1.0.0/plugin.js",
+      "sha256": "8f4ce6aa4c0b0e382d0a0ae45ccf1edea3dea2458aab226e5fdd622b706422da",
+      "size": 6400,
+      "assets": []
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.image",
+      "type": "image",
+      "name": "Image",
+      "description": "A locally attached image.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [],
+      "entry": "plugin.jsx",
+      "extensions": [
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp"
+      ],
+      "mimePrefixes": [
+        "image/"
+      ],
+      "status": "available",
+      "artifact": "plugins/tactile.image/1.0.0/plugin.js",
+      "sha256": "2f598a071694befdcac98cea387039b3a523abd7072801da4fdbab6cc22c76de",
+      "size": 6388,
+      "assets": []
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.pdf",
+      "type": "pdf",
+      "name": "PDF",
+      "description": "A locally attached PDF document.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [
+        "worker.create"
+      ],
+      "entry": "plugin.jsx",
+      "extensions": [
+        "pdf"
+      ],
+      "mimePrefixes": [
+        "application/pdf"
+      ],
+      "assets": [
+        {
+          "file": "pdf.worker.min.mjs",
+          "artifact": "plugins/tactile.pdf/1.0.0/pdf.worker.min.mjs",
+          "sha256": "1baa1844c89c80a5b2797c916e75ab29254be46d8e9cb53cb6364d7aad84be36",
+          "size": 1375838
+        }
+      ],
+      "status": "available",
+      "artifact": "plugins/tactile.pdf/1.0.0/plugin.js",
+      "sha256": "1d35ddd7375413ea54390483e2c775bab349d4224080b621d6ff83d87f83ef4b",
+      "size": 344380
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.svg",
+      "type": "svg",
+      "name": "SVG",
+      "description": "A locally attached vector image.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [],
+      "entry": "plugin.jsx",
+      "extensions": [
+        "svg"
+      ],
+      "mimePrefixes": [
+        "image/svg+xml"
+      ],
+      "status": "available",
+      "artifact": "plugins/tactile.svg/1.0.0/plugin.js",
+      "sha256": "ff1b9714d307bbcd325226c5f4a4e12274eaf37e73801d404a5fb8f4b3930a08",
+      "size": 6724,
+      "assets": []
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.video",
+      "type": "video",
+      "name": "Video",
+      "description": "A locally attached video.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [
+        "media.playback",
+        "media.picture-in-picture",
+        "media.fullscreen"
+      ],
+      "entry": "plugin.jsx",
+      "extensions": [
+        "mp4",
+        "webm"
+      ],
+      "mimePrefixes": [
+        "video/"
+      ],
+      "status": "available",
+      "artifact": "plugins/tactile.video/1.0.0/plugin.js",
+      "sha256": "91281560d9270deea8948df2780b6944e7b38f0789dfb8a0aeea172d0bd44230",
+      "size": 21873,
+      "assets": []
+    }
+  ]
+}

@@ -23,11 +23,7 @@ import {
 } from "@tabler/icons-react";
 import { focusFirstMenuItem, handleMenuKeyDown } from "../../components/controls/menuKeyboard.js";
 import { PaperPortal } from "../../components/PaperPortal.jsx";
-import { objectTypeFor } from "../objectTypes.js";
-
-const SheetIcon = objectTypeFor("sheet").icon;
-const TextIcon = objectTypeFor("markdown").icon;
-const CodeIcon = objectTypeFor("code").icon;
+import { useObjectPlugins } from "../registry/ObjectPluginProvider.jsx";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -194,6 +190,7 @@ export function CellContextMenu({
   onFilterValue,
   onClearFilters,
 }) {
+  const { activeCreatableDefinitions } = useObjectPlugins();
   const menuRef = useRef(null);
   const [position, setPosition] = useState(null);
 
@@ -298,9 +295,15 @@ export function CellContextMenu({
           </>
         ) : (
           <>
-            <MenuItem icon={SheetIcon} label="In: Tiles" shortcut="]" onSelect={invoke(() => onCreate("sheet"))} />
-            <MenuItem icon={TextIcon} label="In: Text" onSelect={invoke(() => onCreate("markdown"))} />
-            <MenuItem icon={CodeIcon} label="In: Code" onSelect={invoke(() => onCreate("code"))} />
+            {activeCreatableDefinitions.map((definition, index) => (
+              <MenuItem
+                key={definition.type}
+                icon={definition.icon}
+                label={`In: ${definition.label}`}
+                shortcut={index === 0 ? "]" : undefined}
+                onSelect={invoke(() => onCreate(definition.type))}
+              />
+            ))}
             <MenuItem icon={IconPaperclip} label="In: Local file…" onSelect={invoke(onAttachFile)} />
           </>
         )}

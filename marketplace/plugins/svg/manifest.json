@@ -1,0 +1,1 @@
+{"schemaVersion":1,"packageId":"tactile.svg","type":"svg","name":"SVG","description":"A locally attached vector image.","version":"1.0.0","tactile":">=1.1.0","permissions":[],"entry":"plugin.jsx","extensions":["svg"],"mimePrefixes":["image/svg+xml"]}

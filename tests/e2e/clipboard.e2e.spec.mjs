@@ -81,6 +81,15 @@ async function importClipboardWorkspace(page) {
   await expect(page.locator('[data-object-id="home"][data-cell-address="A1"]')).toBeVisible();
 }
 
+async function installMarketplacePlugin(page, name) {
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("tab", { name: "Plugins" }).click();
+  const marketplace = page.getByRole("region", { name: "Marketplace" });
+  await marketplace.getByRole("button", { name: `Install ${name}` }).click();
+  await expect(page.getByRole("region", { name: "Cell Objects" }).getByRole("switch", { name: `Disable ${name}` })).toBeVisible();
+  await page.getByRole("button", { name: "Close settings" }).click();
+}
+
 async function grantClipboard(page) {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"], {
     origin: new URL(page.url()).origin,
@@ -227,6 +236,7 @@ test("pastes a rectangular TSV from the keyboard and selects that rectangle", as
 
 test("pastes a clipboard image into the selected cell as a linked local image object", async ({ page }) => {
   await page.goto("/");
+  await installMarketplacePlugin(page, "Image");
   await importClipboardWorkspace(page);
 
   await cellLocator(page, "B2").click();
@@ -248,6 +258,7 @@ test("pastes a clipboard image into the selected cell as a linked local image ob
 
 test("pastes an image from the clipboard with Control+V as a linked local image object", async ({ page }) => {
   await page.goto("/");
+  await installMarketplacePlugin(page, "Image");
   await grantClipboard(page);
   await importClipboardWorkspace(page);
   await setClipboardImage(page);
@@ -366,6 +377,7 @@ test("keeps native text-entry paste behavior when the formula editor is active",
 
 test("pastes a clipboard image while the formula editor is active into the selected cell", async ({ page }) => {
   await page.goto("/");
+  await installMarketplacePlugin(page, "Image");
   await grantClipboard(page);
   await importClipboardWorkspace(page);
   await cellLocator(page, "B2").click();

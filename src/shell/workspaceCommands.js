@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 import { cloneTheme, downloadTheme, themeFromFile } from "../themes.js";
-import { isBareUrlValue } from "../model.js";
+import { inferFileObjectType, isBareUrlValue } from "../model.js";
 import { readLocalFile } from "./selectionCommands.js";
+import { useObjectPlugins } from "../objects/registry/ObjectPluginProvider.jsx";
 
 let portableCommandsPromise;
 
@@ -32,6 +33,7 @@ export function useWorkspaceCommands({
   importInputRef,
   resetSelection,
 }) {
+  const plugins = useObjectPlugins();
   const exportWorkspace = useCallback(async () => {
     setExportState("exporting");
     try {
@@ -65,6 +67,10 @@ export function useWorkspaceCommands({
   }, [replaceWorkspace, resetSelection, showNotice]);
 
   const createInCell = useCallback((parentObjectId, cell, type, sourceElement) => {
+    if (!plugins.isEnabled(type)) {
+      showNotice("Enable that cell object in Settings → Plugins first");
+      return;
+    }
     const created = createEmbeddedObject(parentObjectId, cell.id, type);
     if (!created || !sourceElement) return;
     schedule(() => {
@@ -78,11 +84,18 @@ export function useWorkspaceCommands({
         mode: "floating",
       });
     }, 20);
-  }, [createEmbeddedObject, openObject, schedule]);
+  }, [createEmbeddedObject, openObject, plugins, schedule, showNotice]);
 
   const createFileInCell = useCallback(async (parentObjectId, cell, file, sourceElement) => {
     try {
       const asset = await readLocalFile(file);
+      const type = inferFileObjectType(asset);
+      if (!plugins.isEnabled(type)) {
+        const catalogEntry = plugins.catalog.find((entry) => entry.type === type);
+        const action = catalogEntry?.status === "available" ? "Install" : "This file type needs";
+        showNotice(`${action} the ${catalogEntry?.name || type} plugin in Settings → Plugins before attaching this file`);
+        return;
+      }
       const created = createEmbeddedFile(parentObjectId, cell.id, asset);
       if (!created || !sourceElement) return;
       schedule(() => {
@@ -99,7 +112,7 @@ export function useWorkspaceCommands({
     } catch (error) {
       showNotice(error?.message || "That file could not be attached");
     }
-  }, [createEmbeddedFile, openObject, schedule, showNotice]);
+  }, [createEmbeddedFile, openObject, plugins, schedule, showNotice]);
 
   const openLinkCell = useCallback((parentObjectId, payload) => {
     const parent = workspace.objects[parentObjectId];
@@ -117,6 +130,10 @@ export function useWorkspaceCommands({
       });
       return;
     }
+    if (!plugins.isEnabled("link")) {
+      showNotice("Enable Link in Settings → Plugins first");
+      return;
+    }
     const created = createEmbeddedLink(parentObjectId, payload.sourceCellId, payload.linkUrl);
     if (!created) return;
     schedule(() => {
@@ -128,7 +145,7 @@ export function useWorkspaceCommands({
         sourceType: "link",
       });
     }, 20);
-  }, [createEmbeddedLink, openObject, schedule, workspace.objects]);
+  }, [createEmbeddedLink, openObject, plugins, schedule, showNotice, workspace.objects]);
 
   const replaceFileObject = useCallback(async (objectId, file) => {
     try {

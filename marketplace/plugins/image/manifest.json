@@ -1,0 +1,1 @@
+{"schemaVersion":1,"packageId":"tactile.image","type":"image","name":"Image","description":"A locally attached image.","version":"1.0.0","tactile":">=1.1.0","permissions":[],"entry":"plugin.jsx","extensions":["png","jpg","jpeg","gif","webp"],"mimePrefixes":["image/"]}

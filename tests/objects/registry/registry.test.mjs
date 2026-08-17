@@ -1,8 +1,9 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
+
 import { getObjectTypeDefinition, listObjectTypeDefinitions } from "../../../src/objects/registry/index.js";
 
-const EXPECTED_TYPES = ["sheet", "markdown", "document", "pdf", "image", "video", "html", "svg", "link"];
+const EXPECTED_TYPES = ["sheet", "markdown", "link"];
 
 test("registers every existing object type with a lazy renderer contract", () => {
   const definitions = listObjectTypeDefinitions();
@@ -28,9 +29,8 @@ test("renderer loading is explicit and remains bundler-owned", () => {
   assert.equal(definition.renderer.load.constructor.name, "Function");
 });
 
-test("document creation and validation preserve the legacy markdown compatibility", () => {
-  const definition = getObjectTypeDefinition("document");
-  const object = definition.create({ id: "document-test", title: "Document test" });
-  assert.equal(object.type, "markdown");
-  assert.equal(definition.validate(object).valid, true);
+test("unknown optional types resolve to the explicit missing-plugin renderer", () => {
+  const definition = getObjectTypeDefinition("code");
+  assert.equal(definition.type, "missing-plugin");
+  assert.equal(definition.creatable, false);
 });

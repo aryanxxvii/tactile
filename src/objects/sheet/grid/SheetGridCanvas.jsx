@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
-import { preloadObjectRenderer } from "../../objectRegistry.jsx";
+import { preloadObjectRenderer } from "../../registry/ObjectRenderer.jsx";
+import { projectObjectCell } from "../../registry/index.js";
 import { formatFormulaResult } from "../../../sheet/formulas.js";
 import { formatCellValue } from "../../../sheet/formatting.js";
 import { cellAddress, cellId, columnLabel, coordinatesFromAddress } from "../../../sheet/coordinates.js";
@@ -359,10 +360,16 @@ export function SheetGridCanvas({
           const formula = cell?.formula ?? "";
           const embed = cell?.embed;
           const calculatedValue = formula ? formatFormulaResult(formulaValues.get(address)) : rawValue;
-          const embeddedTitle = embed ? workspaceObjects?.[embed.objectId]?.title : "";
+          const embeddedObject = embed ? workspaceObjects?.[embed.objectId] : null;
+          const embeddedProjection = embed ? projectObjectCell(embed.type, {
+            object: embeddedObject,
+            cell,
+            sheet: object,
+            fallbackValue: rawValue,
+          }) : null;
           const linkUrl = !embed && !formula && isBareUrlValue(rawValue) ? rawValue : "";
           const displayValue = embed
-            ? embeddedTitle || rawValue || "Embedded object"
+            ? embeddedProjection?.displayValue || embeddedObject?.title || rawValue || "Embedded object"
             : linkUrl
               ? rawValue
               : formatCellValue(calculatedValue, cell?.style);
@@ -384,7 +391,7 @@ export function SheetGridCanvas({
               formula={formula}
               displayValue={displayValue}
               embedObjectId={embed?.objectId || ""}
-              embedObject={embed?.objectId ? workspaceObjects?.[embed.objectId] : null}
+              embedObject={embeddedObject}
               embedType={embed?.type || ""}
               embedLinkId={embed?.linkId || ""}
               linkUrl={linkUrl}

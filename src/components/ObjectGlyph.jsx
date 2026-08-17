@@ -1,5 +1,5 @@
 import { IconFile } from "@tabler/icons-react";
-import { objectTypeFor } from "../objects/objectTypes.js";
+import { objectTypeFor } from "../objects/registry/objectTypes.js";
 import { normalizeIconEmoji } from "../iconEmoji.js";
 
 export { isEmojiGrapheme, normalizeIconEmoji } from "../iconEmoji.js";

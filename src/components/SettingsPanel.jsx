@@ -11,6 +11,7 @@ import {
   IconLayoutList,
 IconMoon,
   IconPalette,
+  IconPlugConnected,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -23,6 +24,8 @@ import { allThemes } from "../themes.js";
 import { ColorControl } from "./controls/ColorControl.jsx";
 import { SelectMenu } from "./controls/SelectMenu.jsx";
 import { Switch } from "./controls/Switch.jsx";
+import { useObjectPlugins } from "../objects/registry/ObjectPluginProvider.jsx";
+import { isPluginUpdateAvailable } from "../objects/registry/marketplace.js";
 import {
   WORKSPACE_AUTHORING_PROMPT,
   WORKSPACE_AUTHORING_PROMPT_VERSION,
@@ -120,6 +123,7 @@ onChangeWorkspaceFolder,
   onOpenGuide,
   onClose,
 }) {
+  const plugins = useObjectPlugins();
   const [tab, setTab] = useState("appearance");
   const [themeFilter, setThemeFilter] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -244,6 +248,7 @@ onChangeWorkspaceFolder,
           <SettingTab id="settings-tab-appearance" controls="settings-panel-appearance" active={tab === "appearance"} icon={IconPalette} onClick={() => setTab("appearance")}>Appearance</SettingTab>
 <SettingTab id="settings-tab-files" controls="settings-panel-files" active={tab === "files"} icon={IconFileTypeCsv} onClick={() => setTab("files")}>Files &amp; ownership</SettingTab>
           <SettingTab id="settings-tab-keyboard" controls="settings-panel-keyboard" active={tab === "keyboard"} icon={IconKeyboard} onClick={() => setTab("keyboard")}>Keyboard</SettingTab>
+          <SettingTab id="settings-tab-plugins" controls="settings-panel-plugins" active={tab === "plugins"} icon={IconPlugConnected} onClick={() => setTab("plugins")}>Plugins</SettingTab>
           {onCheckForUpdate ? (
             <SettingTab id="settings-tab-updates" controls="settings-panel-updates" active={tab === "updates"} icon={IconRefresh} onClick={() => setTab("updates")}>Updates</SettingTab>
           ) : null}
@@ -449,6 +454,95 @@ onChangeWorkspaceFolder,
                   <IconRefresh size={14} /> Check again
                 </button>
               </div>
+            </div>
+          ) : null}
+
+          {tab === "plugins" ? (
+            <div className="plugins-settings" id="settings-panel-plugins" role="tabpanel" aria-labelledby="settings-tab-plugins">
+              <section className="plugins-section" aria-labelledby="cell-objects-title">
+                <div className="plugins-section-heading">
+                  <div>
+                    <span>Installed</span>
+                    <h3 id="cell-objects-title">Cell Objects</h3>
+                    <p>Active objects appear in the create menu. Existing cells remain readable when an object is disabled.</p>
+                  </div>
+                  <strong>{plugins.cellObjectDefinitions.filter((definition) => {
+                    const record = definition.package?.id ? plugins.installed[definition.package.id] : null;
+                    return record ? record.enabled !== false : plugins.isEnabled(definition.type);
+                  }).length} active</strong>
+                </div>
+                <div className="plugin-list">
+                  {plugins.cellObjectDefinitions.map((definition) => {
+                    const Icon = definition.icon || IconPlugConnected;
+                    const packageId = definition.package?.id;
+                    const installedRecord = packageId ? plugins.installed[packageId] : null;
+                    const enabled = installedRecord
+                      ? installedRecord.enabled !== false
+                      : plugins.isEnabled(definition.type);
+                    return (
+                      <div className="plugin-row" key={definition.type}>
+                        <span className="plugin-icon"><Icon size={17} stroke={1.5} /></span>
+                        <span className="plugin-copy">
+                          <strong>{definition.label}</strong>
+                          <small>{definition.description || `${definition.type} cell object`}</small>
+                        </span>
+                        <span className="plugin-source">{definition.source === "built-in" ? "Offline" : definition.package?.version || "Installed"}</span>
+                        <Switch
+                          label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
+                          checked={enabled}
+                          onChange={(checked) => {
+                            if (installedRecord) void plugins.setInstalledEnabled(packageId, checked);
+                            else plugins.setEnabled(definition.type, checked);
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="plugins-section marketplace-section" aria-labelledby="marketplace-title">
+                <div className="plugins-section-heading">
+                  <div>
+                    <span>Discover</span>
+                    <h3 id="marketplace-title">Marketplace</h3>
+                    <p>Optional first-party cell objects are downloaded, verified, and cached locally.</p>
+                  </div>
+                  <button type="button" onClick={() => void plugins.refreshCatalog()} data-tooltip="Refresh marketplace"><IconRefresh size={14} /></button>
+                </div>
+                {plugins.marketplaceError ? <p className="is-error" role="alert">{plugins.marketplaceError}</p> : null}
+                <div className="plugin-list">
+                  {plugins.catalog.map((entry) => {
+                    const record = plugins.installed[entry.packageId];
+                    const updateAvailable = isPluginUpdateAvailable(entry, record);
+                    return (
+                      <div className="plugin-row" key={entry.packageId} style={{ gridTemplateColumns: "30px minmax(0, 1fr) auto auto" }}>
+                        <span className="plugin-icon"><IconPlugConnected size={17} stroke={1.5} /></span>
+                        <span className="plugin-copy">
+                          <strong>{entry.name}</strong>
+                          <small>{entry.description}</small>
+                        </span>
+                        <span className="plugin-source">
+                          {updateAvailable ? `${record.version} → ${entry.version}` : entry.status === "available" ? entry.version : "Coming later"}
+                        </span>
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+                          {record ? (
+                            <>
+                              {updateAvailable ? (
+                                <button className="settings-close" type="button" aria-label={`Update ${entry.name}`} data-tooltip={`Update ${entry.name}`} onClick={() => void plugins.updateMarketplacePlugin(entry)}><IconRefresh size={14} /></button>
+                              ) : null}
+                              <button className="settings-close" type="button" aria-label={`Delete ${entry.name}`} data-tooltip={`Delete ${entry.name}`} onClick={() => void plugins.uninstallMarketplacePlugin(entry.packageId)}><IconTrash size={14} /></button>
+                            </>
+                          ) : (
+                            <button className="settings-close" type="button" aria-label={`Install ${entry.name}`} data-tooltip={`Install ${entry.name}`} disabled={entry.status !== "available"} onClick={() => void plugins.installFromMarketplace(entry)}><IconDownload size={14} /></button>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {plugins.marketplaceState === "loading" && !plugins.catalog.length ? <p className="marketplace-empty">Loading marketplace…</p> : null}
+                </div>
+              </section>
             </div>
           ) : null}
 

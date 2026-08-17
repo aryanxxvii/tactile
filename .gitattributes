@@ -1,0 +1,2 @@
+# Keep generated marketplace artifacts deterministic across operating systems.
+marketplace/dist/**/*.js text eol=lf
