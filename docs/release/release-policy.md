@@ -95,7 +95,44 @@ The inventory records lockfile SHA-256 hashes and uses deterministic SBOM serial
 
 The root `version.json` is the single source of truth for the complete Tactile app. Each marketplace plugin keeps its independent version in `marketplace/plugins/<name>/manifest.json`.
 
-After changing the app version in `version.json`, run `npm run version:sync`. This updates `package.json`, the root package-lock entries, Tauri configuration, Cargo manifest, and the root Cargo lock entry. Do not edit those mirrored version fields directly. `npm run version:check`, the repository verification command, and app release workflows reject stale mirrors or a mismatched release tag.
+### App version ownership
+
+For an app version change, edit only the `version` field in `version.json`. `npm run version:sync` owns and generates these mirrored fields:
+
+| Generated file              | Generated field                      |
+| --------------------------- | ------------------------------------ |
+| `package.json`              | top-level `version`                  |
+| `package-lock.json`         | top-level and root-package `version` |
+| `src-tauri/tauri.conf.json` | top-level `version`                  |
+| `src-tauri/Cargo.toml`      | Tactile package `version`            |
+| `src-tauri/Cargo.lock`      | Tactile root-package `version`       |
+
+Do not edit those generated version fields directly, use dependency-version commands to change dependency entries, or change plugin manifests as part of an ordinary app version bump. Marketplace plugin versions remain independently owned by their manifests.
+
+### Version automation
+
+| Entry point                   | Version behavior                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `npm run version:sync`        | Writes every generated app version field from `version.json`.                                     |
+| `npm run version:check`       | Read-only check; fails when any generated app version field is stale.                             |
+| `npm run dev`                 | Its `predev` lifecycle hook synchronizes and checks before Vite starts.                           |
+| `npm run build`               | Its `prebuild` lifecycle hook synchronizes and checks before the production web build.            |
+| `npx tauri dev`               | Inherits `npm run dev` through Tauri's `beforeDevCommand`.                                        |
+| `npx tauri build`             | Inherits `npm run build` through Tauri's `beforeBuildCommand`.                                    |
+| Direct Cargo build/check/test | Does not rewrite manifests; `build.rs` fails if `Cargo.toml` differs from `version.json`.         |
+| `npm run verify`              | Runs the read-only version check before repository verification.                                  |
+| App release workflow          | Read-only validation; rejects stale mirrors or a tag version that differs from `version.json`.    |
+| Marketplace build and release | Does not synchronize app versions; plugin release validation uses the selected plugin's manifest. |
+
+Tagged and verification builds intentionally do not repair committed files. They fail on drift so released artifacts remain reproducible from the tagged commit.
+
+### App version update procedure
+
+1. Change `version.json`.
+2. Run `npm run version:sync`.
+3. Review and commit `version.json` plus every generated file changed by the sync.
+4. Run `npm run version:check` and the relevant engineering gates.
+5. Tag the committed version with the matching `alpha@<version>` or `release@<version>` tag.
 
 Assign a version only after compatibility and migration behavior are reviewed. Commit each synchronized app or plugin version change before creating its matching tag, then push that tag so the corresponding workflow builds the same commit. Release workflows enforce tag and manifest alignment before building.
 

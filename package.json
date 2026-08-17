@@ -15,7 +15,9 @@
   "scripts": {
     "version:sync": "node scripts/release/sync-version.mjs",
     "version:check": "node scripts/release/sync-version.mjs --check",
+    "predev": "npm run version:sync && npm run version:check",
     "dev": "npm run marketplace:build && vite",
+    "prebuild": "npm run version:sync && npm run version:check",
     "build": "npm run marketplace:build && vite build && node scripts/prepare-sites-build.mjs && node scripts/check-bundle-budget.mjs",
     "marketplace:build": "node scripts/build-marketplace.mjs",
     "preview": "vite preview",

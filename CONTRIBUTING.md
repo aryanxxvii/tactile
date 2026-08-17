@@ -34,6 +34,17 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 Run the narrowest relevant checks while iterating, then run the full gate before handoff. A passing local check is evidence for that environment, not cross-platform certification.
 
+## App version changes
+
+`version.json` owns the complete app version. Do not directly edit the mirrored version fields in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, or `src-tauri/Cargo.lock`.
+
+```text
+npm run version:sync
+npm run version:check
+```
+
+Development and production npm/Tauri builds synchronize automatically. Direct Cargo builds and release workflows only validate and fail on drift; they do not repair committed files. Marketplace plugin versions remain independent. See [the release policy](docs/release/release-policy.md#versioning-and-rollback) for the ownership table, automation matrix, and tagging procedure.
+
 ## Marketplace plugins
 
 Tiles and Text ship with Tactile. Optional cell-object types live under `marketplace/plugins/` and compile independently of the application. Read [the marketplace release guide](docs/marketplace.md) and the scoped [`marketplace/AGENTS.md`](marketplace/AGENTS.md) before changing a plugin.
