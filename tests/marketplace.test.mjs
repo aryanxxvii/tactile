@@ -13,6 +13,7 @@ import {
   isPluginUpdateAvailable,
   LOCAL_MARKETPLACE_CATALOG_URL,
   localDevelopmentPluginRecord,
+  marketplaceInstallSize,
   marketplaceCatalogUrl,
   sha256Hex,
   updatedPluginRecord,
@@ -159,6 +160,39 @@ test("plugin downloads verify size and SHA-256 before activation", async () => {
   await assert.rejects(
     downloadMarketplacePlugin({ ...entry, sha256: "0".repeat(64) }, async () => response(source)),
     /checksum/,
+  );
+});
+
+test("marketplace install size and progress include the bundle and declared assets", async () => {
+  const source = new TextEncoder().encode("export function activate() { return {}; }");
+  const asset = new TextEncoder().encode("worker bytes");
+  const entry = {
+    status: "available",
+    artifact: "/marketplace/plugin.js",
+    size: source.byteLength,
+    sha256: await sha256Hex(source),
+    assets: [
+      {
+        file: "worker.mjs",
+        artifact: "/marketplace/worker.mjs",
+        size: asset.byteLength,
+        sha256: await sha256Hex(asset),
+      },
+    ],
+  };
+  const progress = [];
+  await downloadMarketplacePlugin(
+    entry,
+    async (url) => response(url.endsWith("worker.mjs") ? asset : source),
+    (next) => progress.push(next),
+  );
+  assert.equal(marketplaceInstallSize(entry), source.byteLength + asset.byteLength);
+  assert.equal(progress.at(-1).phase, "verified");
+  assert.equal(progress.at(-1).loaded, marketplaceInstallSize(entry));
+  assert.equal(progress.at(-1).total, marketplaceInstallSize(entry));
+  assert.equal(
+    progress.some((item) => item.phase === "verifying" && item.file === "worker.mjs"),
+    true,
   );
 });
 

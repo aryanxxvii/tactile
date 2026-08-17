@@ -10,11 +10,28 @@ test("Marketplace owns install, version updates, and delete while Cell Objects o
 
   const cellObjects = page.getByRole("region", { name: "Cell Objects" });
   const marketplace = page.getByRole("region", { name: "Marketplace" });
+  const codeMarketplaceRow = marketplace.locator(".marketplace-plugin-row").filter({ hasText: "Code" });
+  const codeMarketplaceMeta = codeMarketplaceRow.locator(".marketplace-plugin-meta > span");
+  await expect(codeMarketplaceMeta.nth(0)).toHaveText("1.0.0");
+  await expect(codeMarketplaceMeta.nth(1)).toHaveText(/\d+(?:\.\d+)? (?:KB|MB)/);
+  await expect(codeMarketplaceRow).not.toContainText("install");
   await page.locator(".tactile-app").evaluate((element) => {
     element.dataset.pluginLifecycleProbe = "mounted";
   });
 
-  await marketplace.getByRole("button", { name: "Install Code" }).click();
+  await page.route(
+    "**/plugins/tactile.code/*/plugin.js",
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await route.continue();
+    },
+    { times: 1 },
+  );
+  const installCode = marketplace.getByRole("button", { name: "Install Code" });
+  await installCode.click();
+  await expect(codeMarketplaceRow.getByRole("progressbar", { name: "Downloading Code" })).toBeVisible();
+  await expect(codeMarketplaceRow.locator(".plugin-install-meta")).toContainText("Downloading");
+  await expect(installCode).toBeDisabled();
   await expect(page.locator('.tactile-app[data-plugin-lifecycle-probe="mounted"]')).toHaveCount(1);
   await expect(cellObjects.getByRole("switch", { name: "Disable Code" })).toBeVisible();
   const codeRuntimesTab = page.getByRole("tab", { name: "Code runtimes" });

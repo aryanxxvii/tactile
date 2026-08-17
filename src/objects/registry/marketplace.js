@@ -170,22 +170,66 @@ export async function sha256Hex(source) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-export async function downloadMarketplacePlugin(entry, fetcher = fetch) {
+export function marketplaceInstallSize(entry) {
+  return Math.max(0, Number(entry?.size) || 0)
+    + (entry?.assets || []).reduce((total, asset) => total + Math.max(0, Number(asset?.size) || 0), 0);
+}
+
+async function responseBytes(response, onChunk) {
+  if (response.body?.getReader) {
+    const reader = response.body.getReader();
+    const chunks = [];
+    let length = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+      chunks.push(chunk);
+      length += chunk.byteLength;
+      onChunk?.(chunk.byteLength);
+    }
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return bytes;
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  onChunk?.(bytes.byteLength);
+  return bytes;
+}
+
+export async function downloadMarketplacePlugin(entry, fetcher = fetch, onProgress) {
   if (entry?.status !== "available" || !entry.artifact || !entry.sha256) throw new Error("This plugin is not available for installation.");
+  const total = marketplaceInstallSize(entry);
+  let loaded = 0;
+  const report = (phase, file) => onProgress?.({ phase, file, loaded, total });
+  const receive = async (response, file) => responseBytes(response, (chunkSize) => {
+    loaded += chunkSize;
+    report("downloading", file);
+  });
+  report("downloading", "plugin.js");
   const response = await fetcher(entry.artifact, { cache: "no-store" });
   if (!response.ok) throw new Error(`Plugin download failed (${response.status}).`);
-  const source = await response.text();
-  if (entry.size && new TextEncoder().encode(source).byteLength !== entry.size) throw new Error("Plugin bundle size does not match the catalog.");
-  if (await sha256Hex(source) !== entry.sha256) throw new Error("Plugin bundle checksum does not match the catalog.");
+  const sourceBytes = await receive(response, "plugin.js");
+  if (entry.size && sourceBytes.byteLength !== entry.size) throw new Error("Plugin bundle size does not match the catalog.");
+  report("verifying", "plugin.js");
+  if (await sha256Hex(sourceBytes) !== entry.sha256) throw new Error("Plugin bundle checksum does not match the catalog.");
+  const source = new TextDecoder().decode(sourceBytes);
   const assetSources = [];
   for (const asset of entry.assets || []) {
+    report("downloading", asset.file);
     const assetResponse = await fetcher(asset.artifact, { cache: "no-store" });
     if (!assetResponse.ok) throw new Error(`Plugin asset download failed (${assetResponse.status}).`);
-    const bytes = new Uint8Array(await assetResponse.arrayBuffer());
+    const bytes = await receive(assetResponse, asset.file);
     if (asset.size && bytes.byteLength !== asset.size) throw new Error(`Plugin asset ${asset.file} size does not match the catalog.`);
+    report("verifying", asset.file);
     if (await sha256Hex(bytes) !== asset.sha256) throw new Error(`Plugin asset ${asset.file} checksum does not match the catalog.`);
     assetSources.push({ file: asset.file, bytes });
   }
+  report("verified", "");
   return { source, assetSources };
 }
 

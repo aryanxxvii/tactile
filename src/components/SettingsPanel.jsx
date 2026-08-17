@@ -25,7 +25,7 @@ import { ColorControl } from "./controls/ColorControl.jsx";
 import { SelectMenu } from "./controls/SelectMenu.jsx";
 import { Switch } from "./controls/Switch.jsx";
 import { useObjectPlugins } from "../objects/registry/ObjectPluginProvider.jsx";
-import { isPluginUpdateAvailable } from "../objects/registry/marketplace.js";
+import { isPluginUpdateAvailable, marketplaceInstallSize } from "../objects/registry/marketplace.js";
 import {
   WORKSPACE_AUTHORING_PROMPT,
   WORKSPACE_AUTHORING_PROMPT_VERSION,
@@ -68,6 +68,21 @@ const themeFilters = [
 function boundedTokenValue(value, min, max) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : min;
+}
+
+function formatPluginSize(bytes) {
+  const size = Math.max(0, Number(bytes) || 0);
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(size < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function transferLabel(transfer) {
+  if (!transfer) return "";
+  if (transfer.phase === "verifying" || transfer.phase === "verified") return "Verifying";
+  if (transfer.phase === "installing") return "Installing";
+  if (transfer.phase === "saving") return "Saving";
+  return "Downloading";
 }
 
 function SettingTab({ active, icon: Icon, children, onClick, id, controls }) {
@@ -563,26 +578,51 @@ onChangeWorkspaceFolder,
                   {plugins.catalog.map((entry) => {
                     const record = plugins.installed[entry.packageId];
                     const updateAvailable = isPluginUpdateAvailable(entry, record);
+                    const transfer = plugins.pluginTransfers[entry.packageId];
+                    const installSize = marketplaceInstallSize(entry);
+                    const progress = transfer?.total
+                      ? Math.max(0, Math.min(100, Math.round((transfer.loaded / transfer.total) * 100)))
+                      : 0;
                     return (
-                      <div className="plugin-row" key={entry.packageId} style={{ gridTemplateColumns: "30px minmax(0, 1fr) auto auto" }}>
+                      <div className={`plugin-row marketplace-plugin-row${transfer ? " is-transferring" : ""}`} key={entry.packageId}>
                         <span className="plugin-icon"><IconPlugConnected size={17} stroke={1.5} /></span>
                         <span className="plugin-copy">
                           <strong>{entry.name}</strong>
                           <small>{entry.description}</small>
+                          {transfer ? (
+                            <span className="plugin-install-meta">
+                              <strong>{transferLabel(transfer)}{transfer.phase === "downloading" ? ` ${progress}%` : ""}</strong>
+                            </span>
+                          ) : null}
+                          {transfer ? (
+                            <span
+                              className={`plugin-transfer-track is-${transfer.phase}`}
+                              role="progressbar"
+                              aria-label={`${transferLabel(transfer)} ${entry.name}`}
+                              aria-valuemin="0"
+                              aria-valuemax="100"
+                              aria-valuenow={transfer.phase === "downloading" ? progress : undefined}
+                              aria-valuetext={transfer.phase === "downloading" ? `${progress}%` : transferLabel(transfer)}
+                            >
+                              <i style={transfer.phase === "downloading" ? { width: `${progress}%` } : undefined} />
+                            </span>
+                          ) : null}
                         </span>
-                        <span className="plugin-source">
-                          {updateAvailable ? `${record.version} → ${entry.version}` : entry.status === "available" ? entry.version : "Coming later"}
+                        <span className="plugin-source marketplace-plugin-meta">
+                          <span>{updateAvailable ? `${record.version} → ${entry.version}` : entry.status === "available" ? entry.version : "Coming later"}</span>
+                          {entry.status === "available" ? <i aria-hidden="true" /> : null}
+                          {entry.status === "available" ? <span>{formatPluginSize(installSize)}</span> : null}
                         </span>
-                        <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+                        <span className="plugin-marketplace-actions">
                           {record ? (
                             <>
                               {updateAvailable ? (
-                                <button className="settings-close" type="button" aria-label={`Update ${entry.name}`} data-tooltip={`Update ${entry.name}`} onClick={() => void plugins.updateMarketplacePlugin(entry)}><IconRefresh size={14} /></button>
+                                <button className="settings-close" type="button" aria-label={`Update ${entry.name}`} data-tooltip={`Update ${entry.name}`} disabled={Boolean(transfer)} onClick={() => void plugins.updateMarketplacePlugin(entry)}><IconRefresh size={14} /></button>
                               ) : null}
-                              <button className="settings-close" type="button" aria-label={`Delete ${entry.name}`} data-tooltip={`Delete ${entry.name}`} onClick={() => void plugins.uninstallMarketplacePlugin(entry.packageId)}><IconTrash size={14} /></button>
+                              <button className="settings-close" type="button" aria-label={`Delete ${entry.name}`} data-tooltip={`Delete ${entry.name}`} disabled={Boolean(transfer)} onClick={() => void plugins.uninstallMarketplacePlugin(entry.packageId)}><IconTrash size={14} /></button>
                             </>
                           ) : (
-                            <button className="settings-close" type="button" aria-label={`Install ${entry.name}`} data-tooltip={`Install ${entry.name}`} disabled={entry.status !== "available"} onClick={() => void plugins.installFromMarketplace(entry)}><IconDownload size={14} /></button>
+                            <button className="settings-close" type="button" aria-label={`Install ${entry.name}`} data-tooltip={`Install ${entry.name}`} disabled={entry.status !== "available" || Boolean(transfer)} onClick={() => void plugins.installFromMarketplace(entry)}><IconDownload size={14} /></button>
                           )}
                         </span>
                       </div>

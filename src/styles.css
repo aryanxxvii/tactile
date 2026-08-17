@@ -3100,6 +3100,87 @@ kbd {
   white-space: nowrap;
 }
 
+.marketplace-plugin-row {
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  transition: min-height 120ms ease;
+}
+
+.marketplace-plugin-row.is-transferring {
+  min-height: 70px;
+}
+
+.plugin-install-meta {
+  display: flex;
+  align-items: center;
+  margin-top: 3px;
+  font-size: 7.5px;
+}
+
+.plugin-install-meta strong {
+  color: var(--accent);
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.marketplace-plugin-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.marketplace-plugin-meta > i {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.plugin-transfer-track {
+  height: 3px;
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--tray);
+}
+
+.plugin-transfer-track > i {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 100ms ease;
+}
+
+.plugin-transfer-track:not(.is-downloading) > i {
+  width: 34%;
+  animation: plugin-transfer-sweep 900ms ease-in-out infinite;
+}
+
+@keyframes plugin-transfer-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(310%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-transfer-track:not(.is-downloading) > i {
+    width: 100%;
+    animation: none;
+  }
+}
+
+.plugin-marketplace-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .marketplace-empty {
   display: grid;
   place-items: center;

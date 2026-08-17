@@ -34,6 +34,7 @@ export function ObjectPluginProvider({ children }) {
   const [installed, setInstalled] = useState({});
   const [marketplaceState, setMarketplaceState] = useState("loading");
   const [marketplaceError, setMarketplaceError] = useState("");
+  const [pluginTransfers, setPluginTransfers] = useState({});
   const uninstallersRef = useRef(new Map());
 
   const activateRecord = async (record) => {
@@ -116,6 +117,7 @@ export function ObjectPluginProvider({ children }) {
     install: registerObjectTypeDefinition,
     catalog,
     installed,
+    pluginTransfers,
     marketplaceState,
     marketplaceError,
     refreshCatalog: async () => {
@@ -132,28 +134,52 @@ export function ObjectPluginProvider({ children }) {
     },
     installFromMarketplace: async (entry) => {
       setMarketplaceError("");
+      const updateTransfer = (next) => setPluginTransfers((current) => ({
+        ...current,
+        [entry.packageId]: { ...(current[entry.packageId] || {}), ...next },
+      }));
       try {
-        const downloaded = await downloadMarketplacePlugin(entry);
+        const downloaded = await downloadMarketplacePlugin(entry, fetch, updateTransfer);
+        updateTransfer({ phase: "installing" });
         await activateRecord({ ...entry, ...downloaded });
         const record = { ...entry, ...downloaded, enabled: true, installedAt: new Date().toISOString() };
+        updateTransfer({ phase: "saving" });
         await writeInstalledPlugin(record);
         setInstalled((current) => ({ ...current, [entry.packageId]: record }));
       } catch (error) {
         setMarketplaceError(error?.message || String(error));
+      } finally {
+        setPluginTransfers((current) => {
+          const next = { ...current };
+          delete next[entry.packageId];
+          return next;
+        });
       }
     },
     updateMarketplacePlugin: async (entry) => {
       const currentRecord = installed[entry.packageId];
       if (!currentRecord) return;
       setMarketplaceError("");
+      const updateTransfer = (next) => setPluginTransfers((current) => ({
+        ...current,
+        [entry.packageId]: { ...(current[entry.packageId] || {}), ...next },
+      }));
       try {
-        const downloaded = await downloadMarketplacePlugin(entry);
+        const downloaded = await downloadMarketplacePlugin(entry, fetch, updateTransfer);
+        updateTransfer({ phase: "installing" });
         const record = updatedPluginRecord(currentRecord, entry, downloaded);
         if (record.enabled) await activateRecord(record);
+        updateTransfer({ phase: "saving" });
         await writeInstalledPlugin(record);
         setInstalled((current) => ({ ...current, [entry.packageId]: record }));
       } catch (error) {
         setMarketplaceError(error?.message || String(error));
+      } finally {
+        setPluginTransfers((current) => {
+          const next = { ...current };
+          delete next[entry.packageId];
+          return next;
+        });
       }
     },
     setInstalledEnabled: async (packageId, enabled) => {
@@ -178,7 +204,7 @@ export function ObjectPluginProvider({ children }) {
         return next;
       });
     },
-  }), [allDefinitions, catalog, cellObjectDefinitions, definitions, enabledTypes, installed, marketplaceError, marketplaceState, settingsContributions]);
+  }), [allDefinitions, catalog, cellObjectDefinitions, definitions, enabledTypes, installed, marketplaceError, marketplaceState, pluginTransfers, settingsContributions]);
 
   return (
     <ObjectPluginCommandsContext.Provider value={commandQueries}>
