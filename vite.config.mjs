@@ -92,6 +92,14 @@ export default defineConfig({
   },
   build: {
     outDir: "dist/client",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("/node_modules/katex/")) return "katex";
+          return undefined;
+        },
+      },
+    },
   },
   optimizeDeps: {
     include: ["react", "react-dom/client"],

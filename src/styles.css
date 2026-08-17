@@ -1902,6 +1902,103 @@ kbd {
   font-size: 0.88em;
 }
 
+.markdown-math {
+  color: var(--default-ink);
+}
+
+.markdown-math.is-inline {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: -0.15em;
+}
+
+.markdown-math.is-display {
+  display: block;
+  min-height: 48px;
+  margin: 14px 0 20px;
+  padding: 10px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.markdown-math-source,
+.markdown-math-error {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.markdown-math-error {
+  color: var(--negative);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.markdown-math-rendered,
+.markdown-math-rendered > .katex {
+  max-width: 100%;
+}
+
+.markdown-mermaid {
+  display: grid;
+  width: 100%;
+  min-height: 210px;
+  margin: 18px 0 26px;
+  padding: 22px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-elevated);
+  box-shadow: inset 0 1px 0 var(--surface-highlight-soft);
+  place-items: center;
+  scrollbar-color: var(--line-strong) var(--tray);
+}
+
+.markdown-mermaid img {
+  display: block;
+  width: auto;
+  min-width: min(100%, 360px);
+  max-width: none;
+  min-height: 164px;
+  margin: auto;
+}
+
+.markdown-mermaid-placeholder {
+  color: var(--faint);
+  font-family: var(--font-ui);
+  font-size: 12px;
+}
+
+.markdown-mermaid.is-rendering .markdown-mermaid-placeholder {
+  color: var(--muted);
+}
+
+.markdown-mermaid-error {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 5px;
+  padding: 2px;
+  color: var(--negative);
+  font-size: 12px;
+  text-align: left;
+}
+
+.markdown-mermaid-error > span {
+  color: var(--muted);
+}
+
+.markdown-mermaid-error pre {
+  max-height: 180px;
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  color: var(--default-ink);
+  background: var(--tray);
+  font-family: var(--font-mono);
+  white-space: pre;
+}
+
 .markdown-code-block {
   position: relative;
   margin: 0 0 1.2em;

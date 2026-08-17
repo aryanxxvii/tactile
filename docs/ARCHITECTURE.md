@@ -43,6 +43,20 @@ Counter, Code, PDF, Image, Video, Audio, HTML, and SVG are independently compile
 - Font files and object assets are self-hosted; inactive font families are not fetched until they are rendered.
 - In & Out animates transforms and opacity only. Object content is mounted once per layer and the source geometry is snapshotted before animation.
 
+## Markdown capabilities
+
+Markdown parsing and ordinary React rendering are part of the Text object. Heavy renderers are built-in capabilities, not marketplace plugins, and remain outside the application entry chunk:
+
+- KaTeX mounts through a lazy React boundary only when parsed `$...$`, `$$...$$`, `\(...\)`, or `\[...\]` nodes enter Preview or Split view. Rendering uses HTML plus MathML, `trust: false`, and a bounded in-memory expression cache.
+- Mermaid fences initially mount a lightweight placeholder. `IntersectionObserver` starts the dynamic Mermaid import and render when the block approaches the viewport, independently of editor input.
+- Mermaid runs with strict security, HTML labels and click bindings disabled, and no CSP expansion. Generated SVG is validated and displayed through a per-mount Blob image URL instead of being inserted as active application DOM.
+- Mermaid starts from its neutral base theme, then maps the active Tactile Paper, cell, tray, ink, line, accent, status, and UI font tokens across diagram families. Output uses a SHA-256 key over normalized source, renderer configuration, and active theme colors. The bounded LRU lasts for the current app session only; errors are not cached.
+- Preview Find skips generated capability subtrees so text highlighting cannot mutate asynchronous renderer output.
+
+The portable boundary remains source-only: Markdown objects store the original text, while generated KaTeX markup, Mermaid SVG, cache keys, and render state are ephemeral. Persistent render caches and workspace-format changes require a separate architecture decision.
+
+Browser certification includes a user-shaped Markdown document containing headings, inline and display math, and a Mermaid flowchart. The test requires visible KaTeX geometry, two MathML annotations, and a decoded Blob-backed Mermaid image with nonzero intrinsic dimensions; this catches blank output that DOM-presence checks alone would miss.
+
 ## Data boundaries
 
 - `workspace`: identity, home object, object index, themes, and settings.
