@@ -9,7 +9,7 @@ The native app workflow accepts two tag forms:
 - `alpha@<version>` creates an alpha app build;
 - `release@<version>` creates an official release candidate.
 
-Both tags run the same Windows, macOS, and Linux build, signing, validation, checksum, updater-manifest, artifact-upload, and draft GitHub Release steps. Release builds retain the standard Tactile icon; alpha builds use the same mark in blue so installed builds are visually distinguishable. Staged installer names include `alpha` or `release`; macOS names also retain their `ad-hoc`, `signed-unnotarized`, or `signed-notarized` status. The tag category communicates release intent but does not weaken any build gate.
+Both tags run the same Windows, macOS, and Linux build, signing, validation, checksum, updater-manifest, artifact-upload, and draft GitHub Release steps. Release builds retain the standard Tactile icon and in-app mark. Alpha builds use the same mark in blue for native package icons, the title bar, app dock, startup loader, and favicon so installed and running builds are visually distinguishable. Staged installer names include `alpha` or `release`; macOS names also retain their `ad-hoc`, `signed-unnotarized`, or `signed-notarized` status. The tag category communicates release intent but does not weaken any build gate.
 
 The marketplace plugin workflow accepts `tactile.<name>@<version>`, where `tactile.<name>` exactly matches the plugin manifest's `packageId`. It builds only that package, verifies the generated marketplace output is committed, and creates a draft GitHub Release containing that plugin's bundle, manifest, and checksums.
 

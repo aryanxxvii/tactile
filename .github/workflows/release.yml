@@ -203,6 +203,11 @@ jobs:
           for icon in "${required_icons[@]}"; do
             cp "src-tauri/icons-alpha/$icon" "src-tauri/icons/$icon"
           done
+          if [[ ! -f public/tactile-mark-alpha.svg ]]; then
+            echo "Missing required alpha mark: public/tactile-mark-alpha.svg" >&2
+            exit 1
+          fi
+          cp public/tactile-mark-alpha.svg public/tactile-mark.svg
 
       - name: Build signed Windows Tauri bundle
         if: matrix.platform == 'windows-x64' && steps.windows-prereqs.outputs.signing_ready == 'true'
