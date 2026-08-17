@@ -16,9 +16,9 @@ function hash(bytes) {
 }
 
 function packageDirectories() {
-  return readdirSync(sourceRoot, { withFileTypes: true }).filter((entry) => (
-    entry.isDirectory() && existsSync(path.join(sourceRoot, entry.name, "manifest.json"))
-  ));
+  return readdirSync(sourceRoot, { withFileTypes: true }).filter(
+    (entry) => entry.isDirectory() && existsSync(path.join(sourceRoot, entry.name, "manifest.json")),
+  );
 }
 
 function hostSdkPlugin() {
@@ -72,7 +72,7 @@ function hostSdkPlugin() {
       }));
       compilation.onLoad({ filter: /\.css$/ }, (args) => ({
         loader: "js",
-        contents: `globalThis.__TACTILE_PLUGIN_HOST__.installStyle(${JSON.stringify(readFileSync(args.path, "utf8"))});`,
+        contents: `globalThis.__TACTILE_PLUGIN_HOST__.installStyle(${JSON.stringify(readFileSync(args.path, "utf8").replace(/\r\n?/g, "\n"))});`,
       }));
     },
   };
@@ -85,7 +85,8 @@ async function compilePackage(directory) {
     if (!manifest[field]) throw new Error(`${directory.name} manifest is missing ${field}.`);
   }
   if (manifest.schemaVersion !== 1) throw new Error(`${manifest.packageId} has an unsupported schema version.`);
-  if (selector && selector !== manifest.packageId && selector !== manifest.type && selector !== directory.name) return null;
+  if (selector && selector !== manifest.packageId && selector !== manifest.type && selector !== directory.name)
+    return null;
 
   const artifactDirectory = path.join(outputRoot, "plugins", manifest.packageId, manifest.version);
   rmSync(artifactDirectory, { recursive: true, force: true });

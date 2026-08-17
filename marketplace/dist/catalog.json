@@ -26,8 +26,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.audio/1.0.0/plugin.js",
-      "sha256": "8c39fba96bad4e7100be78e5f9b295ce4610d18ac6c8da341c34f7004eec20f5",
-      "size": 19478,
+      "sha256": "83d151bed8b4573917054999d32aa58a70e6b45df898cda8a0aff7667b821c28",
+      "size": 18858,
       "assets": []
     },
     {
@@ -191,8 +191,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.video/1.0.0/plugin.js",
-      "sha256": "e8d6d7b504774d831687dfdcaacc478335a344e6d06a33348261ac29ef1177ff",
-      "size": 22503,
+      "sha256": "91281560d9270deea8948df2780b6944e7b38f0789dfb8a0aeea172d0bd44230",
+      "size": 21873,
       "assets": []
     }
   ]
