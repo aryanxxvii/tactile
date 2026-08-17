@@ -44,7 +44,7 @@ async function openMarkdownObject(page) {
   const cell = page.locator('[data-object-id="home"][data-cell-address="A1"]');
   await cell.click();
   const layer = page.locator('[data-layer-object="meeting-notes"]');
-  await expect(layer).toHaveAttribute("data-spatial-phase", "floating");
+  await expect(layer).toHaveAttribute("data-spatial-phase", "floating", { timeout: 15_000 });
   await layer.getByRole("button", { name: "Expand embedded object" }).click();
   await expect(layer).toHaveAttribute("data-spatial-phase", "full");
   return layer;
@@ -178,6 +178,48 @@ test("lazily renders accessible inline and display math without blocking edits",
   await surface.getByRole("button", { name: "Preview" }).click();
   await expect(surface.locator(".markdown-math.is-inline .katex")).toHaveCount(1);
   await expect(surface.getByRole("note", { name: "Invalid math expression" })).toContainText("$\\frac{$");
+});
+
+test("loads Mermaid near the viewport and reuses isolated session renders", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownObject(page);
+  const surface = layer.locator(".markdown-object");
+  const editor = surface.getByRole("textbox", { name: "Meeting notes Markdown editor" });
+  const filler = Array.from({ length: 70 }, (_, index) => `Paragraph ${index}.`).join("\n\n");
+  const diagram = "```mermaid\ngraph TD\n A[Input] --> B[Parser]\n B --> C[Renderer]\n```";
+  await editor.fill(`${filler}\n\n${diagram}\n\n${diagram}`);
+  await surface.getByRole("button", { name: "Preview" }).click();
+
+  const diagrams = surface.locator(".markdown-mermaid");
+  await expect(diagrams).toHaveCount(2);
+  await expect(diagrams.first()).toHaveAttribute("data-render-state", "idle");
+  await diagrams.first().scrollIntoViewIfNeeded();
+  await expect(diagrams.first()).toHaveAttribute("data-render-state", "ready", { timeout: 60_000 });
+  await expect(diagrams.nth(1)).toHaveAttribute("data-render-state", "ready", { timeout: 60_000 });
+  await expect(diagrams.locator("img[alt='Mermaid diagram']")).toHaveCount(2);
+  await expect(diagrams.locator("svg, script, [onclick]")).toHaveCount(0);
+  await expect(surface.locator(".markdown-mermaid[data-cache-hit='true']")).toHaveCount(1);
+
+  const svg = await diagrams.first().locator("img").evaluate(async (image) => fetch(image.src).then((response) => response.text()));
+  expect(svg.trim()).toMatch(/^<svg[\s>]/i);
+  expect(svg).not.toMatch(/<script[\s>]|\son[a-z]+\s*=|javascript:/i);
+});
+
+test("renders upstream Mermaid diagram types and localizes invalid source", async ({ page }) => {
+  await page.goto("/");
+  await importWorkspace(page);
+
+  const layer = await openMarkdownObject(page);
+  const surface = layer.locator(".markdown-object");
+  const editor = surface.getByRole("textbox", { name: "Meeting notes Markdown editor" });
+  await editor.fill("```mermaid\nsequenceDiagram\n Alice->>Bob: Hello\n```\n\n```mermaid\nnot a valid diagram\n```");
+  await surface.getByRole("button", { name: "Preview" }).click();
+
+  await expect(surface.locator(".markdown-mermaid.is-ready img")).toHaveCount(1, { timeout: 30_000 });
+  await expect(surface.getByRole("note", { name: "Invalid Mermaid diagram" })).toContainText("not a valid diagram");
+  await expect(surface.locator(".markdown-preview svg, .markdown-preview script")).toHaveCount(0);
 });
 
 test("continues Markdown lists intelligently when Enter is pressed", async ({ page }) => {

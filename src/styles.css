@@ -1938,6 +1938,65 @@ kbd {
   max-width: 100%;
 }
 
+.markdown-mermaid {
+  display: grid;
+  width: 100%;
+  min-height: 180px;
+  margin: 14px 0 22px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--paper-elevated) 78%, var(--tray));
+  place-items: center;
+}
+
+.markdown-mermaid img {
+  display: block;
+  width: auto;
+  min-width: min(100%, 320px);
+  max-width: none;
+  min-height: 160px;
+  padding: 10px;
+}
+
+.markdown-mermaid-placeholder {
+  padding: 24px;
+  color: var(--faint);
+  font-family: var(--font-ui);
+  font-size: 12px;
+}
+
+.markdown-mermaid.is-rendering .markdown-mermaid-placeholder {
+  color: var(--muted);
+}
+
+.markdown-mermaid-error {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 5px;
+  padding: 16px;
+  color: var(--negative);
+  font-size: 12px;
+  text-align: left;
+}
+
+.markdown-mermaid-error > span {
+  color: var(--muted);
+}
+
+.markdown-mermaid-error pre {
+  max-height: 180px;
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  color: var(--default-ink);
+  background: var(--tray);
+  font-family: var(--font-mono);
+  white-space: pre;
+}
+
 .markdown-code-block {
   position: relative;
   margin: 0 0 1.2em;

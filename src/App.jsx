@@ -524,6 +524,7 @@ export function App() {
       onCreateEmbedded: (cell, type, sourceElement) => commands.createInCell(object.id, cell, type, sourceElement),
       onCreateFile: (cell, file, sourceElement) => commands.createFileInCell(object.id, cell, file, sourceElement),
       onReplaceFile: (file) => commands.replaceFileObject(object.id, file),
+      renderTheme: activeTheme.tokens,
       onClearCell: (cellId) => clearCell(object.id, cellId),
       onInsertAxis: (axis, indexToInsert) => insertSheetAxis(object.id, axis, indexToInsert),
       onDeleteAxis: (axis, indexToDelete) => deleteSheetAxis(object.id, axis, indexToDelete),

@@ -201,7 +201,7 @@ function MarkdownColorControl({ label, colors, icon: Icon, onSelect }) {
   );
 }
 
-export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
+export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject, renderTheme }) {
   const [mode, setMode] = useState("write");
   const editorRef = useRef(null);
   const activeEditorRef = useRef(null);
@@ -712,7 +712,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
       aria-label={`${object.title} preview${suffix}`}
       onContextMenu={openPreviewContextMenu}
     >
-      {deferredContent ? renderMarkdownBlocks(parsedBlocks) : (
+      {deferredContent ? renderMarkdownBlocks(parsedBlocks, renderTheme) : (
         <p className="markdown-preview-empty">Nothing to preview yet.</p>
       )}
     </div>

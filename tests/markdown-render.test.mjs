@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { mermaidCacheKey, mermaidConfig } from "../src/objects/markdown/capabilities/mermaidRenderer.js";
 import { parseInlineMarkdown, parseMarkdownBlocks } from "../src/objects/markdown/markdownParse.js";
 
 test("parses built-in Markdown formatting without interpreting protected math", () => {
@@ -57,4 +58,26 @@ test("classifies only exact Mermaid fences as diagrams and never parses their so
   );
   assert.equal(blocks[0].value, "graph TD\n A[$x$] --> B");
   assert.equal(blocks[1].language, "javascript");
+});
+
+test("uses strict Mermaid configuration and theme-aware normalized cache keys", async () => {
+  const light = { colorScheme: "light", paper: "#ffffff", ink: "#111111", accent: "#aa3300" };
+  const dark = { ...light, colorScheme: "dark", paper: "#111111", ink: "#eeeeee" };
+  assert.deepEqual(
+    {
+      securityLevel: mermaidConfig(light).securityLevel,
+      htmlLabels: mermaidConfig(light).htmlLabels,
+      suppressErrorRendering: mermaidConfig(light).suppressErrorRendering,
+      startOnLoad: mermaidConfig(light).startOnLoad,
+    },
+    { securityLevel: "strict", htmlLabels: false, suppressErrorRendering: true, startOnLoad: false },
+  );
+  assert.equal(
+    await mermaidCacheKey(" graph TD\r\n A --> B ", light),
+    await mermaidCacheKey("graph TD\n A --> B", light),
+  );
+  assert.notEqual(
+    await mermaidCacheKey("graph TD\n A --> B", light),
+    await mermaidCacheKey("graph TD\n A --> B", dark),
+  );
 });

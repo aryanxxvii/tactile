@@ -1,6 +1,7 @@
 import { IconSquare, IconSquareCheck } from "@tabler/icons-react";
 
 import { MarkdownMath } from "./MarkdownCapabilities.jsx";
+import { MarkdownMermaidBlock } from "./capabilities/MarkdownMermaidBlock.jsx";
 import { parseInlineMarkdown, parseMarkdownBlocks } from "./markdownParse.js";
 
 function safeHref(value) {
@@ -38,12 +39,11 @@ export function renderInlineMarkdown(text, keyPrefix = "inline") {
   return renderInlineNodes(parseInlineMarkdown(text), keyPrefix);
 }
 
-function renderBlock(block) {
+function renderBlock(block, renderTheme) {
   const key = block.key;
   if (block.type === "math-display") return <MarkdownMath expression={block.value} display block source={block.source} key={key} />;
-  if (block.type === "diagram" || block.type === "code") {
-    return <pre className="markdown-code-block" data-language={block.language || undefined} data-markdown-diagram={block.type === "diagram" ? "mermaid" : undefined} key={key}><code>{block.value}</code></pre>;
-  }
+  if (block.type === "diagram") return <MarkdownMermaidBlock source={block.value} theme={renderTheme} key={key} />;
+  if (block.type === "code") return <pre className="markdown-code-block" data-language={block.language || undefined} key={key}><code>{block.value}</code></pre>;
   if (block.type === "heading") {
     const Heading = `h${block.level}`;
     return <Heading key={key}>{renderInlineNodes(block.children, key)}</Heading>;
@@ -77,7 +77,7 @@ function renderBlock(block) {
   return <p key={key}>{renderInlineNodes(block.children, key)}</p>;
 }
 
-export function renderMarkdownBlocks(contentOrBlocks) {
+export function renderMarkdownBlocks(contentOrBlocks, renderTheme) {
   const blocks = Array.isArray(contentOrBlocks) ? contentOrBlocks : parseMarkdownBlocks(contentOrBlocks);
-  return blocks.map(renderBlock);
+  return blocks.map((block) => renderBlock(block, renderTheme));
 }
