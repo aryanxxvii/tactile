@@ -32,7 +32,9 @@ jobs:
       - run: npm ci
       - run: npm run marketplace:build
       - name: Verify generated catalog and bundles are committed
-        run: test -z "$(git status --porcelain -- marketplace/dist)"
+        run: |
+          git diff --exit-code -- marketplace/dist
+          test -z "$(git ls-files --others --exclude-standard -- marketplace/dist)"
       - uses: actions/upload-artifact@v4
         with:
           name: tactile-marketplace
