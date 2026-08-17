@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   IconAdjustments,
   IconBrackets,
@@ -104,6 +104,37 @@ function ThemeCard({ theme, selected, onSelect }) {
   );
 }
 
+function PluginSettingsLoading({ contribution }) {
+  return (
+    <div className="plugin-settings-loading" role="status" aria-live="polite">
+      <div className="plugin-settings-loading-mark" aria-hidden="true">
+        <IconBrackets size={22} stroke={1.45} />
+      </div>
+      <div className="plugin-settings-loading-copy">
+        <span>Plugin settings</span>
+        <strong>{contribution.loadingLabel || `Loading ${contribution.label}`}</strong>
+        <code aria-hidden="true">
+          <i>&gt;</i> detect <b>runtime</b><em>_</em>
+        </code>
+      </div>
+    </div>
+  );
+}
+
+function PluginSettingsContent({ contribution }) {
+  const Panel = useMemo(() => lazy(async () => {
+    const loaded = await contribution.load();
+    return { default: loaded?.default || loaded };
+  }), [contribution]);
+  return (
+    <div className="plugin-settings-panel" id={contribution.panelId} role="tabpanel" aria-labelledby={contribution.tabId}>
+      <Suspense fallback={<PluginSettingsLoading contribution={contribution} />}>
+        <Panel />
+      </Suspense>
+    </div>
+  );
+}
+
 export function SettingsPanel({
   activeTheme,
   customThemes,
@@ -141,6 +172,7 @@ onChangeWorkspaceFolder,
     [themeFilter, themes],
   );
   const editable = !activeTheme.builtIn;
+  const activePluginSettings = plugins.settingsContributions.find((contribution) => `plugin:${contribution.key}` === tab);
 
   const updateToken = (token, value) => {
     if (!editable) return;
@@ -194,6 +226,9 @@ onChangeWorkspaceFolder,
   }, [onClose]);
 
   useEffect(() => setDeleteConfirm(false), [activeTheme.id]);
+  useEffect(() => {
+    if (tab.startsWith("plugin:") && !activePluginSettings) setTab("plugins");
+  }, [activePluginSettings, tab]);
 
   const runUpdateCheck = async () => {
     if (!onCheckForUpdate) return;
@@ -249,6 +284,18 @@ onChangeWorkspaceFolder,
 <SettingTab id="settings-tab-files" controls="settings-panel-files" active={tab === "files"} icon={IconFileTypeCsv} onClick={() => setTab("files")}>Files &amp; ownership</SettingTab>
           <SettingTab id="settings-tab-keyboard" controls="settings-panel-keyboard" active={tab === "keyboard"} icon={IconKeyboard} onClick={() => setTab("keyboard")}>Keyboard</SettingTab>
           <SettingTab id="settings-tab-plugins" controls="settings-panel-plugins" active={tab === "plugins"} icon={IconPlugConnected} onClick={() => setTab("plugins")}>Plugins</SettingTab>
+          {plugins.settingsContributions.map((contribution) => (
+            <SettingTab
+              key={contribution.key}
+              id={contribution.tabId}
+              controls={contribution.panelId}
+              active={tab === `plugin:${contribution.key}`}
+              icon={contribution.icon}
+              onClick={() => setTab(`plugin:${contribution.key}`)}
+            >
+              {contribution.label}
+            </SettingTab>
+          ))}
           {onCheckForUpdate ? (
             <SettingTab id="settings-tab-updates" controls="settings-panel-updates" active={tab === "updates"} icon={IconRefresh} onClick={() => setTab("updates")}>Updates</SettingTab>
           ) : null}
@@ -256,6 +303,7 @@ onChangeWorkspaceFolder,
         </nav>
 
         <div className="settings-content">
+          {activePluginSettings ? <PluginSettingsContent contribution={activePluginSettings} /> : null}
           {tab === "appearance" ? (
             <div className="appearance-settings" id="settings-panel-appearance" role="tabpanel" aria-labelledby="settings-tab-appearance">
               <aside className="theme-sidebar">

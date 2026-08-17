@@ -1,1 +1,179 @@
-var f={schemaVersion:1,packageId:"tactile.image",type:"image",name:"Image",description:"A locally attached image.",version:"1.0.0",tactile:">=1.1.0",permissions:[],entry:"plugin.jsx",extensions:["png","jpg","jpeg","gif","webp"],mimePrefixes:["image/"]};var o=globalThis.__TACTILE_PLUGIN_HOST__;if(!o)throw new Error("Tactile plugin host is unavailable.");var W=o.React,G=o.React,V=o.React.Children,z=o.React.Component,X=o.React.Fragment,Z=o.React.PureComponent,Q=o.React.cloneElement,K=o.React.createContext,C=o.React.createElement,j=o.React.createRef,b=o.React.forwardRef,Y=o.React.isValidElement,J=o.React.lazy,_=o.React.memo,$=o.React.startTransition,oo=o.React.useContext,eo=o.createId,ro=o.ObjectHeader,ao=o.ObjectGlyph,to=o.PaperPortal,fo=o.useLocalDraft,lo=o.codeLanguageForExtension,no=o.resolveTauriInvoke,so=o.objectTypeFor,co=o.pluginAssetUrl,uo=o.React.useCallback,po=o.React.useDeferredValue,mo=o.React.useEffect,xo=o.React.useId,Io=o.React.useLayoutEffect,io=o.React.useMemo,Co=o.React.useReducer,Fo=o.React.useRef,go=o.React.useState,ho=o.React.useSyncExternalStore,So=o.React.useTransition;var A={outline:{xmlns:"http://www.w3.org/2000/svg",width:24,height:24,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},filled:{xmlns:"http://www.w3.org/2000/svg",width:24,height:24,viewBox:"0 0 24 24",fill:"currentColor",stroke:"none"}};var n=(r,s,c,a)=>{let d=b(({color:p="currentColor",size:m=24,stroke:F=2,title:x,className:g,children:l,...u},I)=>C("svg",{ref:I,...A[r],width:m,height:m,className:["tabler-icon",`tabler-icon-${s}`,g].join(" "),...r==="filled"?{fill:p}:{strokeWidth:F,stroke:p},...u},[x&&C("title",{key:"svg-title"},x),...a.map(([i,R])=>C(i,R)),...Array.isArray(l)?l:[l]]));return d.displayName=`${c}`,d};var v=[["path",{d:"M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2",key:"svg-0"}],["path",{d:"M7 11l5 5l5 -5",key:"svg-1"}],["path",{d:"M12 4l0 12",key:"svg-2"}]],h=n("outline","download","Download",v);var T=[["path",{d:"M14 3v4a1 1 0 0 0 1 1h4",key:"svg-0"}],["path",{d:"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2",key:"svg-1"}],["path",{d:"M12 11v6",key:"svg-2"}],["path",{d:"M9.5 13.5l2.5 -2.5l2.5 2.5",key:"svg-3"}]],S=n("outline","file-upload","FileUpload",T);var H=[["path",{d:"M5 19l2.757 -7.351a1 1 0 0 1 .936 -.649h12.307a1 1 0 0 1 .986 1.164l-.996 5.211a2 2 0 0 1 -1.964 1.625h-14.026a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v2",key:"svg-0"}]],B=n("outline","folder-open","FolderOpen",H);var N=[["path",{d:"M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6",key:"svg-0"}],["path",{d:"M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0",key:"svg-1"}],["path",{d:"M8 11v-4a4 4 0 1 1 8 0v4",key:"svg-2"}]],D=n("outline","lock","Lock",N);var q=[["path",{d:"M15 8h.01",key:"svg-0"}],["path",{d:"M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12",key:"svg-1"}],["path",{d:"M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5",key:"svg-2"}],["path",{d:"M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3",key:"svg-3"}]],L=n("outline","photo","Photo",q);var e=globalThis.__TACTILE_PLUGIN_HOST__;if(!e)throw new Error("Tactile plugin host is unavailable.");var _o=e.React,t=e.React,$o=e.React.Children,oe=e.React.Component,ee=e.React.Fragment,re=e.React.PureComponent,ae=e.React.cloneElement,te=e.React.createContext,fe=e.React.createElement,le=e.React.createRef,ne=e.React.forwardRef,de=e.React.isValidElement,se=e.React.lazy,ce=e.React.memo,ue=e.React.startTransition,pe=e.React.useContext,P=e.createId,w=e.ObjectHeader,me=e.ObjectGlyph,xe=e.PaperPortal,Ie=e.useLocalDraft,ie=e.codeLanguageForExtension,Ce=e.resolveTauriInvoke,Fe=e.objectTypeFor,ge=e.pluginAssetUrl,he=e.React.useCallback,Se=e.React.useDeferredValue,Be=e.React.useEffect,De=e.React.useId,Le=e.React.useLayoutEffect,Pe=e.React.useMemo,be=e.React.useReducer,M=e.React.useRef,Ae=e.React.useState,we=e.React.useSyncExternalStore,Me=e.React.useTransition;function y(r,s,c){return{type:r.type,label:r.name,description:r.description,icon:c,package:{id:r.packageId,version:r.version},renderer:{load:async()=>s},cell:{project:({object:a,fallbackValue:d})=>({displayValue:a?.title||d||r.name})},create:(a={})=>({...a,id:a.id||P(r.type),type:r.type,title:a.title||`Untitled ${r.name}`,description:a.description||"",parent:a.parent||null,assetId:a.assetId||null,source:a.source||""}),validate:a=>({valid:a?.type===r.type,errors:a?.type===r.type?[]:[`Object type must be ${r.type}.`]}),migrate:(a,d)=>({...a,id:a?.id||d||P(r.type),type:r.type,assetId:a?.assetId||null,source:a?.source||""}),serialize:a=>a,deserialize:a=>a,assetPolicy:{kind:"external-asset",acceptsBinary:!0,extensions:r.extensions||[],mimePrefixes:r.mimePrefixes||[]}}}function k({object:r,path:s,saveState:c,onUpdateObject:a,onBack:d,canGoBack:p,workspaceActions:m,assets:F,onReplaceFile:x,onReparentObject:g}){let l=r.assetId?F?.[r.assetId]:null,u=M(null);return t.createElement("article",{className:"object-surface file-object","data-object-type":"image"},t.createElement(w,{object:r,path:s,saveState:c,onChange:a,onBack:d,canGoBack:p,workspaceActions:m,onReparentObject:g}),t.createElement("main",{className:"file-workspace"},t.createElement("input",{ref:u,className:"native-file-input",type:"file",accept:"image/*",tabIndex:-1,"aria-hidden":"true",onChange:I=>{let i=I.target.files?.[0];I.target.value="",i&&x?.(i)}}),t.createElement("div",{className:"file-toolbar"},t.createElement("span",{className:"file-ownership"},t.createElement(D,{size:13})," On this device"),t.createElement("span",{className:"file-meta"},l?.fileName||"Image"),t.createElement("span",{className:"file-toolbar-spacer"}),t.createElement("button",{type:"button",onClick:()=>u.current?.click()},t.createElement(S,{size:13})," Replace"),l?.dataUrl?t.createElement("a",{href:l.dataUrl,download:l.fileName||r.title},t.createElement(h,{size:13})," Download"):null),t.createElement("div",{className:"file-stage"},l?.dataUrl?t.createElement("img",{src:l.dataUrl,alt:r.title}):t.createElement("div",{className:"file-empty-state"},t.createElement("h2",null,"Local content unavailable"),t.createElement("p",null,"Choose the image again to reconnect it."),t.createElement("button",{type:"button",onClick:()=>u.current?.click()},t.createElement(B,{size:14})," Choose image")))))}var E=f;function Ge(){return y(E,k,L)}export{Ge as activate};
+var f={schemaVersion:1,packageId:"tactile.image",type:"image",name:"Image",description:"A locally attached image.",version:"1.0.0",tactile:">=1.1.0",permissions:[],entry:"plugin.jsx",extensions:["png","jpg","jpeg","gif","webp"],mimePrefixes:["image/"]};var o=globalThis.__TACTILE_PLUGIN_HOST__;if(!o)throw new Error("Tactile plugin host is unavailable.");var G=o.React,V=o.React,z=o.React.Children,X=o.React.Component,Z=o.React.Fragment,Q=o.React.PureComponent,K=o.React.cloneElement,j=o.React.createContext,C=o.React.createElement,Y=o.React.createRef,P=o.React.forwardRef,J=o.React.isValidElement,_=o.React.lazy,$=o.React.memo,oo=o.React.startTransition,eo=o.React.useContext,ro=o.createId,ao=o.ObjectHeader,to=o.ObjectGlyph,fo=o.PaperPortal,lo=o.useLocalDraft,no=o.codeLanguageForExtension,so=o.resolveTauriInvoke,co=o.CODE_RUNTIME_TOOLS,uo=o.getCodeRuntimeProfile,po=o.setCodeRuntimePath,mo=o.subscribeCodeRuntimeProfile,xo=o.objectTypeFor,Io=o.pluginAssetUrl,io=o.installStyle,Co=o.React.useCallback,go=o.React.useDeferredValue,Fo=o.React.useEffect,ho=o.React.useId,So=o.React.useLayoutEffect,Bo=o.React.useMemo,Do=o.React.useReducer,bo=o.React.useRef,Lo=o.React.useState,Po=o.React.useSyncExternalStore,wo=o.React.useTransition;var w={outline:{xmlns:"http://www.w3.org/2000/svg",width:24,height:24,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"},filled:{xmlns:"http://www.w3.org/2000/svg",width:24,height:24,viewBox:"0 0 24 24",fill:"currentColor",stroke:"none"}};var n=(r,s,c,a)=>{let d=P(({color:p="currentColor",size:m=24,stroke:g=2,title:x,className:F,children:l,...u},I)=>C("svg",{ref:I,...w[r],width:m,height:m,className:["tabler-icon",`tabler-icon-${s}`,F].join(" "),...r==="filled"?{fill:p}:{strokeWidth:g,stroke:p},...u},[x&&C("title",{key:"svg-title"},x),...a.map(([i,O])=>C(i,O)),...Array.isArray(l)?l:[l]]));return d.displayName=`${c}`,d};var T=[["path",{d:"M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2",key:"svg-0"}],["path",{d:"M7 11l5 5l5 -5",key:"svg-1"}],["path",{d:"M12 4l0 12",key:"svg-2"}]],h=n("outline","download","Download",T);var H=[["path",{d:"M14 3v4a1 1 0 0 0 1 1h4",key:"svg-0"}],["path",{d:"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2",key:"svg-1"}],["path",{d:"M12 11v6",key:"svg-2"}],["path",{d:"M9.5 13.5l2.5 -2.5l2.5 2.5",key:"svg-3"}]],S=n("outline","file-upload","FileUpload",H);var N=[["path",{d:"M5 19l2.757 -7.351a1 1 0 0 1 .936 -.649h12.307a1 1 0 0 1 .986 1.164l-.996 5.211a2 2 0 0 1 -1.964 1.625h-14.026a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v2",key:"svg-0"}]],B=n("outline","folder-open","FolderOpen",N);var q=[["path",{d:"M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6",key:"svg-0"}],["path",{d:"M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0",key:"svg-1"}],["path",{d:"M8 11v-4a4 4 0 1 1 8 0v4",key:"svg-2"}]],D=n("outline","lock","Lock",q);var E=[["path",{d:"M15 8h.01",key:"svg-0"}],["path",{d:"M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12",key:"svg-1"}],["path",{d:"M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5",key:"svg-2"}],["path",{d:"M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3",key:"svg-3"}]],b=n("outline","photo","Photo",E);var e=globalThis.__TACTILE_PLUGIN_HOST__;if(!e)throw new Error("Tactile plugin host is unavailable.");var te=e.React,t=e.React,fe=e.React.Children,le=e.React.Component,ne=e.React.Fragment,de=e.React.PureComponent,se=e.React.cloneElement,ce=e.React.createContext,ue=e.React.createElement,pe=e.React.createRef,me=e.React.forwardRef,xe=e.React.isValidElement,Ie=e.React.lazy,ie=e.React.memo,Ce=e.React.startTransition,ge=e.React.useContext,L=e.createId,A=e.ObjectHeader,Fe=e.ObjectGlyph,he=e.PaperPortal,Se=e.useLocalDraft,Be=e.codeLanguageForExtension,De=e.resolveTauriInvoke,be=e.CODE_RUNTIME_TOOLS,Le=e.getCodeRuntimeProfile,Pe=e.setCodeRuntimePath,we=e.subscribeCodeRuntimeProfile,Ae=e.objectTypeFor,ye=e.pluginAssetUrl,y=e.installStyle,Me=e.React.useCallback,ke=e.React.useDeferredValue,Re=e.React.useEffect,Oe=e.React.useId,ve=e.React.useLayoutEffect,Te=e.React.useMemo,He=e.React.useReducer,M=e.React.useRef,Ne=e.React.useState,qe=e.React.useSyncExternalStore,Ee=e.React.useTransition;y(`.file-workspace {
+  width: calc(100% - 24px);
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  margin: 10px 12px 11px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper-elevated);
+  box-shadow: 0 9px 22px color-mix(in srgb, var(--elevation-shadow) 38%, transparent);
+}
+
+.file-toolbar {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 5px 3px 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.file-ownership,
+.file-toolbar button,
+.file-toolbar a {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  background: var(--paper-elevated);
+  font-size: 8px;
+}
+
+.file-ownership {
+  color: var(--positive);
+  border-color: color-mix(in srgb, var(--positive) 28%, var(--line));
+  background: color-mix(in srgb, var(--positive) 7%, var(--paper-elevated));
+}
+
+.file-toolbar button,
+.file-toolbar a {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.file-toolbar button:hover,
+.file-toolbar button:focus-visible,
+.file-toolbar a:hover,
+.file-toolbar a:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--tray);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  user-select: text;
+}
+
+.file-meta {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-toolbar-spacer {
+  flex: 1;
+}
+
+.file-stage {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, color-mix(in srgb, var(--tray) 42%, transparent) 25%, transparent 25%) 0 0 / 18px 18px,
+    linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--tray) 42%, transparent) 75%) 0 0 / 18px 18px,
+    linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--tray) 42%, transparent) 75%) 9px -9px / 18px 18px,
+    linear-gradient(45deg, color-mix(in srgb, var(--tray) 42%, transparent) 25%, var(--paper-elevated) 25%) 9px 9px /
+      18px 18px;
+}
+
+.file-stage > img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 3px;
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--elevation-shadow) 68%, transparent);
+}
+
+.file-stage > .video-player,
+.file-stage > .audio-player {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.file-stage > iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: white;
+}
+
+.file-empty-state {
+  width: min(360px, calc(100% - 48px));
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  text-align: center;
+  background: color-mix(in srgb, var(--paper-elevated) 94%, transparent);
+  box-shadow:
+    0 12px 34px color-mix(in srgb, var(--elevation-shadow) 48%, transparent),
+    inset 0 1px 0 var(--surface-highlight);
+}
+
+.file-empty-state > svg {
+  color: var(--accent);
+}
+
+.file-empty-state h2 {
+  margin: 10px 0 5px;
+  color: var(--ink);
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+
+.file-empty-state p {
+  margin: 0;
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.file-empty-state button {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--paper-elevated);
+  background: var(--accent);
+  font-size: 8.5px;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 var(--surface-highlight-soft),
+    0 2px 5px color-mix(in srgb, var(--elevation-shadow) 60%, transparent);
+}
+
+.file-empty-state button:hover,
+.file-empty-state button:focus-visible {
+  outline: 0;
+  filter: brightness(0.95);
+  box-shadow:
+    0 0 0 3px var(--accent-soft),
+    inset 0 1px 0 var(--surface-highlight-soft);
+}
+
+@media (max-width: 900px) {
+  .file-workspace {
+    width: calc(100% - 16px);
+    margin-inline: 8px;
+  }
+}
+`);function k(r,s,c){return{type:r.type,label:r.name,description:r.description,icon:c,package:{id:r.packageId,version:r.version},renderer:{load:async()=>s},cell:{project:({object:a,fallbackValue:d})=>({displayValue:a?.title||d||r.name})},create:(a={})=>({...a,id:a.id||L(r.type),type:r.type,title:a.title||`Untitled ${r.name}`,description:a.description||"",parent:a.parent||null,assetId:a.assetId||null,source:a.source||""}),validate:a=>({valid:a?.type===r.type,errors:a?.type===r.type?[]:[`Object type must be ${r.type}.`]}),migrate:(a,d)=>({...a,id:a?.id||d||L(r.type),type:r.type,assetId:a?.assetId||null,source:a?.source||""}),serialize:a=>a,deserialize:a=>a,assetPolicy:{kind:"external-asset",acceptsBinary:!0,extensions:r.extensions||[],mimePrefixes:r.mimePrefixes||[]}}}function R({object:r,path:s,saveState:c,onUpdateObject:a,onBack:d,canGoBack:p,workspaceActions:m,assets:g,onReplaceFile:x,onReparentObject:F}){let l=r.assetId?g?.[r.assetId]:null,u=M(null);return t.createElement("article",{className:"object-surface file-object","data-object-type":"image"},t.createElement(A,{object:r,path:s,saveState:c,onChange:a,onBack:d,canGoBack:p,workspaceActions:m,onReparentObject:F}),t.createElement("main",{className:"file-workspace"},t.createElement("input",{ref:u,className:"native-file-input",type:"file",accept:"image/*",tabIndex:-1,"aria-hidden":"true",onChange:I=>{let i=I.target.files?.[0];I.target.value="",i&&x?.(i)}}),t.createElement("div",{className:"file-toolbar"},t.createElement("span",{className:"file-ownership"},t.createElement(D,{size:13})," On this device"),t.createElement("span",{className:"file-meta"},l?.fileName||"Image"),t.createElement("span",{className:"file-toolbar-spacer"}),t.createElement("button",{type:"button",onClick:()=>u.current?.click()},t.createElement(S,{size:13})," Replace"),l?.dataUrl?t.createElement("a",{href:l.dataUrl,download:l.fileName||r.title},t.createElement(h,{size:13})," Download"):null),t.createElement("div",{className:"file-stage"},l?.dataUrl?t.createElement("img",{src:l.dataUrl,alt:r.title}):t.createElement("div",{className:"file-empty-state"},t.createElement("h2",null,"Local content unavailable"),t.createElement("p",null,"Choose the image again to reconnect it."),t.createElement("button",{type:"button",onClick:()=>u.current?.click()},t.createElement(B,{size:14})," Choose image")))))}var U=f;function er(){return k(U,R,b)}export{er as activate};

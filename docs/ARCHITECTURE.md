@@ -13,6 +13,7 @@ Each object type registers:
 - file serializer and parser
 - default-title generator
 - commands and context-menu contributions
+- optional lazy Settings contribution
 
 This lets later types such as Gantt charts join the same navigation and file model without rewriting the workspace shell.
 
@@ -22,13 +23,15 @@ Built-ins and runtime marketplace packages use the same `defineObjectPlugin` con
 
 The installed client bundles only Tiles and Text as user-managed object types. Bare links and legacy Document-to-Text migration remain core compatibility behavior. Unknown optional types render through `MissingPluginObject`; their records and assets are not coerced into another type.
 
-`marketplace/` is independently buildable and publishable. `npm run marketplace:build` compiles all first-party manifests; `npm run marketplace:build -- <package-id>` compiles only one plugin without invoking the Tactile Vite build. It emits a static v1 catalog plus immutable versioned ESM bundles, declared assets, sizes, and SHA-256 hashes. Packages import approved APIs only through the compiler-resolved `tactile:host` module and do not import each other. Tactile supplies the shared React runtime and approved SDK functions. Publishing generated marketplace artifacts does not require rebuilding the Tactile client.
+`marketplace/` is independently buildable and publishable. `npm run marketplace:build` compiles all first-party manifests; `npm run marketplace:build -- <package-id>` compiles only one plugin without invoking the Tactile Vite build. It emits a static v1 catalog plus immutable versioned ESM bundles, declared assets, sizes, and SHA-256 hashes. Packages import approved APIs only through the compiler-resolved `tactile:host` module and do not import each other. Tactile supplies the shared React runtime and approved SDK functions. Plugin CSS is compiled into each package as lifecycle-owned `installStyle(...)` calls; plugin-specific selectors do not belong in host CSS. Publishing generated marketplace artifacts does not require rebuilding the Tactile client.
+
+Marketplace authority is environment-specific and explicit. Vite development serves and watches the locally generated catalog, activates installed plugins from fresh local artifacts instead of IndexedDB source, and never persists that override. Production preparation removes any embedded catalog and defaults to the repository's GitHub Raw catalog. Production downloads remain untrusted until catalog size and SHA-256 checks pass; the native CSP permits only that origin and the host-created blob activation path. See [ADR 0001](adr/0001-marketplace-catalog-authority.md).
 
 Browser installations are stored in profile-level IndexedDB, separate from workspace records. Installed bundles are verified before activation and enabled plugins are restored on restart. Portable workspaces never contain executable plugin bytes; they preserve opaque plugin-owned object fields and declare non-executable `pluginRequirements` metadata.
 
-Installed and enabled are separate states. Cell Objects is the only enable/disable surface and continues to list disabled installed packages. Marketplace owns install, delete, and semantic-version updates; an update preserves the package's enabled state.
+Installed and enabled are separate states. Cell Objects is the only enable/disable surface and continues to list disabled installed packages. Marketplace owns install, delete, and semantic-version updates; an update preserves the package's enabled state. Enabled plugin definitions may contribute a validated lazy Settings tab. Contributions are package-namespaced and registry-driven, so Settings contains no plugin-specific imports or branches and removes a tab immediately when its plugin is disabled or uninstalled.
 
-Counter, Code, PDF, Image, Video, Audio, HTML, and SVG are independently compiled packages and remain absent from core production chunks. PDF owns its separately verified worker asset; Video and Audio own plugin-local player styles. Native allowlisted download/cache commands remain required before desktop marketplace delivery is release-complete. Build and GitHub release instructions are in [marketplace.md](marketplace.md).
+Counter, Code, PDF, Image, Video, Audio, HTML, and SVG are independently compiled packages and remain absent from core production chunks. Every package owns its renderer styles; file-object packages compile the shared marketplace SDK shell into their own artifacts, and PDF owns its separately verified worker asset. Native allowlisted download/cache commands remain required before desktop marketplace delivery is release-complete. Build and GitHub release instructions are in [marketplace.md](marketplace.md).
 
 ## Performance rules
 

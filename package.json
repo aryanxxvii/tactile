@@ -30,13 +30,31 @@
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:component && npm run test:e2e && npm run build && npm run test:sites"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.11.0",
+    "@codemirror/lang-cpp": "^6.0.3",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.12",
+    "@codemirror/lang-java": "^6.0.2",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/lang-rust": "^6.0.2",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/legacy-modes": "^6.5.3",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/search": "^6.7.1",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.9",
     "@fontsource-variable/lilex": "^5.3.0",
     "@fontsource-variable/public-sans": "^5.3.0",
     "@tabler/icons-react": "^3.46.0",
     "jszip": "^3.10.1",
     "pdfjs-dist": "^4.10.38",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "sucrase": "^3.35.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",

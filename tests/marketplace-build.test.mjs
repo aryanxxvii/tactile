@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
+import { build } from "esbuild";
+
 const root = path.resolve(import.meta.dirname, "..");
 const catalog = JSON.parse(readFileSync(path.join(root, "marketplace", "dist", "catalog.json"), "utf8"));
 const expected = [
@@ -26,8 +28,14 @@ function sha256(bytes) {
 }
 
 test("the generated catalog contains every independently compiled plugin", () => {
-  assert.deepEqual(catalog.plugins.map((entry) => entry.packageId), expected);
-  assert.equal(catalog.plugins.every((entry) => entry.status === "available"), true);
+  assert.deepEqual(
+    catalog.plugins.map((entry) => entry.packageId),
+    expected,
+  );
+  assert.equal(
+    catalog.plugins.every((entry) => entry.status === "available"),
+    true,
+  );
 });
 
 test("catalog hashes and sizes match independently emitted artifacts", () => {
@@ -46,16 +54,30 @@ test("catalog hashes and sizes match independently emitted artifacts", () => {
   }
 });
 
-test("compiled plugins contain no unresolved host or cross-plugin imports", () => {
+test("compiled plugins contain no unresolved host or cross-plugin imports", async () => {
   for (const entry of catalog.plugins) {
-    const source = readFileSync(artifactFile(entry.artifact), "utf8");
+    const pluginFile = artifactFile(entry.artifact);
+    const source = readFileSync(pluginFile, "utf8");
     assert.doesNotMatch(source, /tactile:host|src\/objects|marketplace\/plugins/);
-    assert.doesNotMatch(source, /(?:^|[;}])\s*import\s*(?:["'{*]|[A-Za-z_$])/m);
+    const result = await build({
+      entryPoints: [pluginFile],
+      bundle: true,
+      format: "esm",
+      platform: "browser",
+      write: false,
+      metafile: true,
+      logLevel: "silent",
+    });
+    const input = Object.values(result.metafile.inputs).find((value) => value.bytes === Buffer.byteLength(source));
+    assert.deepEqual(input?.imports || [], [], entry.packageId);
   }
 });
 
 test("PDF owns its worker asset while other plugins remain independent", () => {
   const pdf = catalog.plugins.find((entry) => entry.packageId === "tactile.pdf");
-  assert.deepEqual(pdf.assets.map((asset) => asset.file), ["pdf.worker.min.mjs"]);
+  assert.deepEqual(
+    pdf.assets.map((asset) => asset.file),
+    ["pdf.worker.min.mjs"],
+  );
   assert.equal(catalog.plugins.filter((entry) => entry.assets?.length).length, 1);
 });

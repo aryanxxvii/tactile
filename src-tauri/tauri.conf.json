@@ -23,8 +23,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'self' asset: tactile-html: blob: data: https: http:; img-src 'self' asset: blob: data:; media-src 'self' asset: blob: data:; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:",
-      "devCsp": "default-src 'self'; base-uri 'none'; connect-src 'self' http://localhost:5173 ws://localhost:5173; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'self' asset: tactile-html: blob: data: https: http:; img-src 'self' asset: blob: data:; media-src 'self' asset: blob: data:; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:",
+      "csp": "default-src 'self'; base-uri 'none'; connect-src 'self' https://raw.githubusercontent.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'self' asset: tactile-html: blob: data: https: http:; img-src 'self' asset: blob: data:; media-src 'self' asset: blob: data:; object-src 'none'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:",
+      "devCsp": "default-src 'self'; base-uri 'none'; connect-src 'self' http://localhost:5173 ws://localhost:5173; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src 'self' asset: tactile-html: blob: data: https: http:; img-src 'self' asset: blob: data:; media-src 'self' asset: blob: data:; object-src 'none'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:",
       "freezePrototype": true,
       "assetProtocol": {
         "enable": false
@@ -35,9 +35,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4REI1MTkwMjlBMkY4RTYKUldUbStLSXBrRkhiK0NPcGRGcnVjRlNlaU9RTFZRTld3NEZXeDgzSlR2ZytNTnIzL0pJRnM3K0QK",
-      "endpoints": [
-        "https://github.com/aryanxxvii/tactile/releases/latest/download/latest.json"
-      ]
+      "endpoints": ["https://github.com/aryanxxvii/tactile/releases/latest/download/latest.json"]
     }
   },
   "bundle": {

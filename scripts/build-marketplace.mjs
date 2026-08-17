@@ -55,8 +55,13 @@ function hostSdkPlugin() {
           export const useLocalDraft = host.useLocalDraft;
           export const codeLanguageForExtension = host.codeLanguageForExtension;
           export const resolveTauriInvoke = host.resolveTauriInvoke;
+          export const CODE_RUNTIME_TOOLS = host.CODE_RUNTIME_TOOLS;
+          export const getCodeRuntimeProfile = host.getCodeRuntimeProfile;
+          export const setCodeRuntimePath = host.setCodeRuntimePath;
+          export const subscribeCodeRuntimeProfile = host.subscribeCodeRuntimeProfile;
           export const objectTypeFor = host.objectTypeFor;
           export const pluginAssetUrl = host.pluginAssetUrl;
+          export const installStyle = host.installStyle;
           export const useCallback = host.React.useCallback;
           export const useDeferredValue = host.React.useDeferredValue;
           export const useEffect = host.React.useEffect;
@@ -72,7 +77,7 @@ function hostSdkPlugin() {
       }));
       compilation.onLoad({ filter: /\.css$/ }, (args) => ({
         loader: "js",
-        contents: `globalThis.__TACTILE_PLUGIN_HOST__.installStyle(${JSON.stringify(readFileSync(args.path, "utf8").replace(/\r\n?/g, "\n"))});`,
+        contents: `import { installStyle } from "tactile:host"; installStyle(${JSON.stringify(readFileSync(args.path, "utf8").replace(/\r\n?/g, "\n"))});`,
       }));
     },
   };

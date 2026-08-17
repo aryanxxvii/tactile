@@ -1,4 +1,5 @@
 import { createId } from "tactile:host";
+import "./FileObject.css";
 
 export function createFilePlugin(manifest, Renderer, icon) {
   return {

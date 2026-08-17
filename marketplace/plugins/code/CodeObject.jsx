@@ -3,6 +3,7 @@ import {
   PaperPortal,
   React,
   codeLanguageForExtension,
+  getCodeRuntimeProfile,
   resolveTauriInvoke,
   useEffect,
   useLocalDraft,
@@ -19,37 +20,757 @@ import {
   IconTerminal2,
   IconTrash,
 } from "@tabler/icons-react";
+import { CodeEditor } from "./CodeEditor.jsx";
+import { prepareBrowserSource } from "./execution.js";
+import "./CodeObject.css";
 
 const LANGUAGE_LABELS = {
-  javascript: "JavaScript", jsx: "JSX", typescript: "TypeScript", tsx: "TSX",
-  python: "Python", c: "C", cpp: "C++", java: "Java", rust: "Rust",
-  go: "Go", ruby: "Ruby", bash: "Bash", json: "JSON", sql: "SQL",
-  html: "HTML", css: "CSS", plaintext: "Plain text",
+  javascript: "JavaScript",
+  jsx: "JSX",
+  typescript: "TypeScript",
+  tsx: "TSX",
+  python: "Python",
+  c: "C",
+  cpp: "C++",
+  java: "Java",
+  rust: "Rust",
+  go: "Go",
+  ruby: "Ruby",
+  bash: "Bash",
+  json: "JSON",
+  sql: "SQL",
+  html: "HTML",
+  css: "CSS",
+  plaintext: "Plain text",
 };
 
 const KEYWORDS = {
-  javascript: ["async", "await", "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "export", "extends", "finally", "for", "from", "function", "get", "if", "import", "in", "instanceof", "let", "new", "of", "return", "set", "static", "super", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with", "yield", "true", "false", "null", "undefined"],
-  jsx: ["async", "await", "break", "case", "catch", "class", "const", "continue", "default", "delete", "do", "else", "export", "extends", "finally", "for", "from", "function", "if", "import", "in", "instanceof", "let", "new", "return", "static", "super", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "yield", "true", "false", "null", "undefined"],
-  typescript: ["abstract", "any", "as", "asserts", "async", "await", "break", "case", "catch", "class", "const", "continue", "declare", "default", "delete", "do", "else", "enum", "export", "extends", "finally", "for", "from", "function", "get", "if", "implements", "import", "in", "infer", "instanceof", "interface", "is", "keyof", "let", "namespace", "never", "new", "of", "private", "protected", "public", "readonly", "return", "satisfies", "set", "static", "super", "switch", "this", "throw", "try", "type", "typeof", "unknown", "var", "void", "while", "with", "yield", "true", "false", "null", "undefined"],
-  tsx: ["abstract", "any", "as", "async", "await", "break", "case", "catch", "class", "const", "continue", "declare", "default", "delete", "do", "else", "enum", "export", "extends", "finally", "for", "from", "function", "if", "implements", "import", "in", "infer", "instanceof", "interface", "keyof", "let", "namespace", "never", "new", "return", "static", "super", "switch", "this", "throw", "try", "type", "typeof", "unknown", "var", "void", "while", "yield", "true", "false", "null", "undefined"],
-  python: ["and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", "elif", "else", "except", "False", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "None", "nonlocal", "not", "or", "pass", "raise", "return", "True", "try", "while", "with", "yield"],
-  c: ["auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "register", "restrict", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while", "true", "false", "NULL"],
-  cpp: ["alignas", "alignof", "and", "asm", "auto", "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t", "class", "const", "consteval", "constexpr", "constinit", "continue", "decltype", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept", "not", "nullptr", "operator", "private", "protected", "public", "register", "reinterpret_cast", "requires", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", "switch", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while"],
-  java: ["abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "var", "void", "volatile", "while", "true", "false", "null"],
-  rust: ["as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while"],
-  go: ["break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func", "go", "goto", "if", "import", "interface", "map", "package", "range", "return", "select", "struct", "switch", "type", "var", "true", "false", "nil"],
-  ruby: ["BEGIN", "END", "alias", "and", "begin", "break", "case", "class", "def", "defined?", "do", "else", "elsif", "end", "ensure", "false", "for", "if", "in", "module", "next", "nil", "not", "or", "redo", "rescue", "retry", "return", "self", "super", "then", "true", "undef", "unless", "until", "when", "while", "yield"],
-  bash: ["if", "then", "else", "elif", "fi", "for", "while", "until", "do", "done", "case", "esac", "function", "in", "select", "return", "local", "export", "source", "shift", "true", "false"],
-  sql: ["select", "from", "where", "insert", "into", "values", "update", "set", "delete", "create", "table", "database", "alter", "drop", "index", "view", "join", "inner", "left", "right", "outer", "on", "as", "and", "or", "not", "null", "is", "in", "between", "like", "order", "by", "group", "having", "limit", "offset", "union", "all", "distinct", "primary", "key", "foreign", "references", "default", "unique", "constraint", "check"],
-  html: ["html", "head", "body", "div", "span", "a", "img", "script", "style", "link", "meta", "title", "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "table", "thead", "tbody", "tr", "td", "th", "form", "input", "button", "select", "option", "textarea", "iframe", "br", "hr", "nav", "header", "footer", "main", "section", "article", "aside", "blockquote", "pre", "code", "strong", "em"],
-  css: ["color", "background", "background-color", "border", "margin", "padding", "display", "position", "top", "right", "bottom", "left", "width", "height", "font", "font-size", "font-family", "font-weight", "line-height", "text-align", "text-decoration", "float", "clear", "overflow", "z-index", "opacity", "transition", "transform", "flex", "grid", "align-items", "justify-content", "cursor", "box-shadow"],
+  javascript: [
+    "async",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "from",
+    "function",
+    "get",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "let",
+    "new",
+    "of",
+    "return",
+    "set",
+    "static",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+    "true",
+    "false",
+    "null",
+    "undefined",
+  ],
+  jsx: [
+    "async",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "from",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "let",
+    "new",
+    "return",
+    "static",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "yield",
+    "true",
+    "false",
+    "null",
+    "undefined",
+  ],
+  typescript: [
+    "abstract",
+    "any",
+    "as",
+    "asserts",
+    "async",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "declare",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "enum",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "from",
+    "function",
+    "get",
+    "if",
+    "implements",
+    "import",
+    "in",
+    "infer",
+    "instanceof",
+    "interface",
+    "is",
+    "keyof",
+    "let",
+    "namespace",
+    "never",
+    "new",
+    "of",
+    "private",
+    "protected",
+    "public",
+    "readonly",
+    "return",
+    "satisfies",
+    "set",
+    "static",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "try",
+    "type",
+    "typeof",
+    "unknown",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+    "true",
+    "false",
+    "null",
+    "undefined",
+  ],
+  tsx: [
+    "abstract",
+    "any",
+    "as",
+    "async",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "declare",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "enum",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "from",
+    "function",
+    "if",
+    "implements",
+    "import",
+    "in",
+    "infer",
+    "instanceof",
+    "interface",
+    "keyof",
+    "let",
+    "namespace",
+    "never",
+    "new",
+    "return",
+    "static",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "try",
+    "type",
+    "typeof",
+    "unknown",
+    "var",
+    "void",
+    "while",
+    "yield",
+    "true",
+    "false",
+    "null",
+    "undefined",
+  ],
+  python: [
+    "and",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "False",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "None",
+    "nonlocal",
+    "not",
+    "or",
+    "pass",
+    "raise",
+    "return",
+    "True",
+    "try",
+    "while",
+    "with",
+    "yield",
+  ],
+  c: [
+    "auto",
+    "break",
+    "case",
+    "char",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extern",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "inline",
+    "int",
+    "long",
+    "register",
+    "restrict",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "struct",
+    "switch",
+    "typedef",
+    "union",
+    "unsigned",
+    "void",
+    "volatile",
+    "while",
+    "true",
+    "false",
+    "NULL",
+  ],
+  cpp: [
+    "alignas",
+    "alignof",
+    "and",
+    "asm",
+    "auto",
+    "bool",
+    "break",
+    "case",
+    "catch",
+    "char",
+    "char8_t",
+    "char16_t",
+    "char32_t",
+    "class",
+    "const",
+    "consteval",
+    "constexpr",
+    "constinit",
+    "continue",
+    "decltype",
+    "default",
+    "delete",
+    "do",
+    "double",
+    "dynamic_cast",
+    "else",
+    "enum",
+    "explicit",
+    "export",
+    "extern",
+    "false",
+    "float",
+    "for",
+    "friend",
+    "goto",
+    "if",
+    "inline",
+    "int",
+    "long",
+    "mutable",
+    "namespace",
+    "new",
+    "noexcept",
+    "not",
+    "nullptr",
+    "operator",
+    "private",
+    "protected",
+    "public",
+    "register",
+    "reinterpret_cast",
+    "requires",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "static_cast",
+    "struct",
+    "switch",
+    "template",
+    "this",
+    "thread_local",
+    "throw",
+    "true",
+    "try",
+    "typedef",
+    "typeid",
+    "typename",
+    "union",
+    "unsigned",
+    "using",
+    "virtual",
+    "void",
+    "volatile",
+    "wchar_t",
+    "while",
+  ],
+  java: [
+    "abstract",
+    "assert",
+    "boolean",
+    "break",
+    "byte",
+    "case",
+    "catch",
+    "char",
+    "class",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extends",
+    "final",
+    "finally",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "implements",
+    "import",
+    "instanceof",
+    "int",
+    "interface",
+    "long",
+    "native",
+    "new",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "return",
+    "short",
+    "static",
+    "strictfp",
+    "super",
+    "switch",
+    "synchronized",
+    "this",
+    "throw",
+    "throws",
+    "transient",
+    "try",
+    "var",
+    "void",
+    "volatile",
+    "while",
+    "true",
+    "false",
+    "null",
+  ],
+  rust: [
+    "as",
+    "async",
+    "await",
+    "break",
+    "const",
+    "continue",
+    "crate",
+    "dyn",
+    "else",
+    "enum",
+    "extern",
+    "false",
+    "fn",
+    "for",
+    "if",
+    "impl",
+    "in",
+    "let",
+    "loop",
+    "match",
+    "mod",
+    "move",
+    "mut",
+    "pub",
+    "ref",
+    "return",
+    "self",
+    "Self",
+    "static",
+    "struct",
+    "super",
+    "trait",
+    "true",
+    "type",
+    "unsafe",
+    "use",
+    "where",
+    "while",
+  ],
+  go: [
+    "break",
+    "case",
+    "chan",
+    "const",
+    "continue",
+    "default",
+    "defer",
+    "else",
+    "fallthrough",
+    "for",
+    "func",
+    "go",
+    "goto",
+    "if",
+    "import",
+    "interface",
+    "map",
+    "package",
+    "range",
+    "return",
+    "select",
+    "struct",
+    "switch",
+    "type",
+    "var",
+    "true",
+    "false",
+    "nil",
+  ],
+  ruby: [
+    "BEGIN",
+    "END",
+    "alias",
+    "and",
+    "begin",
+    "break",
+    "case",
+    "class",
+    "def",
+    "defined?",
+    "do",
+    "else",
+    "elsif",
+    "end",
+    "ensure",
+    "false",
+    "for",
+    "if",
+    "in",
+    "module",
+    "next",
+    "nil",
+    "not",
+    "or",
+    "redo",
+    "rescue",
+    "retry",
+    "return",
+    "self",
+    "super",
+    "then",
+    "true",
+    "undef",
+    "unless",
+    "until",
+    "when",
+    "while",
+    "yield",
+  ],
+  bash: [
+    "if",
+    "then",
+    "else",
+    "elif",
+    "fi",
+    "for",
+    "while",
+    "until",
+    "do",
+    "done",
+    "case",
+    "esac",
+    "function",
+    "in",
+    "select",
+    "return",
+    "local",
+    "export",
+    "source",
+    "shift",
+    "true",
+    "false",
+  ],
+  sql: [
+    "select",
+    "from",
+    "where",
+    "insert",
+    "into",
+    "values",
+    "update",
+    "set",
+    "delete",
+    "create",
+    "table",
+    "database",
+    "alter",
+    "drop",
+    "index",
+    "view",
+    "join",
+    "inner",
+    "left",
+    "right",
+    "outer",
+    "on",
+    "as",
+    "and",
+    "or",
+    "not",
+    "null",
+    "is",
+    "in",
+    "between",
+    "like",
+    "order",
+    "by",
+    "group",
+    "having",
+    "limit",
+    "offset",
+    "union",
+    "all",
+    "distinct",
+    "primary",
+    "key",
+    "foreign",
+    "references",
+    "default",
+    "unique",
+    "constraint",
+    "check",
+  ],
+  html: [
+    "html",
+    "head",
+    "body",
+    "div",
+    "span",
+    "a",
+    "img",
+    "script",
+    "style",
+    "link",
+    "meta",
+    "title",
+    "p",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "ul",
+    "ol",
+    "li",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "td",
+    "th",
+    "form",
+    "input",
+    "button",
+    "select",
+    "option",
+    "textarea",
+    "iframe",
+    "br",
+    "hr",
+    "nav",
+    "header",
+    "footer",
+    "main",
+    "section",
+    "article",
+    "aside",
+    "blockquote",
+    "pre",
+    "code",
+    "strong",
+    "em",
+  ],
+  css: [
+    "color",
+    "background",
+    "background-color",
+    "border",
+    "margin",
+    "padding",
+    "display",
+    "position",
+    "top",
+    "right",
+    "bottom",
+    "left",
+    "width",
+    "height",
+    "font",
+    "font-size",
+    "font-family",
+    "font-weight",
+    "line-height",
+    "text-align",
+    "text-decoration",
+    "float",
+    "clear",
+    "overflow",
+    "z-index",
+    "opacity",
+    "transition",
+    "transform",
+    "flex",
+    "grid",
+    "align-items",
+    "justify-content",
+    "cursor",
+    "box-shadow",
+  ],
   json: ["true", "false", "null"],
 };
 
-const DEFAULT_KEYWORDS = ["if", "else", "for", "while", "return", "function", "class", "const", "let", "var", "true", "false", "null", "undefined", "import", "export", "from", "new", "this", "try", "catch", "throw", "switch", "case", "break", "continue"];
+const DEFAULT_KEYWORDS = [
+  "if",
+  "else",
+  "for",
+  "while",
+  "return",
+  "function",
+  "class",
+  "const",
+  "let",
+  "var",
+  "true",
+  "false",
+  "null",
+  "undefined",
+  "import",
+  "export",
+  "from",
+  "new",
+  "this",
+  "try",
+  "catch",
+  "throw",
+  "switch",
+  "case",
+  "break",
+  "continue",
+];
 
 const ESCAPE_RE = /[&<>"']/g;
-const ESCAPE_MAP = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
+const ESCAPE_MAP = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 
 function escapeHtml(text) {
   return text.replace(ESCAPE_RE, (char) => ESCAPE_MAP[char]);
@@ -136,7 +857,6 @@ function runJavaScriptInWorker(source, onMessage, onDone, timeoutMs) {
       error: (...args) => postMessage({ type: "err", text: args.map(String).join(" ") }),
     };
     self.onmessage = async (event) => {
-      const timer = setTimeout(() => { postMessage({ type: "timeout" }); self.close(); }, event.data.timeoutMs);
       try {
         const fn = new Function("console", event.data.source);
         const result = await fn(self.console);
@@ -145,31 +865,55 @@ function runJavaScriptInWorker(source, onMessage, onDone, timeoutMs) {
       } catch (error) {
         postMessage({ type: "err", text: String(error && error.stack || error) });
         postMessage({ type: "done" });
-      } finally {
-        clearTimeout(timer);
       }
     };
   `;
   const blob = new Blob([workerCode], { type: "application/javascript" });
   const url = URL.createObjectURL(blob);
   const worker = new Worker(url);
+  let settled = false;
+  const dispose = () => {
+    if (settled) return false;
+    settled = true;
+    window.clearTimeout(timer);
+    worker.terminate();
+    URL.revokeObjectURL(url);
+    return true;
+  };
+  const finish = () => {
+    if (dispose()) onDone();
+  };
+  const timer = window.setTimeout(() => {
+    onMessage({ type: "timeout" });
+    finish();
+  }, timeoutMs);
   worker.onmessage = (event) => {
-    if (event.data.type === "done") { onDone(); return; }
+    if (settled) return;
+    if (event.data.type === "done") {
+      finish();
+      return;
+    }
     onMessage(event.data);
   };
   worker.onerror = (event) => {
+    if (settled) return;
     onMessage({ type: "err", text: String(event.message || "Unknown worker error") });
-    onDone();
+    finish();
   };
-  worker.postMessage({ source, timeoutMs });
-  return () => {
-    worker.terminate();
-    URL.revokeObjectURL(url);
-  };
+  worker.postMessage({ source });
+  return dispose;
 }
 
 function languageRunsInBrowser(language) {
   return language === "javascript" || language === "jsx" || language === "typescript" || language === "tsx";
+}
+
+function languageRunsNatively(language) {
+  return ["python", "c", "cpp", "java", "rust", "go", "ruby", "bash"].includes(language);
+}
+
+function languageCanRun(language) {
+  return languageRunsInBrowser(language) || languageRunsNatively(language);
 }
 
 function LanguageMenu({ value, options, onChange, disabled = false }) {
@@ -203,11 +947,12 @@ function LanguageMenu({ value, options, onChange, disabled = false }) {
       const left = Math.max(gutter, Math.min(rect.left, window.innerWidth - width - gutter));
       const below = rect.bottom + gap;
       const above = rect.top - gap - height;
-      const top = below + height <= window.innerHeight - gutter
-        ? below
-        : above >= gutter
-          ? above
-          : Math.max(gutter, Math.min(below, window.innerHeight - height - gutter));
+      const top =
+        below + height <= window.innerHeight - gutter
+          ? below
+          : above >= gutter
+            ? above
+            : Math.max(gutter, Math.min(below, window.innerHeight - height - gutter));
       setPosition((current) => (current && current.left === left && current.top === top ? current : { left, top }));
     };
     updatePosition();
@@ -246,11 +991,12 @@ function LanguageMenu({ value, options, onChange, disabled = false }) {
     event.stopPropagation();
     const buttons = [...(menuRef.current?.querySelectorAll("button") || [])];
     const activeIndex = buttons.indexOf(document.activeElement);
-    const nextIndex = event.key === "Home"
-      ? 0
-      : event.key === "End"
-        ? buttons.length - 1
-        : (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? buttons.length - 1
+          : (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
     buttons[nextIndex]?.focus();
   };
 
@@ -302,18 +1048,24 @@ function LanguageMenu({ value, options, onChange, disabled = false }) {
   );
 }
 
-export function CodeObject({ object, path, saveState, onUpdateObject, onBack, canGoBack, workspaceActions, onReparentObject }) {
+export function CodeObject({
+  object,
+  path,
+  saveState,
+  onUpdateObject,
+  onBack,
+  canGoBack,
+  workspaceActions,
+  onReparentObject,
+}) {
   const canonicalContent = object.content || "";
   const contentSession = useLocalDraft(canonicalContent, (next) => onUpdateObject({ content: next }));
   const content = contentSession.draft;
   const language = object.language || codeLanguageForExtension(object.extension) || "plaintext";
-  const textareaRef = useRef(null);
-  const preRef = useRef(null);
   const [running, setRunning] = useState(false);
   const [lines, setLines] = useState([]);
   const terminateRef = useRef(null);
 
-  const highlighted = useMemo(() => highlight(content, language), [content, language]);
   const languageLabel = LANGUAGE_LABELS[language] || language;
   const languageOptions = useMemo(
     () => Object.entries(LANGUAGE_LABELS).map(([key, label]) => ({ value: key, label })),
@@ -323,46 +1075,46 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
   const shellRef = useRef(null);
   const resizingRef = useRef(null);
 
-  useEffect(() => () => { terminateRef.current?.(); }, []);
+  useEffect(
+    () => () => {
+      terminateRef.current?.();
+    },
+    [],
+  );
   useEffect(() => {
-    if (running) setLines((current) => current.length ? current : [{ kind: "meta", text: `Running ${languageLabel}…` }]);
+    if (running)
+      setLines((current) => (current.length ? current : [{ kind: "meta", text: `Running ${languageLabel}…` }]));
   }, [running, languageLabel]);
 
   const commitContent = () => contentSession.commitDraft(contentSession.draftRef.current);
-  const handleBack = () => { commitContent(); onBack?.(); };
-
-  const syncScroll = () => {
-    const textarea = textareaRef.current;
-    const pre = preRef.current;
-    if (!textarea || !pre) return;
-    pre.scrollTop = textarea.scrollTop;
-    pre.scrollLeft = textarea.scrollLeft;
-  };
-
-  const handleKeyDown = (event) => {
-    if (event.key === "Tab") {
-      event.preventDefault();
-      const textarea = event.currentTarget;
-      const { selectionStart, selectionEnd } = textarea;
-      const next = `${content.slice(0, selectionStart)}  ${content.slice(selectionEnd)}`;
-      contentSession.updateDraft(next);
-      window.requestAnimationFrame(() => {
-        textarea.selectionStart = textarea.selectionEnd = selectionStart + 2;
-      });
-    } else if (event.key === "[" && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      // Reserved: [ returns to parent (same as other object surfaces).
-    }
+  const handleBack = () => {
+    commitContent();
+    onBack?.();
   };
 
   const appendLine = (item) => setLines((current) => [...current, item]);
 
   const handleRun = async () => {
-    if (running) { terminateRef.current?.(); setRunning(false); setLines((current) => [...current, { kind: "meta", text: "Stopped." }]); return; }
+    if (running) {
+      terminateRef.current?.();
+      setRunning(false);
+      setLines((current) => [...current, { kind: "meta", text: "Stopped." }]);
+      return;
+    }
     setLines([]);
     setRunning(true);
     const source = contentSession.draftRef.current;
-    const { language: runLanguage, source: runSource } = normalizeSourceForRun(source, language);
+    const normalized = normalizeSourceForRun(source, language);
+    const runLanguage = normalized.language;
+    let runSource = normalized.source;
     if (languageRunsInBrowser(runLanguage)) {
+      try {
+        runSource = prepareBrowserSource(runSource, runLanguage);
+      } catch (error) {
+        setRunning(false);
+        setLines([{ kind: "err", text: `Transform failed: ${String(error?.message || error)}` }]);
+        return;
+      }
       let output = [];
       terminateRef.current = runJavaScriptInWorker(
         runSource,
@@ -384,13 +1136,27 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
     const invoke = resolveTauriInvoke();
     if (!invoke) {
       setRunning(false);
-      setLines([{ kind: "err", text: `Running ${languageLabel} requires the native app (interpreter runs on this device).` }]);
+      setLines([
+        {
+          kind: "err",
+          text: `${languageLabel} cannot run in the browser preview. Open Tactile Desktop to use the compiler or interpreter installed on this device.`,
+        },
+      ]);
       return;
     }
     try {
-      const result = await invoke("workspace_run_code", { language: runLanguage, source: runSource, timeoutMs: 12000 });
+      const result = await invoke("workspace_run_code", {
+        language: runLanguage,
+        source: runSource,
+        timeoutMs: 12000,
+        executablePaths: getCodeRuntimeProfile().paths,
+      });
       const output = [];
-      if (result?.timedOut) output.push({ kind: "err", text: `Execution timed out after ${Math.round((result.timeoutMs || 12000) / 1000)}s.` });
+      if (result?.timedOut)
+        output.push({
+          kind: "err",
+          text: `Execution timed out after ${Math.round((result.timeoutMs || 12000) / 1000)}s.`,
+        });
       if (result?.stdout) output.push({ kind: "out", text: String(result.stdout) });
       if (result?.stderr) output.push({ kind: "err", text: String(result.stderr) });
       if (result?.error) output.push({ kind: "err", text: String(result.error) });
@@ -442,24 +1208,27 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
       <main className="code-workspace">
         <div className="code-toolbar cell-format-toolbar" aria-label="Code commands">
           <div className="cell-format-group" role="group" aria-label="Language">
-            <LanguageMenu
-              value={language}
-              options={languageOptions}
-              onChange={handleLanguageChange}
-            />
+            <LanguageMenu value={language} options={languageOptions} onChange={handleLanguageChange} />
           </div>
           <div className="code-toolbar-actions">
             <button
               type="button"
               className={`code-run-button${running ? " is-running" : ""}`}
-              disabled={language === "plaintext"}
-              data-tooltip={running ? "Stop" : `Run ${languageLabel}`}
+              disabled={!languageCanRun(language)}
+              data-tooltip={
+                running ? "Stop" : languageCanRun(language) ? `Run ${languageLabel}` : `${languageLabel} is editor only`
+              }
               onClick={handleRun}
             >
               {running ? <IconSquareCheck size={14} stroke={1.9} /> : <IconPlayerPlay size={14} stroke={1.9} />}
               {running ? "Stop" : "Run"}
             </button>
-            <button className="code-clear-button" type="button" data-tooltip="Clear output" onClick={() => setLines([])}>
+            <button
+              className="code-clear-button"
+              type="button"
+              data-tooltip="Clear output"
+              onClick={() => setLines([])}
+            >
               <IconTrash size={14} stroke={1.7} />
             </button>
           </div>
@@ -467,25 +1236,21 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
 
         <div ref={shellRef} className="code-editor-shell">
           <div className="code-editor-surface">
-            <pre ref={preRef} className="code-pre" aria-hidden="true">
-              <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: highlighted }} />
-            </pre>
-            <textarea
-              ref={textareaRef}
-              className="code-input"
+            <CodeEditor
               value={content}
-              spellCheck="false"
-              autoCapitalize="off"
-              autoCorrect="off"
-              onChange={(event) => contentSession.updateDraft(event.target.value)}
-              onScroll={syncScroll}
-              onKeyDown={handleKeyDown}
+              language={language}
+              ariaLabel={`${object.title} code editor`}
+              onChange={contentSession.updateDraft}
               onBlur={commitContent}
-              placeholder={`// ${languageLabel}`}
-              aria-label={`${object.title} code editor`}
             />
           </div>
-          <div className="code-output-resizer" role="separator" aria-orientation="horizontal" aria-label="Resize output" onPointerDown={beginResize} />
+          <div
+            className="code-output-resizer"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize output"
+            onPointerDown={beginResize}
+          />
           <div className={`code-output${lines.length ? "" : " is-empty"}`} style={{ height: outputHeight }}>
             <div className="code-output-header">
               <IconTerminal2 size={13} stroke={1.6} /> Output
@@ -493,7 +1258,9 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
             {lines.length ? (
               <pre className="code-output-body">
                 {lines.map((line, index) => (
-                  <div key={index} className={`code-out-line ${line.kind}`}>{line.text}</div>
+                  <div key={index} className={`code-out-line ${line.kind}`}>
+                    {line.text}
+                  </div>
                 ))}
               </pre>
             ) : (
@@ -505,9 +1272,13 @@ export function CodeObject({ object, path, saveState, onUpdateObject, onBack, ca
 
       <footer className="object-statusbar">
         <span className="status-spacer" />
-        <span className="status-item"><IconLanguage size={14} stroke={1.55} /> {languageLabel}</span>
+        <span className="status-item">
+          <IconLanguage size={14} stroke={1.55} /> {languageLabel}
+        </span>
         <span className="status-divider">·</span>
-        <span className="status-item keyboard-hint"><IconBrackets size={14} stroke={1.6} /> <kbd>[</kbd> out</span>
+        <span className="status-item keyboard-hint">
+          <IconBrackets size={14} stroke={1.6} /> <kbd>[</kbd> out
+        </span>
       </footer>
     </article>
   );

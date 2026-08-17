@@ -23,7 +23,7 @@ fn native_build_uses_the_existing_vite_client_output() {
 }
 
 #[test]
-fn production_csp_limits_remote_content_to_link_previews() {
+fn production_csp_limits_marketplace_delivery_to_github_raw() {
     let config = config();
     let csp = config["app"]["security"]["csp"]
         .as_str()
@@ -31,9 +31,17 @@ fn production_csp_limits_remote_content_to_link_previews() {
 
     assert!(csp.contains("default-src 'self'"));
     assert!(csp.contains("object-src 'none'"));
-    assert!(csp.contains("frame-src 'self' asset: blob: data: https: http:"));
-    assert!(csp.contains("script-src 'self'"));
-    assert!(csp.contains("connect-src 'self'"));
+    assert!(csp.contains("frame-src 'self' asset: tactile-html: blob: data: https: http:"));
+    assert!(csp.contains("script-src 'self' 'unsafe-inline' blob:"));
+    let connect_src = csp
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.starts_with("connect-src"))
+        .expect("production CSP must define connect-src");
+    assert_eq!(
+        connect_src,
+        "connect-src 'self' https://raw.githubusercontent.com"
+    );
     assert!(csp.contains("img-src 'self'"));
     assert!(csp.contains("media-src 'self'"));
     assert!(!csp.contains("wss:"));
@@ -53,10 +61,13 @@ fn development_csp_only_adds_loopback_vite_endpoints() {
 }
 
 #[test]
-fn main_capability_is_local_only_and_permissionless() {
+fn main_capability_is_local_only_and_updater_only() {
     let capability = capability();
 
     assert_eq!(capability["windows"], serde_json::json!(["main"]));
-    assert_eq!(capability["permissions"], serde_json::json!([]));
+    assert_eq!(
+        capability["permissions"],
+        serde_json::json!(["updater:default"])
+    );
     assert!(capability.get("remote").is_none());
 }

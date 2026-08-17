@@ -1,5 +1,6 @@
 const APPLICATION_TITLE_PREFIX: &str = "Tactile — ";
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
 use tauri::http::{header::CONTENT_SECURITY_POLICY, Response as HttpResponse, StatusCode};
 use tauri::{AppHandle, Manager};
@@ -210,10 +211,7 @@ fn workspace_open_directory(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn workspace_serve_html(
-    app: AppHandle,
-    content: String,
-) -> Result<String, String> {
+fn workspace_serve_html(app: AppHandle, content: String) -> Result<String, String> {
     use std::time::{SystemTime, UNIX_EPOCH};
     let sandbox_dir = app
         .path()
@@ -326,6 +324,7 @@ struct RunCodeResult {
 
 fn run_process_with_timeout(command: &mut std::process::Command, timeout_ms: u64) -> RunCodeResult {
     use std::io::Read;
+    let program = command.get_program().to_string_lossy().into_owned();
     let mut child = match command
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -339,7 +338,7 @@ fn run_process_with_timeout(command: &mut std::process::Command, timeout_ms: u64
                 stdout: String::new(),
                 stderr: String::new(),
                 timed_out: false,
-                error: Some(format!("unable to launch process: {error}")),
+                error: Some(format!("unable to launch {program}: {error}")),
             };
         }
     };
@@ -422,7 +421,115 @@ fn write_source(dir: &Path, file_name: &str, source: &str) -> Result<PathBuf, St
     Ok(path)
 }
 
-fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult {
+fn configured_program(paths: &HashMap<String, String>, tool: &str, fallback: &str) -> String {
+    paths
+        .get(tool)
+        .map(|path| path.trim())
+        .filter(|path| !path.is_empty())
+        .unwrap_or(fallback)
+        .to_owned()
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CodeRuntimeInfo {
+    tool: String,
+    command: String,
+    configured: bool,
+    available: bool,
+    version: String,
+    error: Option<String>,
+}
+
+const PYTHON_RUNTIME_CANDIDATES: &[&str] = &["python3", "python", "py"];
+
+fn probe_runtime_tool(
+    tool: &str,
+    candidates: &[&str],
+    executable_paths: &HashMap<String, String>,
+) -> CodeRuntimeInfo {
+    let configured = executable_paths
+        .get(tool)
+        .map(|path| path.trim())
+        .filter(|path| !path.is_empty());
+    let programs: Vec<String> = configured
+        .map(|path| vec![path.to_owned()])
+        .unwrap_or_else(|| {
+            candidates
+                .iter()
+                .map(|candidate| (*candidate).to_owned())
+                .collect()
+        });
+    let mut last_error = None;
+    for program in &programs {
+        match std::process::Command::new(program)
+            .arg("--version")
+            .stdin(std::process::Stdio::null())
+            .output()
+        {
+            Ok(output) if output.status.success() => {
+                let text = if output.stdout.is_empty() {
+                    &output.stderr
+                } else {
+                    &output.stdout
+                };
+                let version = String::from_utf8_lossy(text)
+                    .lines()
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .to_owned();
+                return CodeRuntimeInfo {
+                    tool: tool.to_owned(),
+                    command: program.clone(),
+                    configured: configured.is_some(),
+                    available: true,
+                    version,
+                    error: None,
+                };
+            }
+            Ok(output) => last_error = Some(format!("version probe exited with {}", output.status)),
+            Err(error) => last_error = Some(error.to_string()),
+        }
+    }
+    CodeRuntimeInfo {
+        tool: tool.to_owned(),
+        command: programs.first().cloned().unwrap_or_default(),
+        configured: configured.is_some(),
+        available: false,
+        version: String::new(),
+        error: last_error,
+    }
+}
+
+#[tauri::command]
+fn workspace_discover_code_runtimes(
+    executable_paths: Option<HashMap<String, String>>,
+) -> Vec<CodeRuntimeInfo> {
+    let paths = executable_paths.unwrap_or_default();
+    [
+        ("python", PYTHON_RUNTIME_CANDIDATES.to_vec()),
+        ("node", vec!["node"]),
+        ("gcc", vec!["gcc"]),
+        ("gpp", vec!["g++"]),
+        ("javac", vec!["javac"]),
+        ("java", vec!["java"]),
+        ("rustc", vec!["rustc"]),
+        ("go", vec!["go"]),
+        ("ruby", vec!["ruby"]),
+        ("bash", vec!["bash"]),
+    ]
+    .into_iter()
+    .map(|(tool, candidates)| probe_runtime_tool(tool, &candidates, &paths))
+    .collect()
+}
+
+fn run_code_impl(
+    language: &str,
+    source: &str,
+    timeout_ms: u64,
+    executable_paths: &HashMap<String, String>,
+) -> RunCodeResult {
     let dir = std::env::temp_dir().join(format!("tactile-code-run-{}", std::process::id()));
     let _ = std::fs::create_dir_all(&dir);
     let file_ext = match language {
@@ -441,11 +548,17 @@ fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult
                 stdout: String::new(),
                 stderr: String::new(),
                 timed_out: false,
-                error: Some(format!("running {language} internally is not supported yet")),
+                error: Some(format!(
+                    "running {language} internally is not supported yet"
+                )),
             };
         }
     };
-    let file_name = if language == "java" { "Main.java".to_owned() } else { format!("main.{file_ext}") };
+    let file_name = if language == "java" {
+        "Main.java".to_owned()
+    } else {
+        format!("main.{file_ext}")
+    };
     let file_path = match write_source(&dir, &file_name, source) {
         Ok(path) => path,
         Err(error) => {
@@ -461,52 +574,77 @@ fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult
     let exe_name = if cfg!(windows) { "main.exe" } else { "main" };
     let exe = dir.join(exe_name);
 
-    let compile_and_run = |compiler_args: Vec<String>, program_args: Vec<String>| -> RunCodeResult {
-        let mut compile = std::process::Command::new(&compiler_args[0]);
-        for argument in compiler_args.iter().skip(1) {
-            compile.arg(argument);
-        }
-        let build = run_process_with_timeout(&mut compile, timeout_ms);
-        if build.exit_code != Some(0) {
-            return build;
-        }
-        let mut run = std::process::Command::new(&program_args[0]);
-        for argument in program_args.iter().skip(1) {
-            run.arg(argument);
-        }
-        run_process_with_timeout(&mut run, timeout_ms)
-    };
+    let compile_and_run =
+        |compiler_args: Vec<String>, program_args: Vec<String>| -> RunCodeResult {
+            let mut compile = std::process::Command::new(&compiler_args[0]);
+            for argument in compiler_args.iter().skip(1) {
+                compile.arg(argument);
+            }
+            let build = run_process_with_timeout(&mut compile, timeout_ms);
+            if build.exit_code != Some(0) {
+                return build;
+            }
+            let mut run = std::process::Command::new(&program_args[0]);
+            for argument in program_args.iter().skip(1) {
+                run.arg(argument);
+            }
+            run_process_with_timeout(&mut run, timeout_ms)
+        };
 
     match language {
         "c" => compile_and_run(
-            vec!["gcc".into(), file_path.to_string_lossy().into_owned(), "-o".into(), exe.to_string_lossy().into_owned()],
+            vec![
+                configured_program(executable_paths, "gcc", "gcc"),
+                file_path.to_string_lossy().into_owned(),
+                "-o".into(),
+                exe.to_string_lossy().into_owned(),
+            ],
             vec![exe.to_string_lossy().into_owned()],
         ),
         "cpp" => compile_and_run(
-            vec!["g++".into(), file_path.to_string_lossy().into_owned(), "-o".into(), exe.to_string_lossy().into_owned()],
+            vec![
+                configured_program(executable_paths, "gpp", "g++"),
+                file_path.to_string_lossy().into_owned(),
+                "-o".into(),
+                exe.to_string_lossy().into_owned(),
+            ],
             vec![exe.to_string_lossy().into_owned()],
         ),
         "rust" => compile_and_run(
-            vec!["rustc".into(), file_path.to_string_lossy().into_owned(), "-o".into(), exe.to_string_lossy().into_owned()],
+            vec![
+                configured_program(executable_paths, "rustc", "rustc"),
+                file_path.to_string_lossy().into_owned(),
+                "-o".into(),
+                exe.to_string_lossy().into_owned(),
+            ],
             vec![exe.to_string_lossy().into_owned()],
         ),
         "go" => {
-            let mut run = std::process::Command::new("go");
+            let mut run =
+                std::process::Command::new(configured_program(executable_paths, "go", "go"));
             run.arg("run").arg(&file_path);
             run_process_with_timeout(&mut run, timeout_ms)
         }
         "java" => {
-            let mut javac = std::process::Command::new("javac");
+            let mut javac =
+                std::process::Command::new(configured_program(executable_paths, "javac", "javac"));
             javac.current_dir(&dir).arg(&file_name);
             let build = run_process_with_timeout(&mut javac, timeout_ms);
             if build.exit_code != Some(0) {
                 return build;
             }
-            let mut java = std::process::Command::new("java");
+            let mut java =
+                std::process::Command::new(configured_program(executable_paths, "java", "java"));
             java.current_dir(&dir).arg("-cp").arg(".").arg("Main");
             run_process_with_timeout(&mut java, timeout_ms)
         }
-        "python" => match first_available(&["python3", "python"]) {
+        "python" => match executable_paths
+            .get("python")
+            .map(String::as_str)
+            .filter(|path| !path.trim().is_empty())
+            .map(str::to_owned)
+            .or_else(|| first_available(PYTHON_RUNTIME_CANDIDATES))
+        {
             Some(program) => {
                 let mut run = std::process::Command::new(program);
                 run.arg(&file_path);
@@ -520,7 +658,13 @@ fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult
                 error: Some("Python interpreter not found on this device".into()),
             },
         },
-        "javascript" | "jsx" | "typescript" | "tsx" => match first_available(&["node"]) {
+        "javascript" | "jsx" | "typescript" | "tsx" => match executable_paths
+            .get("node")
+            .map(String::as_str)
+            .filter(|path| !path.trim().is_empty())
+            .map(str::to_owned)
+            .or_else(|| first_available(&["node"]))
+        {
             Some(program) => {
                 let mut run = std::process::Command::new(program);
                 run.arg(&file_path);
@@ -534,7 +678,13 @@ fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult
                 error: Some("Node.js not found on this device".into()),
             },
         },
-        "ruby" => match first_available(&["ruby"]) {
+        "ruby" => match executable_paths
+            .get("ruby")
+            .map(String::as_str)
+            .filter(|path| !path.trim().is_empty())
+            .map(str::to_owned)
+            .or_else(|| first_available(&["ruby"]))
+        {
             Some(program) => {
                 let mut run = std::process::Command::new(program);
                 run.arg(&file_path);
@@ -548,7 +698,13 @@ fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult
                 error: Some("Ruby interpreter not found on this device".into()),
             },
         },
-        "bash" => match first_available(&["bash"]) {
+        "bash" => match executable_paths
+            .get("bash")
+            .map(String::as_str)
+            .filter(|path| !path.trim().is_empty())
+            .map(str::to_owned)
+            .or_else(|| first_available(&["bash"]))
+        {
             Some(program) => {
                 let mut run = std::process::Command::new(program);
                 run.arg(&file_path);
@@ -567,14 +723,26 @@ fn run_code_impl(language: &str, source: &str, timeout_ms: u64) -> RunCodeResult
             stdout: String::new(),
             stderr: String::new(),
             timed_out: false,
-            error: Some(format!("running {language} internally is not supported yet")),
+            error: Some(format!(
+                "running {language} internally is not supported yet"
+            )),
         },
     }
 }
 
 #[tauri::command]
-fn workspace_run_code(language: String, source: String, timeout_ms: Option<u64>) -> RunCodeResult {
-    run_code_impl(&language, &source, timeout_ms.unwrap_or(12_000))
+fn workspace_run_code(
+    language: String,
+    source: String,
+    timeout_ms: Option<u64>,
+    executable_paths: Option<HashMap<String, String>>,
+) -> RunCodeResult {
+    run_code_impl(
+        &language,
+        &source,
+        timeout_ms.unwrap_or(12_000),
+        &executable_paths.unwrap_or_default(),
+    )
 }
 
 #[derive(serde::Serialize)]
@@ -636,7 +804,9 @@ fn window_start_drag(window: tauri::WebviewWindow) -> Result<(), String> {
 #[tauri::command]
 fn window_start_resize(app: tauri::AppHandle, direction: String) -> Result<(), String> {
     use tauri_runtime::ResizeDirection;
-    let window = app.get_window("main").ok_or_else(|| "main window not found".to_string())?;
+    let window = app
+        .get_window("main")
+        .ok_or_else(|| "main window not found".to_string())?;
     let direction = match direction.as_str() {
         "north" => ResizeDirection::North,
         "south" => ResizeDirection::South,
@@ -648,7 +818,9 @@ fn window_start_resize(app: tauri::AppHandle, direction: String) -> Result<(), S
         "southWest" => ResizeDirection::SouthWest,
         _ => return Err("invalid window resize direction".to_string()),
     };
-    window.start_resize_dragging(direction).map_err(|error| error.to_string())
+    window
+        .start_resize_dragging(direction)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -679,6 +851,7 @@ pub fn run() {
             workspace_open_url,
             workspace_write_snapshot,
             workspace_serve_html,
+            workspace_discover_code_runtimes,
             workspace_run_code,
             check_for_update,
             download_and_install_update,

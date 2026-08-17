@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cpSync, copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,16 +8,15 @@ const dist = path.join(root, "dist");
 const index = path.join(dist, "client", "index.html");
 const worker = path.join(root, "worker", "index.js");
 const hosting = path.join(root, ".openai", "hosting.json");
-const marketplace = path.join(root, "marketplace", "dist");
 
-for (const file of [index, worker, hosting, marketplace]) {
+for (const file of [index, worker, hosting]) {
   if (!existsSync(file)) throw new Error("Missing Sites build input: " + file);
 }
 
 mkdirSync(path.join(dist, "server"), { recursive: true });
 mkdirSync(path.join(dist, ".openai"), { recursive: true });
+rmSync(path.join(dist, "client", "marketplace"), { recursive: true, force: true });
 copyFileSync(worker, path.join(dist, "server", "index.js"));
 copyFileSync(hosting, path.join(dist, ".openai", "hosting.json"));
-cpSync(marketplace, path.join(dist, "client", "marketplace"), { recursive: true });
 
-console.log("Prepared Sites build and marketplace catalog");
+console.log("Prepared Sites build; marketplace loads from the hosted catalog");
