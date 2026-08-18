@@ -7,10 +7,10 @@ This inventory is a reproducible snapshot of the committed JavaScript and Rust d
 ## Snapshot
 
 | Ecosystem | Components | Direct | License evidence | Missing license evidence |
-| --------- | ---------: | -----: | ---------------: | -----------------------: |
-| npm       |        390 |     23 |              388 |                        2 |
-| Cargo     |        438 |      4 |              438 |                        0 |
-| Total     |        828 |     27 |              826 |                        2 |
+| --- | ---: | ---: | ---: | ---: |
+| npm | 602 | 47 | 586 | 16 |
+| Cargo | 537 | 8 | 537 | 0 |
+| Total | 1139 | 55 | 1123 | 16 |
 
 Source hashes are recorded in third-party-inventory.json, sbom-npm.cdx.json, and sbom-cargo.cdx.json. The generator deliberately omits wall-clock timestamps and derives SBOM serial numbers from the lockfile hashes.
 
@@ -20,7 +20,21 @@ Source hashes are recorded in third-party-inventory.json, sbom-npm.cdx.json, and
 - License text, attribution notices, and the project's own license are not supplied by this packet. An owner/legal decision is required before any public or commercial distribution.
 - Components without license evidence must be resolved or explicitly accepted by the legal owner before release:
 
+- npm: @tauri-apps/cli@2.11.4
+- npm: @tauri-apps/cli-darwin-arm64@2.11.4
+- npm: @tauri-apps/cli-darwin-x64@2.11.4
+- npm: @tauri-apps/cli-linux-arm-gnueabihf@2.11.4
+- npm: @tauri-apps/cli-linux-arm64-gnu@2.11.4
+- npm: @tauri-apps/cli-linux-arm64-musl@2.11.4
+- npm: @tauri-apps/cli-linux-riscv64-gnu@2.11.4
+- npm: @tauri-apps/cli-linux-x64-gnu@2.11.4
+- npm: @tauri-apps/cli-linux-x64-musl@2.11.4
+- npm: @tauri-apps/cli-win32-arm64-msvc@2.11.4
+- npm: @tauri-apps/cli-win32-ia32-msvc@2.11.4
+- npm: @tauri-apps/cli-win32-x64-msvc@2.11.4
+- npm: dompurify@3.4.13
 - npm: jszip@3.10.1
+- npm: khroma@2.1.0
 - npm: pako@1.0.11
 
 ## Re-generation
