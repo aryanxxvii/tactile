@@ -11,7 +11,7 @@ This guide describes the repository workflow. It does not grant release, legal, 
 - Preserve unknown fields when reading and writing portable data. Do not silently discard plugin or future-version data.
 - Use the existing object registry and persistence ports when adding object types or storage adapters. Do not duplicate navigation, import/export, or command behavior in a renderer.
 - Keep A1 sheet addressing and embedded-object links stable. A link has an object ID, link ID, relation, parent object, and source cell; repairs must be deterministic.
-- Do not add a dependency without updating the appropriate lockfile, reviewing its license evidence, and regenerating the release inventory in `docs/release/`.
+- Do not add a dependency without updating the appropriate lockfile, reviewing its license evidence, and regenerating `evidence/release/`.
 - Do not claim that a dependency, release, security contact, license, signing key, or platform certification exists unless the repository or an owner provides evidence.
 
 ## Toolchain and checks
@@ -87,7 +87,7 @@ Before changing a format or migration:
 The committed inventory is generated with:
 
 ```text
-node docs/release/generate-inventory.mjs
+node scripts/release/generate-inventory.mjs
 ```
 
 It reads `package-lock.json` and `src-tauri/Cargo.lock`, records their hashes, emits CycloneDX SBOMs, and summarizes license evidence. The generated data is an engineering snapshot. It is not a legal conclusion, a complete notice bundle, or a project license. A legal owner must review license texts and attribution requirements before distribution.

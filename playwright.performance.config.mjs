@@ -8,7 +8,7 @@ export default {
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  reporter: [["list"], ["json", { outputFile: "docs/performance/playwright-results.json" }]],
+  reporter: [["list"], ["json", { outputFile: "evidence/performance/playwright-results.json" }]],
   use: {
     baseURL,
     headless: true,

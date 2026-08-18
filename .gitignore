@@ -5,6 +5,7 @@ dist/
 *.png
 !src-tauri/icons/*.png
 !src-tauri/icons-alpha/*.png
+!images/*.png
 *.xlsx
 audits/
 .cache/

@@ -33,8 +33,8 @@
   },
   "browserHarness": {
     "status": "measured",
-    "resultFile": "docs/performance/browser-results.json",
-    "visualResultFile": "docs/performance/visual-results.json",
+    "resultFile": "evidence/performance/browser-results.json",
+    "visualResultFile": "evidence/performance/visual-results.json",
     "typingActionCompleted": true,
     "reactCommitCountsObservable": true,
     "scenarios": {

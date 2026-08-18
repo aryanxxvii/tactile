@@ -15020,7 +15020,7 @@
       },
       {
         "name": "tactile:generated-by",
-        "value": "docs/release/generate-inventory.mjs"
+        "value": "scripts/release/generate-inventory.mjs"
       }
     ],
     "tools": [

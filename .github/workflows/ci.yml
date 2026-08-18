@@ -47,7 +47,8 @@ jobs:
           fi
           mapfile -d '' files < <(
             git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$GITHUB_SHA" -- \
-              '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.json' '*.yml' '*.yaml' '*.md' '*.css' '*.html'
+              '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.json' '*.yml' '*.yaml' '*.md' '*.css' '*.html' \
+              ':(exclude)evidence/**'
           )
           if (( ${#files[@]} )); then
             npx prettier --check "${files[@]}"

@@ -24,7 +24,7 @@ function parseArgs(argv) {
   const args = {
     baseUrl: "http://127.0.0.1:5173",
     fixture: "",
-    output: "docs/performance/browser-results.json",
+    output: "evidence/performance/browser-results.json",
     screenshots: "tests/visual/baselines",
     runs: 1,
     headless: true,

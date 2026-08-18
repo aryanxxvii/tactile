@@ -35,7 +35,7 @@ For a sensitive report, wait for the owner-configured private channel. Do not at
 
 ## Supply-chain response
 
-Dependency changes must update the relevant lockfile and regenerate `docs/release/sbom-npm.cdx.json`, `docs/release/sbom-cargo.cdx.json`, and `docs/release/third-party-inventory.json`. Run the applicable audit and test gates, record exceptions, and require owner/legal review of license obligations. The current repository does not evidence a signing key, provenance service, or complete third-party notice bundle; those are release prerequisites.
+Dependency changes must update the relevant lockfile and regenerate `evidence/release/sbom-npm.cdx.json`, `evidence/release/sbom-cargo.cdx.json`, and `evidence/release/third-party-inventory.json`. Run the applicable audit and test gates, record exceptions, and require owner/legal review of license obligations. The current repository does not evidence a signing key, provenance service, or complete third-party notice bundle; those are release prerequisites.
 
 ## Owner prerequisites before a public release
 
