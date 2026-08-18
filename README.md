@@ -32,7 +32,7 @@ npm run dev
 Contributors can verify the combined rendered output with:
 
 ```bash
-npx playwright test tests/e2e/markdown-object.e2e.spec.mjs --config playwright.e2e.config.mjs --grep "visible LaTeX and Mermaid"
+npx playwright test tests/e2e/markdown-object.e2e.spec.mjs --config config/playwright/e2e.config.mjs --grep "visible LaTeX and Mermaid"
 ```
 
 Desktop shell:

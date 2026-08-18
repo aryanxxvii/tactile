@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 const baseURL = process.env.TACTILE_BASE_URL || "http://127.0.0.1:5187";
 
 export default defineConfig({
-  testDir: "./tests/e2e",
+  testDir: "../../tests/e2e",
   testMatch: /.*\.e2e\.spec\.[cm]?[jt]s$/,
   timeout: 120_000,
   fullyParallel: false,

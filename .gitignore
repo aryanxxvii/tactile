@@ -13,6 +13,8 @@ coverage/
 test-results-*/
 *.tsbuildinfo
 test-results/
+tmp/
+evidence/performance/playwright-results.json
 
 # Internal project planning and wave records are kept out of the public repository.
 /WORKFLOW.md

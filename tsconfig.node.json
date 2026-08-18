@@ -13,5 +13,5 @@
     "tsBuildInfoFile": ".cache/tsconfig.node.tsbuildinfo",
     "types": ["node"]
   },
-  "include": ["vite.config.mjs", "playwright*.config.mjs", "scripts/**/*.mjs", "benchmarks/**/*.mjs", "tests/**/*.mjs"]
+  "include": ["vite.config.mjs", "config/**/*.mjs", "scripts/**/*.mjs", "benchmarks/**/*.mjs", "tests/**/*.mjs"]
 }
