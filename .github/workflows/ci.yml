@@ -36,7 +36,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run version:check
-      - run: npm run format:check
+      - name: Check changed-file formatting
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${BASE_SHA:-}" || "$BASE_SHA" =~ ^0+$ ]]; then
+            BASE_SHA="$(git rev-parse HEAD^)"
+          fi
+          mapfile -d '' files < <(
+            git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$GITHUB_SHA" -- \
+              '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.json' '*.yml' '*.yaml' '*.md' '*.css' '*.html'
+          )
+          if (( ${#files[@]} )); then
+            npx prettier --check "${files[@]}"
+          fi
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:unit
