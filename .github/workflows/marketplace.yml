@@ -9,7 +9,7 @@ on:
       - "package-lock.json"
       - ".github/workflows/marketplace.yml"
   push:
-    branches: [main]
+    branches: [alpha, main]
     paths:
       - "marketplace/**"
       - "scripts/build-marketplace.mjs"
