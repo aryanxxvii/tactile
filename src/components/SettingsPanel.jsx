@@ -21,6 +21,12 @@ IconMoon,
   IconX,
 } from "@tabler/icons-react";
 import { allThemes } from "../themes.js";
+import {
+  TACTILE_CHANNEL,
+  TACTILE_COMMIT_SHORT,
+  TACTILE_PLATFORM,
+  TACTILE_VERSION,
+} from "../buildRevision.js";
 import { ColorControl } from "./controls/ColorControl.jsx";
 import { SelectMenu } from "./controls/SelectMenu.jsx";
 import { Switch } from "./controls/Switch.jsx";
@@ -496,6 +502,9 @@ onChangeWorkspaceFolder,
                 <div>
                   <h3>Updates</h3>
                   <p>Check GitHub for the latest Tactile release and install it right here.</p>
+                  <small>
+                    Tactile {TACTILE_VERSION} · {TACTILE_CHANNEL} · {TACTILE_PLATFORM} · {TACTILE_COMMIT_SHORT}
+                  </small>
                 </div>
               </div>
               <div className="updates-status" role="status">
