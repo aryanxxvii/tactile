@@ -1,0 +1,82 @@
+name: Application CI
+
+on:
+  push:
+    branches:
+      - alpha
+      - "feature/**"
+      - "fix/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - alpha
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_AUDIT: "false"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality:
+    name: Quality and unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run version:check
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
+
+  web:
+    name: Web build and browser tests
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/alpha'
+    needs: quality
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:sites
+      - run: npm run test:component
+      - run: npm run test:e2e
+      - name: Upload alpha web build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/alpha'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactile-alpha-web-${{ github.sha }}
+          path: dist/client
+          if-no-files-found: error
+          retention-days: 7
+
+  native:
+    name: Native checks
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/alpha'
+    needs: quality
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+      - run: cargo check --manifest-path src-tauri/Cargo.toml
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
