@@ -1,151 +1,143 @@
 # Release policy
 
-Tactile has two tag-triggered release workflows. Workflows react to tags and build the referenced commit; they do not create tags or detect version changes. They validate tag and manifest versions before building.
+This policy defines Tactile's two long-lived branches, version authority, immutable releases, and artifact ownership. Operational commands are in [development-workflow.md](development-workflow.md).
 
-## Build categories and tags
+## Branch model
 
-The native app workflow accepts two tag forms:
-
-- `alpha@<version>` creates an alpha app build;
-- `release@<version>` creates an official release candidate.
-
-Both tags run the same Windows, macOS, and Linux build, signing, validation, checksum, updater-manifest, artifact-upload, and draft GitHub Release steps. Release builds retain the standard Tactile icon and in-app mark. Alpha builds use the same mark in blue for native package icons, the title bar, app dock, startup loader, and favicon so installed and running builds are visually distinguishable. Staged installer names include `alpha` or `release`; macOS names also retain their `ad-hoc`, `signed-unnotarized`, or `signed-notarized` status. The tag category communicates release intent but does not weaken any build gate.
-
-The marketplace plugin workflow accepts `tactile.<name>@<version>`, where `tactile.<name>` exactly matches the plugin manifest's `packageId`. It builds only that package, verifies the generated marketplace output is committed, and creates a draft GitHub Release containing that plugin's bundle, manifest, and checksums.
-
-The former `v*` native release tag form is retired. Tags outside these patterns do not trigger release builds.
-
-## Tag operation rules
-
-Git permits multiple tags on one commit. An accepted promotion flow is to tag a commit as `alpha@<version>`, review its build, and then tag the same commit as `release@<version>`. Each tag triggers a separate workflow run and draft GitHub Release; the alpha build receives the blue icon and `alpha` artifact label, while the release build retains the standard icon and receives the `release` artifact label.
-
-The version after `@` must match the version declared by the tagged commit:
-
-- app tags must match `version.json` and every generated package version field;
-- plugin tags must match the selected plugin's `manifest.json` version.
-
-The workflows enforce this equality before installing dependencies or building. A mismatched app tag, stale generated app manifest, mismatched plugin tag, or incompatible plugin major version fails its release workflow.
-
-Tags do not require empty commits. Create them directly on the committed version change:
-
-```text
-git tag "alpha@1.1.0"
-git push origin "alpha@1.1.0"
-git tag "release@1.1.0"
-git push origin "release@1.1.0"
+```mermaid
+flowchart LR
+  F[feature/* or fix/*] -->|PR| A[alpha]
+  A -->|release PR| M[main]
+  A -->|vX.Y.Z-alpha.N or vX.Y.Z-rc.N| P[Prerelease CI]
+  M -->|vX.Y.Z| R[Stable release CI]
+  M -->|tactile.name@X.Y.Z| G[Plugin release CI]
 ```
 
-To correct or rerun an unpublished tag, delete it locally and remotely, fix or select the intended commit, then recreate and push it. Published release tags are immutable; correcting one requires a new version.
+| Branch      | Responsibility                           | Changes enter through                                 | Required state                      |
+| ----------- | ---------------------------------------- | ----------------------------------------------------- | ----------------------------------- |
+| `main`      | Production-ready source                  | Release PR from `alpha`; urgent `hotfix/*` PR         | Every commit is potentially stable  |
+| `alpha`     | Active development and integration       | PR from temporary work branches; release preparation  | Buildable with required CI passing  |
+| `feature/*` | Temporary feature, fix, refactor or test | Created from and squash-merged back into `alpha`      | Focused enough to review and revert |
+| `hotfix/*`  | Temporary urgent production correction   | Created from `main`; PR to `main`, then sync to alpha | Minimal production fix              |
+
+Only `main` and `alpha` are long-lived. Block force-push and deletion on both. Delete temporary branches after merge.
+
+## Protection rules
+
+### `main`
+
+- Require a pull request, one approval, resolved conversations, and all required CI checks.
+- Block direct pushes, force-pushes, and deletion.
+- Require the branch to be current before merge.
+- Allow release PRs from `alpha` and urgent PRs from `hotfix/*`.
+- Restrict stable and plugin tag creation to release maintainers.
+
+### `alpha`
+
+- Require CI for pull requests and block force-push/deletion.
+- Use PRs for ordinary development; a maintainer may directly push only release preparation or immediate integration repair.
+- Revert a breaking integration quickly. Incomplete features must be guarded, disabled, or reverted before promotion.
+
+Branch protection and tag rules are repository-host settings; workflow files cannot enforce all of them.
+
+## Semantic versions
+
+Tactile follows Semantic Versioning:
+
+- `MAJOR`: incompatible portable-format, plugin-host API, updater, or public contract change.
+- `MINOR`: backward-compatible functionality.
+- `PATCH`: backward-compatible bug fix.
+
+Distributed development builds use unique prerelease versions:
 
 ```text
-git tag -d "alpha@1.1.0"
-git push origin ":refs/tags/alpha@1.1.0"
-git tag "alpha@1.1.0" <commit>
-git push origin "alpha@1.1.0"
+1.5.0-alpha.1
+1.5.0-alpha.2
+1.5.0-rc.1
+1.5.0
 ```
 
-## Required release inputs
+Use `alpha.N` for tester builds and `rc.N` after feature scope is frozen. A beta stage is unnecessary unless the project later needs a distinct public-testing phase. Every published version is immutable; a changed build requires a new version.
 
-Every release candidate must identify:
+## Version authority
 
-- a source commit and clean-worktree record;
-- the matching app or plugin version manifest and intended platform matrix;
-- portable format compatibility statement and migration notes;
-- build/test logs for the relevant runtime and native targets;
-- normalized npm and Cargo SBOMs tied to the committed lockfile hashes;
-- dependency audit results and accepted exceptions;
-- project license, third-party license texts, attribution notices, and legal approval;
-- signed artifacts and public verification instructions, once an owner chooses the signing system;
-- a changelog entry and a rollback/recovery plan.
+The root `version.json` is the only app version edited manually. `npm run version:sync` generates matching versions in:
 
-## Engineering gates
+- `package.json` and the root entries in `package-lock.json`;
+- `src-tauri/tauri.conf.json`;
+- the Tactile package entries in `src-tauri/Cargo.toml` and `src-tauri/Cargo.lock`.
 
-Run the repository checks appropriate to the candidate:
+Do not edit generated version fields directly. `npm run version:check`, application CI, Cargo's build script, and release validation reject drift.
 
-```text
-npm ci
-npm run verify
-cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
-cargo check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-npm audit --audit-level=high
-node docs/release/generate-inventory.mjs
-```
+Marketplace plugins own independent versions in `marketplace/plugins/<name>/manifest.json`. Plugin major versions must match Tactile's major version.
 
-The native Windows/macOS/Ubuntu smoke matrix must run before claiming native release readiness. The current Wave 4 evidence records the SQLite/WAL service as implemented, while cross-platform smoke and full Tauri persistence integration remain open. The app release workflow packages all three target families, but packaging is not the same as signed, notarized, or fully smoke-tested native support.
+## Tags and channels
 
-## Supply-chain and license posture
+| Tag                  | Source branch | Result                                      |
+| -------------------- | ------------- | ------------------------------------------- |
+| `vX.Y.Z-alpha.N`     | `alpha`       | Blue-branded published GitHub prerelease    |
+| `vX.Y.Z-rc.N`        | `alpha`       | Release-branded published GitHub prerelease |
+| `vX.Y.Z`             | `main`        | Stable draft GitHub Release for approval    |
+| `tactile.name@X.Y.Z` | `main`        | Draft release for one marketplace plugin    |
 
-`package-lock.json` and `src-tauri/Cargo.lock` are the resolution sources. The generator emits:
+Use annotated tags. Never move, delete, or reuse a tag after artifacts are available. Release workflows verify the tag version, generated manifests, and required source branch before building.
 
-- `sbom-npm.cdx.json`, from npm's package-lock-only CycloneDX output;
-- `sbom-cargo.cdx.json`, from locked Cargo metadata plus Cargo.lock checksums;
-- `third-party-inventory.json` and `.md`, which map exact components to license evidence and direct/development/native scope.
+## Promotion from alpha to main
 
-The inventory intentionally distinguishes evidence from legal approval. The repository now includes the project MIT license, but it does not yet constitute a complete third-party notice bundle. No public/commercial release may rely on the generated IDs alone; an owner/legal reviewer must inspect the actual license texts, attribution requirements, copyleft obligations, asset fonts, and native distribution terms.
+The default release mechanism is a normal, clearly labelled release PR from `alpha` to `main`:
 
-Security advisories must be triaged per dependency and lockfile. A clean `npm audit` result is a snapshot, not a guarantee. Native advisory scanning, source review, and any OS/WebView/FFI obligations must be added to the release record when the native product is shipped.
+1. Stabilize `alpha`; disable or revert unfinished work.
+2. Change `version.json` from the latest prerelease to the stable version and synchronize mirrors.
+3. Update `CHANGELOG.md`, compatibility notes, inventory, and rollback information.
+4. Open the release PR and run full CI/native gates.
+5. Merge after release approval.
+6. Create the matching stable tag on the resulting `main` commit.
+7. Review and publish the draft release produced by CI.
+8. Merge `main` back into `alpha`, then start the next prerelease version.
 
-## Artifact integrity and signing
+If `alpha` must advance during stabilization, create a temporary `release/vX.Y.Z` branch from the approved alpha commit. PR it to `main` and delete it afterward. This is an exception, not a third long-lived branch.
 
-The inventory records lockfile SHA-256 hashes and uses deterministic SBOM serial numbers derived from those hashes. This establishes input identity for the inventory; it does not sign the application or prove build provenance. Signing credentials, key custody, trusted build environment, attestations, and verification instructions are not evidenced and must be supplied by the release owner before publication.
+## Production hotfixes
 
-## Versioning and rollback
+Create `hotfix/vX.Y.Z` from the current stable `main`, make the smallest correction, bump the patch version, and PR it to `main`. Tag the merged main commit. Then merge `main` into `alpha` before closing the hotfix. Resolve conflicts in favor of preserving both the fix and ongoing development.
 
-The root `version.json` is the single source of truth for the complete Tactile app. Each marketplace plugin keeps its independent version in `marketplace/plugins/<name>/manifest.json`.
+## CI and publication
 
-### App version ownership
+| Event                     | Behavior                                                               |
+| ------------------------- | ---------------------------------------------------------------------- |
+| Feature/fix branch push   | Formatting, lint, typecheck, version check, unit tests                 |
+| PR to `alpha` or `main`   | Full web/browser build plus native check/test                          |
+| Push to `alpha`           | Full CI and a seven-day web artifact; no public app release            |
+| App SemVer tag            | Clean cross-platform native package, validation, signatures, checksums |
+| Stable app tag            | Adds updater manifest and creates a draft release                      |
+| Prerelease app tag        | Creates a GitHub prerelease; stable updater metadata is not replaced   |
+| Marketplace source change | Rebuilds catalog and rejects committed artifact drift                  |
+| Marketplace plugin tag    | Builds and stages only the selected plugin                             |
 
-For an app version change, edit only the `version` field in `version.json`. `npm run version:sync` owns and generates these mirrored fields:
+CI validates branches. Tags authorize package publication. A branch push never silently creates an official release.
 
-| Generated file              | Generated field                      |
-| --------------------------- | ------------------------------------ |
-| `package.json`              | top-level `version`                  |
-| `package-lock.json`         | top-level and root-package `version` |
-| `src-tauri/tauri.conf.json` | top-level `version`                  |
-| `src-tauri/Cargo.toml`      | Tactile package `version`            |
-| `src-tauri/Cargo.lock`      | Tactile root-package `version`       |
+## Artifact policy
 
-Do not edit those generated version fields directly, use dependency-version commands to change dependency entries, or change plugin manifests as part of an ordinary app version bump. Marketplace plugin versions remain independently owned by their manifests.
+Commit source, tests, docs, workflows, lockfiles, configuration, and required branding/installer inputs. `marketplace/dist` remains committed because production currently serves that verified catalog from `main`.
 
-### Version automation
+Do not commit `dist/client`, `src-tauri/target`, installers, executables, coverage, test reports, caches, or CI packages. Store short-lived development builds as Actions artifacts and released installers in GitHub Releases.
 
-| Entry point                   | Version behavior                                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------------- |
-| `npm run version:sync`        | Writes every generated app version field from `version.json`.                                     |
-| `npm run version:check`       | Read-only check; fails when any generated app version field is stale.                             |
-| `npm run dev`                 | Its `predev` lifecycle hook synchronizes and checks before Vite starts.                           |
-| `npm run build`               | Its `prebuild` lifecycle hook synchronizes and checks before the production web build.            |
-| `npx tauri dev`               | Inherits `npm run dev` through Tauri's `beforeDevCommand`.                                        |
-| `npx tauri build`             | Inherits `npm run build` through Tauri's `beforeBuildCommand`.                                    |
-| Direct Cargo build/check/test | Does not rewrite manifests; `build.rs` fails if `Cargo.toml` differs from `version.json`.         |
-| `npm run verify`              | Runs the read-only version check before repository verification.                                  |
-| App release workflow          | Read-only validation; rejects stale mirrors or a tag version that differs from `version.json`.    |
-| Marketplace build and release | Does not synchronize app versions; plugin release validation uses the selected plugin's manifest. |
+Release artifacts include platform/architecture/version/channel in their names, SHA-256 checksums, and Tauri updater signatures. Windows code signing and Apple signing/notarization are applied when repository credentials are configured.
 
-Tagged and verification builds intentionally do not repair committed files. They fail on drift so released artifacts remain reproducible from the tagged commit.
+## Release gates
 
-### App version update procedure
+Before stable publication, retain evidence for:
 
-1. Change `version.json`.
-2. Run `npm run version:sync`.
-3. Review and commit `version.json` plus every generated file changed by the sync.
-4. Run `npm run version:check` and the relevant engineering gates.
-5. Tag the committed version with the matching `alpha@<version>` or `release@<version>` tag.
+- `npm ci`, `npm run verify`, and native format/check/test/clippy;
+- Windows, macOS, and Linux packaging/smoke results;
+- portable-format and plugin compatibility impact;
+- dependency audits, regenerated SBOM/inventory, and license review;
+- source commit, tag, checksums, signing status, changelog, and rollback target.
 
-Assign a version only after compatibility and migration behavior are reviewed. Commit each synchronized app or plugin version change before creating its matching tag, then push that tag so the corresponding workflow builds the same commit. Release workflows enforce tag and manifest alignment before building.
+Packaging success is not proof of platform certification, legal approval, or signing identity. Release owners must explicitly approve those claims.
 
-A release that changes the portable format must include an ADR, migration fixture, backup/restore test, and explicit handling of newer/older versions. Rollback means restoring the prior signed application and a known-good portable workspace; never require a user to discard the only local copy.
+## Changelog and rollback
 
-## Owner/legal checklist
+Update `CHANGELOG.md` in user-facing PRs and finalize it in the release PR. GitHub-generated notes supplement the changelog; they do not replace curated compatibility, migration, and recovery information.
 
-- [ ] Named engineering/release owner.
-- [ ] Supported platforms and versions declared.
-- [ ] Private security intake and response policy configured.
-- [ ] SQLite/WAL storage is integrated through the native persistence path and cross-platform smoke evidence is complete.
-- [x] Project license selected and added: MIT (`LICENSE`).
-- [ ] Third-party license texts and notices collected.
-- [ ] SBOMs regenerated from the candidate lockfiles and reviewed.
-- [ ] Signing/provenance system configured and verification instructions published.
-- [ ] Changelog, recovery plan, and rollback target approved.
+Never repair a published release in place. Roll forward with a new SemVer version. Rollback restores the previous trusted application and a known-good portable workspace without discarding the user's only local copy.

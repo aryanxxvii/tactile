@@ -34,6 +34,16 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 Run the narrowest relevant checks while iterating, then run the full gate before handoff. A passing local check is evidence for that environment, not cross-platform certification.
 
+## Branch and pull-request workflow
+
+- `alpha` is the active integration branch. Create temporary `feature/*`, `fix/*`, or `refactor/*` branches from it and PR them back to `alpha`.
+- `main` is protected production-ready history. Promote through an approved release PR from `alpha`; use a temporary `hotfix/*` branch from `main` only for urgent production corrections.
+- Squash ordinary work PRs. Preserve a merge commit when promoting `alpha` to `main` or synchronizing a hotfix back to `alpha`.
+- Delete temporary branches after merge. Never force-push `main` or `alpha`.
+- Update `CHANGELOG.md` for user-facing behavior.
+
+See [the developer release workflow](docs/release/development-workflow.md) for commands and [the release policy](docs/release/release-policy.md) for protection, tagging, and artifact rules.
+
 ## App version changes
 
 `version.json` owns the complete app version. Do not directly edit the mirrored version fields in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, or `src-tauri/Cargo.lock`.
@@ -43,7 +53,7 @@ npm run version:sync
 npm run version:check
 ```
 
-Development and production npm/Tauri builds synchronize automatically. Direct Cargo builds and release workflows only validate and fail on drift; they do not repair committed files. Marketplace plugin versions remain independent. See [the release policy](docs/release/release-policy.md#versioning-and-rollback) for the ownership table, automation matrix, and tagging procedure.
+Development and production npm/Tauri builds synchronize automatically. Direct Cargo builds and release workflows only validate and fail on drift; they do not repair committed files. Marketplace plugin versions remain independent. See [the release policy](docs/release/release-policy.md#version-authority) for ownership rules and [the developer workflow](docs/release/development-workflow.md) for release commands.
 
 ## Marketplace plugins
 
