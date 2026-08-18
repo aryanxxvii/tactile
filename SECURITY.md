@@ -25,7 +25,7 @@ No public release line or supported-version window is declared. The repository c
 - Native storage uses acknowledged WAL frames and atomic checkpoints in the current recovery scaffold. A torn journal tail is truncated during replay, and a deleted cache can be rebuilt from portable files.
 - Storage errors intentionally expose stable categories rather than raw filesystem paths.
 
-These controls are implementation evidence, not a guarantee that every object renderer, WebView, operating-system file handler, or future plugin is safe. See [the threat model](docs/security/threat-model.md) for residual risks and release gates.
+These controls are implementation evidence, not a guarantee that every object renderer, WebView, operating-system file handler, or future plugin is safe. See [security knowledge](.agents/knowledge/security.md) for residual risks and release gates.
 
 ## Reporting useful evidence
 

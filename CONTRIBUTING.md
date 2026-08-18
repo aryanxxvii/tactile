@@ -42,7 +42,7 @@ Run the narrowest relevant checks while iterating, then run the full gate before
 - Delete temporary branches after merge. Never force-push `main` or `alpha`.
 - Update `CHANGELOG.md` for user-facing behavior.
 
-See [the developer release workflow](docs/release/development-workflow.md) for commands and [the release policy](docs/release/release-policy.md) for protection, tagging, and artifact rules.
+See [the developer release workflow](.agents/knowledge/development-workflow.md) for commands and [the release policy](.agents/knowledge/release-policy.md) for protection, tagging, and artifact rules.
 
 ## App version changes
 
@@ -53,11 +53,11 @@ npm run version:sync
 npm run version:check
 ```
 
-Development and production npm/Tauri builds synchronize automatically. Direct Cargo builds and release workflows only validate and fail on drift; they do not repair committed files. Marketplace plugin versions remain independent. See [the release policy](docs/release/release-policy.md#version-authority) for ownership rules and [the developer workflow](docs/release/development-workflow.md) for release commands.
+Development and production npm/Tauri builds synchronize automatically. Direct Cargo builds and release workflows only validate and fail on drift; they do not repair committed files. Marketplace plugin versions remain independent. See [the release policy](.agents/knowledge/release-policy.md#versions-and-tags) for ownership rules and [the developer workflow](.agents/knowledge/development-workflow.md) for release commands.
 
 ## Marketplace plugins
 
-Tiles and Text ship with Tactile. Optional cell-object types live under `marketplace/plugins/` and compile independently of the application. Read [the marketplace release guide](docs/marketplace.md) and the scoped [`marketplace/AGENTS.md`](marketplace/AGENTS.md) before changing a plugin.
+Tiles and Text ship with Tactile. Optional cell-object types live under `marketplace/plugins/` and compile independently of the application. Read the scoped [`marketplace/AGENTS.md`](marketplace/AGENTS.md) first and [marketplace knowledge](.agents/knowledge/marketplace.md) only for host/catalog architecture.
 
 For a plugin-only change, bump the package version and compile only that package:
 
@@ -72,11 +72,11 @@ Marketplace owns Install, version-driven Update, and Delete. Settings > Plugins 
 
 ## Portable data and migrations
 
-The current portable workspace format is v4. Sheets are sparse CSV surfaces, text remains Markdown, and binary resources retain native files. Read [the compatibility guide](docs/compatibility/README.md) before changing serialized fields, link repair, object IDs, or migration behavior.
+The current portable workspace format is v4. Sheets are sparse CSV surfaces, text remains Markdown, and binary resources retain native files. Read [portable format knowledge](.agents/knowledge/file-format.md) before changing serialized fields, link repair, object IDs, or migration behavior.
 
 Before changing a format or migration:
 
-1. Write or update an ADR in `docs/adr/`.
+1. Write or update an ADR in `.agents/decisions/`.
 2. Back up a representative portable workspace and record its SHA-256 hash.
 3. Add round-trip, unknown-field, malformed-input, and downgrade/upgrade expectations where applicable.
 4. Verify that a failed migration leaves the source and its recoverable copy unchanged.
@@ -102,10 +102,10 @@ For dependency changes, record:
 
 ## Security and reporting
 
-Read `SECURITY.md` and `docs/security/threat-model.md` before handling untrusted portable files or native assets. Do not place secrets, user workspaces, or private report contents in tests or public issues.
+Read `SECURITY.md` and `.agents/knowledge/security.md` before handling untrusted portable files or native assets. Do not place secrets, user workspaces, or private report contents in tests or public issues.
 
 No security contact is evidenced by the repository at this time. The maintainer must configure a private reporting path before promising confidential disclosure handling. Non-sensitive defects can use the repository's normal issue/review process once that process is configured.
 
 ## Review and release ownership
 
-`CODEOWNERS` is intentionally unpopulated because no owner identities are evidenced in this repository. Protected branch rules and review requirements are therefore owner prerequisites, not an assumed control. Release tags, version alignment, gates, signing, artifact publication, and legal approval are described in `docs/release/release-policy.md` and remain open until named owners complete them. Read that policy before creating, deleting, or moving a release tag.
+`CODEOWNERS` is intentionally unpopulated because no owner identities are evidenced in this repository. Protected branch rules and review requirements are therefore owner prerequisites, not an assumed control. Release tags, version alignment, gates, signing, artifact publication, and legal approval are described in `.agents/knowledge/release-policy.md` and remain open until named owners complete them. Read that policy before creating, deleting, or moving a release tag.

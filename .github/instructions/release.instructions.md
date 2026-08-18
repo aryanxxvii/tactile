@@ -1,6 +1,6 @@
 ---
-description: "Use when changing Tactile branches, CI, app/plugin versions, release tags, packaging, signing, checksums, changelogs, or release documentation."
-applyTo: ".github/workflows/**,scripts/release/**,docs/release/**,version.json,package.json,package-lock.json,src-tauri/Cargo.toml,src-tauri/Cargo.lock,src-tauri/tauri.conf.json,marketplace/plugins/**/manifest.json,CHANGELOG.md"
+description: "Use when changing Tactile branches, CI, app/plugin versions, release tags, packaging, signing, checksums, changelogs, or release knowledge."
+applyTo: ".github/workflows/**,scripts/release/**,.agents/workflows/release.md,.agents/domains/release.md,.agents/knowledge/release-*.md,.agents/knowledge/development-workflow.md,version.json,package.json,package-lock.json,src-tauri/Cargo.toml,src-tauri/Cargo.lock,src-tauri/tauri.conf.json,marketplace/plugins/**/manifest.json,CHANGELOG.md"
 ---
 
 # Release changes
