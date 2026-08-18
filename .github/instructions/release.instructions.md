@@ -5,7 +5,7 @@ applyTo: ".github/workflows/**,scripts/release/**,docs/release/**,version.json,p
 
 # Release changes
 
-Use [the release specialist](../agents/release.agent.md) and load only its task-specific files.
+Read `/AGENTS.md`, `.agents/workflows/release.md`, and `.agents/domains/release.md`. Load only the task-specific knowledge named there.
 
 - `alpha` is integration; `main` is production and changes through approved PRs.
 - Never mutate published tags/releases or hand-edit generated app version mirrors.
