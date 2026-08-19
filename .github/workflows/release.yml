@@ -447,7 +447,7 @@ jobs:
       - name: Verify SHA-256 checksums and artifact coverage
         run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,tar.gz,appimage,deb --checksums release-artifacts/SHA256SUMS.txt
 
-      - name: Generate updater manifest
+      - name: Generate updater manifest (stable)
         if: ${{ ! contains(github.ref_name, '-') }}
         shell: bash
         run: |
@@ -458,6 +458,18 @@ jobs:
             --version "$version" \
             --repo "${{ github.repository }}" \
             --output release-artifacts/latest.json
+
+      - name: Generate updater manifest (prerelease)
+        if: ${{ contains(github.ref_name, '-') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          node scripts/release/create-updater-manifest.mjs \
+            --dir release-artifacts \
+            --version "$version" \
+            --repo "${{ github.repository }}" \
+            --output release-artifacts/latest-alpha.json
 
       - name: Upload assembled release assets
         uses: actions/upload-artifact@v4

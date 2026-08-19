@@ -884,19 +884,105 @@ struct UpdateInfo {
     download_url: String,
 }
 
-#[tauri::command]
-async fn check_for_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
-    let updater = app.updater().map_err(|e| e.to_string())?;
-    match updater.check().await {
-        Ok(Some(update)) => Ok(Some(UpdateInfo {
-            version: update.version,
-            current_version: update.current_version,
-            body: update.body,
-            download_url: update.download_url.to_string(),
-        })),
-        Ok(None) => Ok(None),
-        Err(e) => Err(e.to_string()),
+const STABLE_UPDATER_ENDPOINT: &str =
+    "https://github.com/aryanxxvii/tactile/releases/latest/download/latest.json";
+const GITHUB_RELEASES_API: &str =
+    "https://api.github.com/repos/aryanxxvii/tactile/releases?per_page=50";
+
+#[derive(Debug, Deserialize)]
+struct GithubRelease {
+    tag_name: String,
+    prerelease: bool,
+    draft: bool,
+}
+
+fn current_app_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
+fn infer_channel_from_version(version: &str) -> &str {
+    if version.contains("-alpha.") {
+        "alpha"
+    } else if version.contains("-rc.") {
+        "rc"
+    } else if version.contains('-') {
+        "prerelease"
+    } else {
+        "stable"
     }
+}
+
+fn is_prerelease_channel(channel: &str) -> bool {
+    matches!(channel, "alpha" | "rc" | "prerelease" | "next")
+        || channel.contains("alpha")
+        || channel.contains("rc")
+}
+
+fn alpha_manifest_url_for_tag(tag: &str) -> String {
+    format!(
+        "https://github.com/aryanxxvii/tactile/releases/download/{}/latest-alpha.json",
+        tag
+    )
+}
+
+fn fetch_github_releases_blocking() -> Result<Vec<GithubRelease>, String> {
+    let agent = ureq::AgentBuilder::new()
+        .timeout(std::time::Duration::from_secs(12))
+        .build();
+    let response = agent
+        .get(GITHUB_RELEASES_API)
+        .set("User-Agent", "Tactile-updater")
+        .set("Accept", "application/vnd.github+json")
+        .call()
+        .map_err(|e| e.to_string())?;
+    if response.status() != 200 {
+        return Err(format!("GitHub API returned {}", response.status()));
+    }
+    let body = response.into_string().map_err(|e| e.to_string())?;
+    serde_json::from_str::<Vec<GithubRelease>>(&body).map_err(|e| e.to_string())
+}
+
+async fn fetch_latest_prerelease_tag() -> Result<Option<String>, String> {
+    let releases = tauri::async_runtime::spawn_blocking(fetch_github_releases_blocking)
+        .await
+        .map_err(|e| e.to_string())??;
+
+    let mut best: Option<(semver::Version, String)> = None;
+    for release in releases {
+        if release.draft || !release.prerelease {
+            continue;
+        }
+        let raw = release.tag_name.trim_start_matches('v');
+        let Ok(version) = semver::Version::parse(raw) else {
+            continue;
+        };
+        match &best {
+            Some((best_version, _)) if best_version >= &version => {}
+            _ => best = Some((version, release.tag_name)),
+        }
+    }
+    Ok(best.map(|(_, tag)| tag))
+}
+
+#[tauri::command]
+async fn check_for_update(
+    app: tauri::AppHandle,
+    channel: Option<String>,
+) -> Result<Option<UpdateInfo>, String> {
+    let current = current_app_version().to_string();
+    let requested = channel
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| infer_channel_from_version(&current))
+        .to_ascii_lowercase();
+    let update = resolve_best_update_for_channel(&app, &requested).await?;
+    Ok(update.map(|value| UpdateInfo {
+        version: value.version,
+        current_version: value.current_version,
+        body: value.body,
+        download_url: value.download_url.to_string(),
+    }))
 }
 
 // Frameless-window commands backing the custom TitleBar (move, resize,
@@ -954,10 +1040,88 @@ fn window_start_resize(app: tauri::AppHandle, direction: String) -> Result<(), S
         .map_err(|error| error.to_string())
 }
 
+async fn resolve_best_update_for_channel(
+    app: &tauri::AppHandle,
+    requested_channel: &str,
+) -> Result<Option<tauri_plugin_updater::Update>, String> {
+    if !is_prerelease_channel(requested_channel) {
+        let endpoint = url::Url::parse(STABLE_UPDATER_ENDPOINT).map_err(|e| e.to_string())?;
+        let updater = app
+            .updater_builder()
+            .endpoints(vec![endpoint])
+            .map_err(|e| e.to_string())?
+            .build()
+            .map_err(|e| e.to_string())?;
+        return updater.check().await.map_err(|e| e.to_string());
+    }
+
+    let alpha_tag = match fetch_latest_prerelease_tag().await {
+        Ok(tag) => tag,
+        Err(_) => None,
+    };
+    let mut candidates: Vec<tauri_plugin_updater::Update> = Vec::new();
+
+    if let Ok(updater) = app
+        .updater_builder()
+        .endpoints(vec![
+            url::Url::parse(STABLE_UPDATER_ENDPOINT).expect("stable updater url is valid"),
+        ])
+        .map_err(|e| e.to_string())?
+        .build()
+        .map_err(|e| e.to_string())
+    {
+        if let Ok(Some(update)) = updater.check().await {
+            candidates.push(update);
+        }
+    }
+
+    if let Some(tag) = alpha_tag {
+        let url_string = alpha_manifest_url_for_tag(&tag);
+        if let Ok(url) = url::Url::parse(&url_string) {
+            if let Ok(builder) = app
+                .updater_builder()
+                .endpoints(vec![url])
+                .map_err(|e| e.to_string())?
+                .build()
+                .map_err(|e| e.to_string())
+            {
+            if let Ok(Some(update)) = builder.check().await {
+                candidates.push(update);
+            }
+            }
+        }
+    }
+
+    if candidates.is_empty() {
+        return Ok(None);
+    }
+    candidates.sort_by(|left, right| {
+        let left_ok = semver::Version::parse(left.version.trim_start_matches('v'));
+        let right_ok = semver::Version::parse(right.version.trim_start_matches('v'));
+        match (left_ok, right_ok) {
+            (Ok(left_version), Ok(right_version)) => left_version.cmp(&right_version),
+            _ => left.version.cmp(&right.version),
+        }
+    });
+    Ok(candidates.into_iter().last())
+}
+
 #[tauri::command]
-async fn download_and_install_update(app: tauri::AppHandle) -> Result<(), String> {
-    let updater = app.updater().map_err(|e| e.to_string())?;
-    let update = updater.check().await.map_err(|e| e.to_string())?;
+async fn download_and_install_update(
+    app: tauri::AppHandle,
+    channel: Option<String>,
+) -> Result<(), String> {
+    let current = current_app_version().to_string();
+    let requested = channel
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| infer_channel_from_version(&current))
+        .to_ascii_lowercase();
+
+    let update = resolve_best_update_for_channel(&app, &requested)
+        .await
+        .map_err(|e| e.to_string())?;
     if let Some(update) = update {
         update
             .download_and_install(|_, _| {}, || {})

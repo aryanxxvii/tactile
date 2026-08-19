@@ -5684,7 +5684,7 @@ kbd {
   /*padding: "5px";*/
   inset: auto 0 0;
   z-index: 240;
-  height: 32px;
+  height: 31px;
   /*display: flex;*/
   align-items: center;
   transform: translate3d(0, 0, 0);
@@ -5710,11 +5710,6 @@ kbd {
   /* The dock remains an active navigation surface while a child is
      floating; only the parent worksheet surface is inert. */
   pointer-events: auto;
-  background: var(--paper);
-}
-
-.tactile-app.has-floating-layer .app-bottom-bar > .app-dock {
-  background: transparent;
 }
 
 .tactile-app.settings-open .app-bottom-bar {

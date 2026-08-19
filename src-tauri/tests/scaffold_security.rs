@@ -40,7 +40,7 @@ fn production_csp_limits_marketplace_delivery_to_github_raw() {
         .expect("production CSP must define connect-src");
     assert_eq!(
         connect_src,
-        "connect-src 'self' https://raw.githubusercontent.com"
+        "connect-src 'self' https://raw.githubusercontent.com https://github.com https://api.github.com"
     );
     assert!(csp.contains("img-src 'self'"));
     assert!(csp.contains("media-src 'self'"));
@@ -65,9 +65,20 @@ fn main_capability_is_local_only_and_updater_only() {
     let capability = capability();
 
     assert_eq!(capability["windows"], serde_json::json!(["main"]));
-    assert_eq!(
-        capability["permissions"],
-        serde_json::json!(["updater:default"])
+    let permissions = capability["permissions"]
+        .as_array()
+        .expect("main capability must list permissions");
+    assert!(
+        permissions.contains(&serde_json::json!("updater:default")),
+        "main capability must expose updater"
     );
+    // The main window also exposes the internal devtools toggle for the
+    // frameless titlebar; no other capabilities are expected.
+    for permission in permissions {
+        assert!(
+            permission == "updater:default" || permission == "core:webview:allow-internal-toggle-devtools",
+            "unexpected capability permission: {permission}"
+        );
+    }
     assert!(capability.get("remote").is_none());
 }

@@ -3758,6 +3758,7 @@ version = "1.1.1-alpha.3"
 dependencies = [
  "rfd",
  "rusqlite",
+ "semver",
  "serde",
  "serde_json",
  "tauri",
@@ -3765,6 +3766,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tauri-runtime",
  "ureq",
+ "url",
 ]
 
 [[package]]

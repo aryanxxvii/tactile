@@ -615,7 +615,7 @@ export function App() {
             layer={layer}
             depth={childIndex + 1}
             viewportInsetLeft={filesSidebarWidth}
-            key={childIndex}
+            key={layer.key}
             onExpand={inOut.expandLayer}
             onClose={inOut.closeTopLayer}
           >
@@ -691,8 +691,8 @@ export function App() {
             onExportWorkspace={commands.exportWorkspace}
             onChangeWorkspaceFolder={nativeRuntime ? changeNativeWorkspaceFolder : undefined}
             onOpenWorkspaceFolder={nativeRuntime ? openNativeWorkspaceFolder : undefined}
-            onCheckForUpdate={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.checkForUpdate()) : undefined}
-            onDownloadAndInstallUpdate={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.downloadAndInstallUpdate()) : undefined}
+            onCheckForUpdate={nativeRuntime ? (channel) => import("./platform/tauri/updater.js").then((m) => m.checkForUpdate(channel)) : undefined}
+            onDownloadAndInstallUpdate={nativeRuntime ? (channel) => import("./platform/tauri/updater.js").then((m) => m.downloadAndInstallUpdate(channel)) : undefined}
             onOpenGuide={nativeRuntime ? () => setNativeGuideOpen(true) : undefined}
             onClose={shell.closeSettings}
           />

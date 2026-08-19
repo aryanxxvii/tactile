@@ -56,6 +56,19 @@ async function main() {
   const files = await walkFiles(directory);
   const platforms = {};
 
+  const isPrerelease = String(options.version || "").includes("-");
+  // Stable releases publish a `latest.json` that resolves through
+  // `.../releases/latest/download/` (GitHub's stable-only redirect).
+  // Prereleases cannot use that redirect — they publish `latest-alpha.json`
+  // at a tag-scoped URL so the alpha channel can discover it via the
+  // releases API without colliding with stable metadata.
+  const bundleUrlFor = (bundleName) => {
+    if (isPrerelease) {
+      return `https://github.com/${options.repo}/releases/download/v${options.version}/${bundleName}`;
+    }
+    return `https://github.com/${options.repo}/releases/latest/download/${bundleName}`;
+  };
+
   for (const { platform, extension, targets } of TARGET_FOR) {
     const bundle = files.find((filePath) => {
       const name = path.basename(filePath).toLowerCase();
@@ -69,7 +82,7 @@ async function main() {
       fail(`Missing updater signature for ${path.basename(bundle)}`);
     }
     const signature = (await readFile(signatureFile, "utf8")).trim();
-    const url = `https://github.com/${options.repo}/releases/latest/download/${path.basename(bundle)}`;
+    const url = bundleUrlFor(path.basename(bundle));
     for (const target of targets) {
       platforms[target] = { signature, url };
     }
@@ -82,10 +95,11 @@ async function main() {
     platforms,
   };
 
-  const output = path.resolve(options.output ?? path.join(directory, "latest.json"));
+  const defaultName = isPrerelease ? "latest-alpha.json" : "latest.json";
+  const output = path.resolve(options.output ?? path.join(directory, defaultName));
   const { writeFile } = await import("node:fs/promises");
   await writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-  console.log(`Wrote updater manifest with platforms: ${Object.keys(platforms).join(", ")}`);
+  console.log(`Wrote updater manifest ${path.basename(output)} with platforms: ${Object.keys(platforms).join(", ")}`);
 }
 
 main().catch((error) => {

@@ -251,23 +251,52 @@ onChangeWorkspaceFolder,
     if (tab.startsWith("plugin:") && !activePluginSettings) setTab("plugins");
   }, [activePluginSettings, tab]);
 
+  const updateChannel = useMemo(() => {
+    const raw = String(TACTILE_CHANNEL || "").trim().toLowerCase();
+    if (!raw || raw === "development") return "development";
+    if (raw === "main" || raw === "release" || raw === "stable") return "stable";
+    if (raw === "alpha" || raw === "next" || raw === "prerelease") return "alpha";
+    if (raw === "rc") return "alpha";
+    if (raw.includes("alpha") || raw.includes("rc")) return "alpha";
+    return raw;
+  }, []);
+  const effectiveUpdateChannel = updateChannel === "development" ? "stable" : updateChannel;
+  const updateChannelLabel = updateChannel === "alpha"
+    ? "alpha"
+    : updateChannel === "stable"
+      ? "stable"
+      : updateChannel;
+  const updateChannelHint = updateChannel === "alpha"
+    ? "You are on the alpha channel — updates track the newest prerelease first, and will also offer a newer stable build when it graduates."
+    : updateChannel === "stable"
+      ? "You are on the stable channel — only finished stable releases are offered."
+      : "You are on a development build — update checks follow the stable channel.";
+
   const runUpdateCheck = async () => {
     if (!onCheckForUpdate) return;
     setUpdateState("checking");
-    const result = await onCheckForUpdate();
-    if (!result) {
+    try {
+      const result = await onCheckForUpdate(effectiveUpdateChannel);
+      if (!result) {
+        setUpdateState("unavailable");
+      } else {
+        setUpdateInfo(result);
+        setUpdateState("available");
+      }
+    } catch {
       setUpdateState("unavailable");
-    } else {
-      setUpdateInfo(result);
-      setUpdateState("available");
     }
   };
 
   const runUpdateInstall = async () => {
     if (!onDownloadAndInstallUpdate) return;
     setUpdateState("installing");
-    const installed = await onDownloadAndInstallUpdate();
-    if (!installed) setUpdateState("error");
+    try {
+      const installed = await onDownloadAndInstallUpdate(effectiveUpdateChannel);
+      if (!installed) setUpdateState("error");
+    } catch {
+      setUpdateState("error");
+    }
   };
 
   return (
@@ -501,29 +530,29 @@ onChangeWorkspaceFolder,
                 <IconDownload size={30} stroke={1.35} />
                 <div>
                   <h3>Updates</h3>
-                  <p>Check GitHub for the latest Tactile release and install it right here.</p>
+                  <p>{updateChannelHint}</p>
                   <small>
-                    Tactile {TACTILE_VERSION} · {TACTILE_CHANNEL} · {TACTILE_PLATFORM} · {TACTILE_COMMIT_SHORT}
+                    Tactile {TACTILE_VERSION} · {TACTILE_CHANNEL} ({updateChannelLabel}) · {TACTILE_PLATFORM} · {TACTILE_COMMIT_SHORT}
                   </small>
                 </div>
               </div>
               <div className="updates-status" role="status">
                 {updateState === "idle" || updateState === "checking"
-                  ? <em>{updateState === "checking" ? "Checking for updates…" : "Not checked yet."}</em>
+                  ? <em>{updateState === "checking" ? `Checking ${updateChannelLabel} channel for updates…` : `Not checked yet on the ${updateChannelLabel} channel.`}</em>
                   : updateState === "unavailable"
-                    ? <em>You are on the latest version.</em>
+                    ? <em>You are on the latest {updateChannelLabel} version.</em>
                     : updateState === "error"
                       ? <em className="is-error">Update failed. Try again.</em>
                       : updateState === "installing"
                         ? <em>Downloading &amp; installing…</em>
-                        : <em>Version {updateInfo?.version} is available.</em>}
+                        : <em>Version {updateInfo?.version} is available on the {updateChannelLabel} channel.</em>}
               </div>
               <div className="updates-actions">
                 {updateState === "available" ? (
                   <button className="is-primary" type="button" onClick={runUpdateInstall}><IconDownload size={14} /> Download &amp; restart</button>
                 ) : null}
                 <button type="button" onClick={runUpdateCheck} disabled={updateState === "checking" || updateState === "installing"}>
-                  <IconRefresh size={14} /> Check again
+                  <IconRefresh size={14} /> Check {updateChannelLabel} again
                 </button>
               </div>
             </div>
