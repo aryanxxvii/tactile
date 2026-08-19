@@ -3,9 +3,12 @@ import {
   React,
   getCodeRuntimeProfile,
   resolveTauriInvoke,
+  setCodeRuntimeDiscovery,
   setCodeRuntimePath,
+  setCodeRuntimeSelected,
   subscribeCodeRuntimeProfile,
   useEffect,
+  useMemo,
   useState,
   useSyncExternalStore,
 } from "tactile:host";
@@ -23,9 +26,11 @@ const DEVICE_LANGUAGES = [
   { id: "bash", label: "Bash", tools: ["bash"] },
 ];
 
-function languageAvailability(language, discoveredByTool) {
+function languageAvailability(language, discoveredByTool, scannedTools) {
   const tools = language.tools.map((tool) => discoveredByTool.get(tool));
-  if (tools.some((tool) => !tool)) return { state: "checking", detail: "Checking" };
+  if (tools.some((tool) => !tool)) {
+    return { state: scannedTools ? "checking" : "not-selected", detail: scannedTools ? "Checking" : "Not selected" };
+  }
   const missing = tools.filter((tool) => !tool.available);
   if (missing.length) return { state: "missing", detail: `Missing ${missing.map((tool) => tool.command).join(" + ")}` };
   return { state: "ready", detail: tools.map((tool) => tool.version || tool.command).join(" · ") };
@@ -33,24 +38,65 @@ function languageAvailability(language, discoveredByTool) {
 
 export function CodeRuntimeSettings() {
   const profile = useSyncExternalStore(subscribeCodeRuntimeProfile, getCodeRuntimeProfile, getCodeRuntimeProfile);
-  const [discovery, setDiscovery] = useState({ state: "idle", tools: [] });
+  const [selected, setSelected] = useState(() => new Set(profile.selected));
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState(null);
+  const [scanTools, setScanTools] = useState(() => profile.discovery?.tools || []);
   const invoke = resolveTauriInvoke();
-  const discoveredByTool = new Map(discovery.tools.map((tool) => [tool.tool, tool]));
+  const discoveredByTool = useMemo(
+    () => new Map(scanTools.map((tool) => [tool.tool, tool])),
+    [scanTools],
+  );
+
+  const selectedTools = useMemo(() => {
+    const tools = [];
+    for (const language of DEVICE_LANGUAGES) {
+      if (selected.has(language.id)) tools.push(...language.tools);
+    }
+    return tools;
+  }, [selected]);
+
+  const toggleLanguage = (languageId) => {
+    const next = new Set(selected);
+    if (next.has(languageId)) next.delete(languageId);
+    else next.add(languageId);
+    setSelected(next);
+    setCodeRuntimeSelected([...next]);
+  };
 
   const refresh = async () => {
-    if (!invoke) return;
-    setDiscovery((current) => ({ ...current, state: "loading" }));
+    if (!invoke || selectedTools.length === 0) return;
+    setScanning(true);
+    setScanError(null);
+    setScanTools([]);
+    const results = [];
     try {
-      const tools = await invoke("workspace_discover_code_runtimes", { executablePaths: profile.paths });
-      setDiscovery({ state: "ready", tools: Array.isArray(tools) ? tools : [] });
+      for (const tool of selectedTools) {
+        const info = await invoke("workspace_probe_code_runtime", {
+          tool,
+          executablePaths: profile.paths,
+        });
+        results.push(info);
+        setScanTools([...results]);
+      }
+      setCodeRuntimeDiscovery({ cachedAt: new Date().toISOString(), tools: results });
     } catch (error) {
-      setDiscovery({ state: "error", tools: [], error: String(error || "Runtime discovery failed.") });
+      setScanError(String(error || "Runtime discovery failed."));
+      setCodeRuntimeDiscovery({ cachedAt: new Date().toISOString(), tools: results });
+    } finally {
+      setScanning(false);
     }
   };
 
+  // Only scan the first time a workspace is visited. Afterwards the cached
+  // results are shown until the user explicitly refreshes.
   useEffect(() => {
+    if (!invoke || profile.discovery?.tools?.length) return;
     void refresh();
-  }, [profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const scannedTools = new Set(scanTools.map((tool) => tool.tool));
 
   return (
     <div className="code-runtime-settings">
@@ -60,7 +106,7 @@ export function CodeRuntimeSettings() {
           <h3>Code runtimes</h3>
           <p>
             {invoke
-              ? "Use programming tools installed on this device. Leave a path empty to resolve the command from PATH."
+              ? "Pick the languages to inspect, then scan for installed tools. Scanning only probes what you selected, one tool at a time."
               : "The browser cannot access programs installed on your device. Open Tactile Desktop to detect and run device toolchains."}
           </p>
         </div>
@@ -70,7 +116,7 @@ export function CodeRuntimeSettings() {
             type="button"
             aria-label="Refresh code runtimes"
             data-tooltip="Refresh"
-            disabled={discovery.state === "loading"}
+            disabled={scanning || selectedTools.length === 0}
             onClick={() => void refresh()}
           >
             <IconRefresh size={14} />
@@ -89,9 +135,9 @@ export function CodeRuntimeSettings() {
           </span>
         </div>
       ) : null}
-      {discovery.state === "error" ? (
+      {scanError ? (
         <p className="code-runtime-banner is-error" role="alert">
-          {discovery.error}
+          {scanError}
         </p>
       ) : null}
       {invoke ? (
@@ -100,8 +146,11 @@ export function CodeRuntimeSettings() {
             <div className="code-runtime-section-heading">
               <div>
                 <span>Execution</span>
-                <h4 id="language-status-title">Language availability</h4>
+                <h4 id="language-status-title">Languages</h4>
               </div>
+              <strong>
+                {selected.size} of {DEVICE_LANGUAGES.length} selected
+              </strong>
             </div>
             <div className="code-runtime-language-grid">
               <div className="code-runtime-language is-ready">
@@ -109,13 +158,22 @@ export function CodeRuntimeSettings() {
                   <IconCircleCheck size={14} stroke={1.7} />
                   <strong>JavaScript · JSX · TypeScript · TSX</strong>
                 </span>
-                <small>Browser worker</small>
+                <small>Always available in the browser worker</small>
               </div>
               {DEVICE_LANGUAGES.map((language) => {
-                const availability = languageAvailability(language, discoveredByTool);
+                const checked = selected.has(language.id);
+                const availability = languageAvailability(language, discoveredByTool, scanning);
                 return (
-                  <div key={language.id} className={`code-runtime-language is-${availability.state}`}>
+                  <button
+                    key={language.id}
+                    type="button"
+                    className={`code-runtime-language is-${availability.state}${checked ? " is-selected" : ""}`}
+                    aria-pressed={checked}
+                    onClick={() => toggleLanguage(language.id)}
+                    data-tooltip={checked ? "Remove from scan" : "Add to scan"}
+                  >
                     <span>
+                      <i className="code-language-check" aria-hidden="true" />
                       {availability.state === "ready" ? (
                         <IconCircleCheck size={14} stroke={1.7} />
                       ) : (
@@ -124,7 +182,7 @@ export function CodeRuntimeSettings() {
                       <strong>{language.label}</strong>
                     </span>
                     <small>{availability.detail}</small>
-                  </div>
+                  </button>
                 );
               })}
               <div className="code-runtime-language is-editor">
@@ -143,52 +201,62 @@ export function CodeRuntimeSettings() {
                 <h4 id="runtime-tools-title">Installed tools</h4>
               </div>
               <strong>
-                {discovery.state === "ready"
-                  ? `${discovery.tools.filter((tool) => tool.available).length} found`
-                  : "Checking"}
+                {scanning
+                  ? `Scanning ${scannedTools.size + 1} of ${selectedTools.length}`
+                  : scanTools.length > 0
+                    ? `${scanTools.filter((tool) => tool.available).length} found`
+                    : profile.discovery?.tools?.length
+                      ? "0 found"
+                      : "Not scanned yet"}
               </strong>
             </div>
-            <div className="code-runtime-list">
-              {CODE_RUNTIME_TOOLS.map((tool) => {
-                const detected = discoveredByTool.get(tool.id);
-                const available = Boolean(detected?.available);
-                return (
-                  <label key={tool.id} className="code-runtime-row">
-                    <span className="code-runtime-tool">
-                      <i className={available ? "is-available" : ""} aria-hidden="true">
-                        {available ? (
-                          <IconCircleCheck size={15} stroke={1.7} />
-                        ) : (
-                          <IconAlertCircle size={15} stroke={1.6} />
-                        )}
-                      </i>
-                      <span>
-                        <strong>{tool.label}</strong>
-                        <small>
-                          {available
-                            ? detected.version || detected.command
-                            : detected
-                              ? `Not found: ${detected.command}`
-                              : tool.command}
-                        </small>
+            {selectedTools.length > 0 ? (
+              <div className="code-runtime-list">
+                {CODE_RUNTIME_TOOLS.filter((tool) => selectedTools.includes(tool.id)).map((tool) => {
+                  const detected = discoveredByTool.get(tool.id);
+                  const available = Boolean(detected?.available);
+                  return (
+                    <label key={tool.id} className="code-runtime-row">
+                      <span className="code-runtime-tool">
+                        <i className={available ? "is-available" : ""} aria-hidden="true">
+                          {available ? (
+                            <IconCircleCheck size={15} stroke={1.7} />
+                          ) : (
+                            <IconAlertCircle size={15} stroke={1.6} />
+                          )}
+                        </i>
+                        <span>
+                          <strong>{tool.label}</strong>
+                          <small>
+                            {available
+                              ? detected.version || detected.command
+                              : detected
+                                ? `Not found: ${detected.command}`
+                                : tool.command}
+                          </small>
+                        </span>
                       </span>
-                    </span>
-                    <input
-                      type="text"
-                      value={profile.paths[tool.id] || ""}
-                      placeholder={`Automatic (${tool.command})`}
-                      spellCheck="false"
-                      aria-invalid={detected && !detected.available ? "true" : undefined}
-                      aria-label={`${tool.label} executable path`}
-                      onChange={(event) => setCodeRuntimePath(tool.id, event.target.value)}
-                    />
-                  </label>
-                );
-              })}
-            </div>
+                      <input
+                        type="text"
+                        value={profile.paths[tool.id] || ""}
+                        placeholder={`Automatic (${tool.command})`}
+                        spellCheck="false"
+                        aria-invalid={detected && !detected.available ? "true" : undefined}
+                        aria-label={`${tool.label} executable path`}
+                        onChange={(event) => setCodeRuntimePath(tool.id, event.target.value)}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="code-runtime-note">Select at least one language above, then press Refresh.</p>
+            )}
           </section>
           <p className="code-runtime-note">
-            Tactile inherits PATH when it starts. Restart the desktop app after installing a tool or changing PATH.
+            {profile.discovery?.cachedAt && !scanning
+              ? `Results cached from ${new Date(profile.discovery.cachedAt).toLocaleString()}. Press Refresh to rescan.`
+              : "Tactile inherits PATH when it starts. Restart the desktop app after installing a tool or changing PATH."}
           </p>
         </>
       ) : (

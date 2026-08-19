@@ -7,7 +7,9 @@ import { resolveTauriInvoke } from "../../platform/tauri/runtime.ts";
 import {
   CODE_RUNTIME_TOOLS,
   getCodeRuntimeProfile,
+  setCodeRuntimeDiscovery,
   setCodeRuntimePath,
+  setCodeRuntimeSelected,
   subscribeCodeRuntimeProfile,
 } from "../../platform/code/runtimeProfiles.js";
 import { objectTypeFor } from "./objectTypes.js";
@@ -22,6 +24,8 @@ export const pluginHostServices = Object.freeze({
   CODE_RUNTIME_TOOLS,
   getCodeRuntimeProfile,
   setCodeRuntimePath,
+  setCodeRuntimeSelected,
+  setCodeRuntimeDiscovery,
   subscribeCodeRuntimeProfile,
   objectTypeFor,
 });
