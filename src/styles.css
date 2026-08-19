@@ -3592,6 +3592,67 @@ kbd {
   line-height: 1.55;
 }
 
+.updates-channel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--paper-elevated);
+}
+
+.updates-channel > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.updates-channel strong {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.updates-channel small {
+  max-width: 350px;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+
+.updates-channel-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(68px, 1fr));
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+}
+
+.updates-channel-options button {
+  min-width: 68px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.updates-channel-options button + button {
+  border-left: 1px solid var(--line-strong);
+}
+
+.updates-channel-options button.is-selected {
+  color: var(--paper);
+  background: var(--accent);
+  font-weight: 600;
+}
+
+.updates-channel-options button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .updates-status {
   margin-bottom: 14px;
   padding: 12px 14px;

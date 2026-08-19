@@ -1,6 +1,6 @@
 [package]
 name = "tactile"
-version = "1.1.1-alpha.3"
+version = "1.1.2-alpha.1"
 description = "Tactile local workspace shell"
 authors = ["Tactile contributors"]
 edition = "2021"
@@ -20,6 +20,7 @@ tauri-plugin-updater = "2"
 tauri-runtime = "2"
 rusqlite = { version = "0.32", features = ["bundled"] }
 rfd = "0.15"
+semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 semver = { version = "1", features = ["serde"] }

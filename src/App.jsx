@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AppDock } from "./components/AppDock.jsx";
 import { SpatialLayer } from "./components/SpatialLayer.jsx";
 import { useLocalWorkspace } from "./hooks/useLocalWorkspace.js";
@@ -19,10 +19,6 @@ import {
   themeStyle,
 } from "./themes.js";
 import { isTauriRuntime, resolveTauriInvoke } from "./platform/tauri/runtime.ts";
-import {
-  publishCodeRuntimeProfile,
-  registerCodeRuntimeProfileWriter,
-} from "./platform/code/runtimeProfiles.js";
 import { TitleBar } from "./components/TitleBar.jsx";
 
 const FilesPanel = lazy(() => import("./components/FilesPanel.jsx").then(({ FilesPanel: Component }) => ({ default: Component })));
@@ -75,24 +71,6 @@ export function App() {
   const inOut = useInOut({ workspace, workspaceRootId, workspaceHydrated: hydrated });
   const nativeRuntime = useMemo(() => isTauriRuntime(), []);
   const nativeInvoke = useMemo(() => resolveTauriInvoke(), []);
-  const openExternalUrl = useCallback(async (url) => {
-    if (!isBareUrlValue(url)) return;
-    if (nativeInvoke) {
-      try {
-        await nativeInvoke("workspace_open_url", { url });
-        return;
-      } catch {
-        // Fall back to a browser tab/window when the native opener is absent.
-      }
-    }
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-  }, [nativeInvoke]);
   const nativeSnapshotRef = useRef({ version: 0, pending: null, writing: false });
   const [nativeGuideOpen, setNativeGuideOpen] = useState(false);
   const nativeGuideShownRef = useRef(false);
@@ -102,10 +80,6 @@ export function App() {
     onUpdateSettings: updateSettings,
     workspaceHydrated: hydrated,
   });
-  useEffect(() => {
-    registerCodeRuntimeProfileWriter((next) => updateSettings({ codeRuntime: next }));
-    publishCodeRuntimeProfile(workspace.settings.codeRuntime);
-  }, [updateSettings, workspace.settings.codeRuntime]);
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -482,6 +456,25 @@ export function App() {
     }
   };
 
+  const openExternalUrl = async (url) => {
+    if (!isBareUrlValue(url)) return;
+    if (nativeInvoke) {
+      try {
+        await nativeInvoke("workspace_open_url", { url });
+        return;
+      } catch {
+        // Fall back to a browser tab/window when the native opener is absent.
+      }
+    }
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  };
+
   const activeTheme = useMemo(
     () => resolveTheme(workspace.activeThemeId, workspace.themes),
     [workspace.activeThemeId, workspace.themes],
@@ -615,7 +608,7 @@ export function App() {
             layer={layer}
             depth={childIndex + 1}
             viewportInsetLeft={filesSidebarWidth}
-            key={layer.key}
+            key={childIndex}
             onExpand={inOut.expandLayer}
             onClose={inOut.closeTopLayer}
           >
@@ -691,8 +684,10 @@ export function App() {
             onExportWorkspace={commands.exportWorkspace}
             onChangeWorkspaceFolder={nativeRuntime ? changeNativeWorkspaceFolder : undefined}
             onOpenWorkspaceFolder={nativeRuntime ? openNativeWorkspaceFolder : undefined}
-            onCheckForUpdate={nativeRuntime ? (channel) => import("./platform/tauri/updater.js").then((m) => m.checkForUpdate(channel)) : undefined}
-            onDownloadAndInstallUpdate={nativeRuntime ? (channel) => import("./platform/tauri/updater.js").then((m) => m.downloadAndInstallUpdate(channel)) : undefined}
+            onGetUpdateChannel={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.getUpdateChannel()) : undefined}
+            onSetUpdateChannel={nativeRuntime ? (channel) => import("./platform/tauri/updater.js").then((m) => m.setUpdateChannel(channel)) : undefined}
+            onCheckForUpdate={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.checkForUpdate()) : undefined}
+            onDownloadAndInstallUpdate={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.downloadAndInstallUpdate()) : undefined}
             onOpenGuide={nativeRuntime ? () => setNativeGuideOpen(true) : undefined}
             onClose={shell.closeSettings}
           />

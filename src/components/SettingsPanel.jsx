@@ -170,6 +170,8 @@ export function SettingsPanel({
   onExportWorkspace,
 onChangeWorkspaceFolder,
   onOpenWorkspaceFolder,
+  onGetUpdateChannel,
+  onSetUpdateChannel,
   onCheckForUpdate,
   onDownloadAndInstallUpdate,
   onOpenGuide,
@@ -182,6 +184,8 @@ onChangeWorkspaceFolder,
   const [authoringPromptCopied, setAuthoringPromptCopied] = useState(false);
   const [updateState, setUpdateState] = useState("idle");
   const [updateInfo, setUpdateInfo] = useState(null);
+  const [updateChannel, setUpdateChannel] = useState(null);
+  const [channelChanging, setChannelChanging] = useState(false);
   const themeInputRef = useRef(null);
   const panelRef = useRef(null);
   const closeRef = useRef(null);
@@ -251,40 +255,35 @@ onChangeWorkspaceFolder,
     if (tab.startsWith("plugin:") && !activePluginSettings) setTab("plugins");
   }, [activePluginSettings, tab]);
 
-  const updateChannel = useMemo(() => {
-    const raw = String(TACTILE_CHANNEL || "").trim().toLowerCase();
-    if (!raw || raw === "development") return "development";
-    if (raw === "main" || raw === "release" || raw === "stable") return "stable";
-    if (raw === "alpha" || raw === "next" || raw === "prerelease") return "alpha";
-    if (raw === "rc") return "alpha";
-    if (raw.includes("alpha") || raw.includes("rc")) return "alpha";
-    return raw;
-  }, []);
-  const effectiveUpdateChannel = updateChannel === "development" ? "stable" : updateChannel;
-  const updateChannelLabel = updateChannel === "alpha"
-    ? "alpha"
-    : updateChannel === "stable"
-      ? "stable"
-      : updateChannel;
-  const updateChannelHint = updateChannel === "alpha"
-    ? "You are on the alpha channel — updates track the newest prerelease first, and will also offer a newer stable build when it graduates."
-    : updateChannel === "stable"
-      ? "You are on the stable channel — only finished stable releases are offered."
-      : "You are on a development build — update checks follow the stable channel.";
+  useEffect(() => {
+    if (tab !== "updates" || !onGetUpdateChannel) return undefined;
+    let active = true;
+    onGetUpdateChannel()
+      .then((channel) => {
+        if (active) setUpdateChannel(channel);
+      })
+      .catch(() => {
+        if (active) setUpdateState("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, [onGetUpdateChannel, tab]);
 
   const runUpdateCheck = async () => {
     if (!onCheckForUpdate) return;
     setUpdateState("checking");
     try {
-      const result = await onCheckForUpdate(effectiveUpdateChannel);
+      const result = await onCheckForUpdate();
       if (!result) {
-        setUpdateState("unavailable");
+        setUpdateInfo(null);
+        setUpdateState("current");
       } else {
         setUpdateInfo(result);
         setUpdateState("available");
       }
     } catch {
-      setUpdateState("unavailable");
+      setUpdateState("error");
     }
   };
 
@@ -292,10 +291,24 @@ onChangeWorkspaceFolder,
     if (!onDownloadAndInstallUpdate) return;
     setUpdateState("installing");
     try {
-      const installed = await onDownloadAndInstallUpdate(effectiveUpdateChannel);
-      if (!installed) setUpdateState("error");
+      await onDownloadAndInstallUpdate();
     } catch {
       setUpdateState("error");
+    }
+  };
+
+  const changeUpdateChannel = async (channel) => {
+    if (!onSetUpdateChannel || channel === updateChannel) return;
+    setChannelChanging(true);
+    setUpdateInfo(null);
+    try {
+      const selected = await onSetUpdateChannel(channel);
+      setUpdateChannel(selected);
+      await runUpdateCheck();
+    } catch {
+      setUpdateState("error");
+    } finally {
+      setChannelChanging(false);
     }
   };
 
@@ -530,29 +543,49 @@ onChangeWorkspaceFolder,
                 <IconDownload size={30} stroke={1.35} />
                 <div>
                   <h3>Updates</h3>
-                  <p>{updateChannelHint}</p>
+                  <p>Check GitHub for the latest Tactile release and install it right here.</p>
                   <small>
-                    Tactile {TACTILE_VERSION} · {TACTILE_CHANNEL} ({updateChannelLabel}) · {TACTILE_PLATFORM} · {TACTILE_COMMIT_SHORT}
+                    Tactile {TACTILE_VERSION} · {TACTILE_CHANNEL} · {TACTILE_PLATFORM} · {TACTILE_COMMIT_SHORT}
                   </small>
+                </div>
+              </div>
+              <div className="updates-channel" aria-labelledby="updates-channel-label">
+                <div>
+                  <strong id="updates-channel-label">Update channel</strong>
+                  <small>Nightly includes alpha and release-candidate builds and may be less reliable.</small>
+                </div>
+                <div className="updates-channel-options" role="group" aria-label="Update channel">
+                  {["stable", "nightly"].map((channel) => (
+                    <button
+                      className={updateChannel === channel ? "is-selected" : ""}
+                      type="button"
+                      aria-pressed={updateChannel === channel}
+                      disabled={!updateChannel || channelChanging || updateState === "checking" || updateState === "installing"}
+                      onClick={() => changeUpdateChannel(channel)}
+                      key={channel}
+                    >
+                      {channel === "stable" ? "Stable" : "Nightly"}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="updates-status" role="status">
                 {updateState === "idle" || updateState === "checking"
-                  ? <em>{updateState === "checking" ? `Checking ${updateChannelLabel} channel for updates…` : `Not checked yet on the ${updateChannelLabel} channel.`}</em>
-                  : updateState === "unavailable"
-                    ? <em>You are on the latest {updateChannelLabel} version.</em>
+                  ? <em>{updateState === "checking" ? "Checking for updates…" : updateChannel ? "Not checked yet." : "Loading update channel…"}</em>
+                  : updateState === "current"
+                    ? <em>{updateChannel === "nightly" ? "No newer alpha or RC build is available." : "No newer stable version is available."}</em>
                     : updateState === "error"
                       ? <em className="is-error">Update failed. Try again.</em>
                       : updateState === "installing"
                         ? <em>Downloading &amp; installing…</em>
-                        : <em>Version {updateInfo?.version} is available on the {updateChannelLabel} channel.</em>}
+                        : <em>Version {updateInfo?.version} is available.</em>}
               </div>
               <div className="updates-actions">
                 {updateState === "available" ? (
                   <button className="is-primary" type="button" onClick={runUpdateInstall}><IconDownload size={14} /> Download &amp; restart</button>
                 ) : null}
                 <button type="button" onClick={runUpdateCheck} disabled={updateState === "checking" || updateState === "installing"}>
-                  <IconRefresh size={14} /> Check {updateChannelLabel} again
+                  <IconRefresh size={14} /> Check again
                 </button>
               </div>
             </div>
@@ -577,7 +610,6 @@ onChangeWorkspaceFolder,
                     const Icon = definition.icon || IconPlugConnected;
                     const packageId = definition.package?.id;
                     const installedRecord = packageId ? plugins.installed[packageId] : null;
-                    const isBuiltIn = definition.source === "built-in" && !packageId;
                     const enabled = installedRecord
                       ? installedRecord.enabled !== false
                       : plugins.isEnabled(definition.type);
@@ -589,28 +621,14 @@ onChangeWorkspaceFolder,
                           <small>{definition.description || `${definition.type} cell object`}</small>
                         </span>
                         <span className="plugin-source">{definition.source === "built-in" ? "Offline" : definition.package?.version || "Installed"}</span>
-                        <span className="plugin-installed-actions">
-                          <Switch
-                            label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
-                            checked={enabled}
-                            disabled={isBuiltIn}
-                            onChange={(checked) => {
-                              if (installedRecord) void plugins.setInstalledEnabled(packageId, checked);
-                              else plugins.setEnabled(definition.type, checked);
-                            }}
-                          />
-                          {installedRecord ? (
-                            <button
-                              className="settings-close plugin-uninstall"
-                              type="button"
-                              aria-label={`Uninstall ${definition.label}`}
-                              data-tooltip={`Uninstall ${definition.label}`}
-                              onClick={() => void plugins.uninstallMarketplacePlugin(packageId)}
-                            >
-                              <IconTrash size={14} />
-                            </button>
-                          ) : null}
-                        </span>
+                        <Switch
+                          label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
+                          checked={enabled}
+                          onChange={(checked) => {
+                            if (installedRecord) void plugins.setInstalledEnabled(packageId, checked);
+                            else plugins.setEnabled(definition.type, checked);
+                          }}
+                        />
                       </div>
                     );
                   })}
@@ -624,7 +642,7 @@ onChangeWorkspaceFolder,
                     <h3 id="marketplace-title">Marketplace</h3>
                     <p>Optional first-party cell objects are downloaded, verified, and cached locally.</p>
                   </div>
-                  <button className="plugins-refresh" type="button" onClick={() => void plugins.refreshCatalog()} data-tooltip="Refresh marketplace"><IconRefresh size={14} /></button>
+                  <button type="button" onClick={() => void plugins.refreshCatalog()} data-tooltip="Refresh marketplace"><IconRefresh size={14} /></button>
                 </div>
                 {plugins.marketplaceError ? <p className="is-error" role="alert">{plugins.marketplaceError}</p> : null}
                 <div className="plugin-list">

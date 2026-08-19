@@ -15,7 +15,7 @@ function parseArgs(argv) {
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (!["--dir", "--version", "--output", "--repo"].includes(argument)) {
+    if (!["--dir", "--version", "--output", "--repo", "--tag"].includes(argument)) {
       fail(`Unknown argument: ${argument}`);
     }
     const value = argv[index + 1];
@@ -25,8 +25,8 @@ function parseArgs(argv) {
     options[argument.slice(2)] = value;
     index += 1;
   }
-  if (!options.dir || !options.version || !options.repo) {
-    fail("--dir, --version, and --repo are required");
+  if (!options.dir || !options.version || !options.repo || !options.tag) {
+    fail("--dir, --version, --repo, and --tag are required");
   }
   return options;
 }
@@ -56,19 +56,6 @@ async function main() {
   const files = await walkFiles(directory);
   const platforms = {};
 
-  const isPrerelease = String(options.version || "").includes("-");
-  // Stable releases publish a `latest.json` that resolves through
-  // `.../releases/latest/download/` (GitHub's stable-only redirect).
-  // Prereleases cannot use that redirect — they publish `latest-alpha.json`
-  // at a tag-scoped URL so the alpha channel can discover it via the
-  // releases API without colliding with stable metadata.
-  const bundleUrlFor = (bundleName) => {
-    if (isPrerelease) {
-      return `https://github.com/${options.repo}/releases/download/v${options.version}/${bundleName}`;
-    }
-    return `https://github.com/${options.repo}/releases/latest/download/${bundleName}`;
-  };
-
   for (const { platform, extension, targets } of TARGET_FOR) {
     const bundle = files.find((filePath) => {
       const name = path.basename(filePath).toLowerCase();
@@ -82,7 +69,7 @@ async function main() {
       fail(`Missing updater signature for ${path.basename(bundle)}`);
     }
     const signature = (await readFile(signatureFile, "utf8")).trim();
-    const url = bundleUrlFor(path.basename(bundle));
+    const url = `https://github.com/${options.repo}/releases/download/${options.tag}/${path.basename(bundle)}`;
     for (const target of targets) {
       platforms[target] = { signature, url };
     }
@@ -95,11 +82,10 @@ async function main() {
     platforms,
   };
 
-  const defaultName = isPrerelease ? "latest-alpha.json" : "latest.json";
-  const output = path.resolve(options.output ?? path.join(directory, defaultName));
+  const output = path.resolve(options.output ?? path.join(directory, "latest.json"));
   const { writeFile } = await import("node:fs/promises");
   await writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-  console.log(`Wrote updater manifest ${path.basename(output)} with platforms: ${Object.keys(platforms).join(", ")}`);
+  console.log(`Wrote updater manifest with platforms: ${Object.keys(platforms).join(", ")}`);
 }
 
 main().catch((error) => {

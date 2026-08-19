@@ -447,8 +447,7 @@ jobs:
       - name: Verify SHA-256 checksums and artifact coverage
         run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,tar.gz,appimage,deb --checksums release-artifacts/SHA256SUMS.txt
 
-      - name: Generate updater manifest (stable)
-        if: ${{ ! contains(github.ref_name, '-') }}
+      - name: Generate updater manifest
         shell: bash
         run: |
           set -euo pipefail
@@ -456,20 +455,9 @@ jobs:
           node scripts/release/create-updater-manifest.mjs \
             --dir release-artifacts \
             --version "$version" \
+            --tag "$GITHUB_REF_NAME" \
             --repo "${{ github.repository }}" \
             --output release-artifacts/latest.json
-
-      - name: Generate updater manifest (prerelease)
-        if: ${{ contains(github.ref_name, '-') }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          node scripts/release/create-updater-manifest.mjs \
-            --dir release-artifacts \
-            --version "$version" \
-            --repo "${{ github.repository }}" \
-            --output release-artifacts/latest-alpha.json
 
       - name: Upload assembled release assets
         uses: actions/upload-artifact@v4
@@ -497,3 +485,60 @@ jobs:
             release_flags+=(--draft)
           fi
           gh release create "$GITHUB_REF_NAME" release-artifacts/* "${release_flags[@]}"
+
+  promote-nightly:
+    name: Promote nightly updater manifest
+    if: ${{ contains(github.ref_name, '-alpha.') || contains(github.ref_name, '-rc.') }}
+    needs: publish
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: updater-nightly
+      cancel-in-progress: false
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Download candidate manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: tactile-release-${{ github.ref_name }}
+          path: nightly-candidate
+
+      - name: Compare with current nightly manifest
+        id: promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--candidate nightly-candidate/latest.json --github-output "$GITHUB_OUTPUT")
+          if gh release view nightly >/dev/null 2>&1; then
+            mkdir current-nightly
+            gh release download nightly --pattern latest.json --dir current-nightly
+            args+=(--current current-nightly/latest.json)
+          fi
+          node scripts/release/promote-updater-channel.mjs "${args[@]}"
+
+      - name: Publish nightly channel manifest
+        if: steps.promotion.outputs.promote == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view nightly >/dev/null 2>&1; then
+            gh release upload nightly nightly-candidate/latest.json --clobber
+          else
+            gh release create nightly nightly-candidate/latest.json \
+              --prerelease \
+              --title "Tactile Nightly Updates" \
+              --notes "Mutable updater metadata for alpha and release-candidate builds. Installers remain on immutable versioned releases."
+          fi

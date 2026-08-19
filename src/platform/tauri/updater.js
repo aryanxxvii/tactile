@@ -1,61 +1,24 @@
 import { resolveTauriInvoke } from "./runtime.ts";
-import { TACTILE_CHANNEL } from "../../buildRevision.js";
 
-function currentChannel() {
-  const raw = String(TACTILE_CHANNEL || "").trim().toLowerCase();
-  if (!raw || raw === "development") {
-    // Development builds follow the stable feed unless explicitly overridden.
-    return "stable";
-  }
-  return raw;
-}
-
-function normalizeChannel(value) {
-  const channel = String(value ?? currentChannel()).trim().toLowerCase();
-  if (!channel || channel === "development") return "stable";
-  if (channel === "main" || channel === "release" || channel === "stable") return "stable";
-  if (channel === "alpha" || channel === "next" || channel === "prerelease") return "alpha";
-  if (channel === "rc") return "alpha";
-  // Fallback: treat anything with alpha/rc as prerelease.
-  if (channel.includes("alpha") || channel.includes("rc")) return "alpha";
-  return "stable";
-}
-
-export async function checkForUpdate(channel) {
+function requireInvoke() {
   const invoke = resolveTauriInvoke();
-  if (!invoke) return null;
-  const effective = normalizeChannel(channel);
-  try {
-    const result = await invoke("check_for_update", { channel: effective });
-    // Older native builds ignore the channel argument and still respond.
-    return result ?? null;
-  } catch {
-    try {
-      const fallback = await invoke("check_for_update");
-      return fallback ?? null;
-    } catch {
-      return null;
-    }
-  }
+  if (!invoke) throw new Error("Tauri updater is unavailable");
+  return invoke;
 }
 
-export async function downloadAndInstallUpdate(channel) {
-  const invoke = resolveTauriInvoke();
-  if (!invoke) return false;
-  const effective = normalizeChannel(channel);
-  try {
-    await invoke("download_and_install_update", { channel: effective });
-    return true;
-  } catch {
-    try {
-      await invoke("download_and_install_update");
-      return true;
-    } catch {
-      return false;
-    }
-  }
+export async function getUpdateChannel() {
+  return requireInvoke()("get_update_channel");
 }
 
-export function getUpdateChannel() {
-  return normalizeChannel();
+export async function setUpdateChannel(channel) {
+  return requireInvoke()("set_update_channel", { channel });
+}
+
+export async function checkForUpdate() {
+  const result = await requireInvoke()("check_for_update");
+  return result ?? null;
+}
+
+export async function downloadAndInstallUpdate() {
+  await requireInvoke()("download_and_install_update");
 }

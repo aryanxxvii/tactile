@@ -2,13 +2,14 @@ const APPLICATION_TITLE_PREFIX: &str = "Tactile — ";
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
+use std::str::FromStr;
 use tauri::http::{header::CONTENT_SECURITY_POLICY, Response as HttpResponse, StatusCode};
 use tauri::{AppHandle, Manager};
-use tauri_plugin_updater::UpdaterExt;
 
 pub mod assets;
 pub mod portable;
 pub mod storage;
+mod updater;
 
 #[derive(Debug, Deserialize)]
 struct NativeWorkspaceFile {
@@ -239,102 +240,6 @@ fn workspace_serve_html(app: AppHandle, content: String) -> Result<String, Strin
     Ok(url)
 }
 
-/// Fetch a remote page through the backend and re-serve it over the local
-/// `tactile-html` protocol, so the app can render it inside an ordinary
-/// `<iframe>` without the remote site's `X-Frame-Options` /
-/// `frame-ancestors` blocks applying. The page's own CSP meta tags are
-/// removed (they would block the cross-origin assets the page loads from its
-/// real origin) and a `<base>` element is injected so relative links and
-/// resources resolve against the original address. Static and content sites
-/// render fully; cookie-authenticated and API-driven apps remain limited
-/// because the proxied page runs on the local protocol origin.
-#[tauri::command]
-async fn workspace_fetch_webview(app: tauri::AppHandle, url: String) -> Result<String, String> {
-    use std::io::Read;
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    if !url.starts_with("http://") && !url.starts_with("https://") {
-        return Err("only http and https addresses may be embedded".to_owned());
-    }
-
-    let html = tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
-        let agent = ureq::AgentBuilder::new()
-            .timeout(std::time::Duration::from_secs(25))
-            .build();
-        let response = agent
-            .get(&url)
-            .set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36")
-            .set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-            .call()
-            .map_err(|error| format!("failed to fetch {url}: {error}"))?;
-        let final_url = response.get_url().to_string();
-        let mut bytes: Vec<u8> = Vec::new();
-        response
-            .into_reader()
-            .take(8 * 1024 * 1024)
-            .read_to_end(&mut bytes)
-            .map_err(|error| format!("failed to read response: {error}"))?;
-        let body = String::from_utf8_lossy(&bytes).into_owned();
-        Ok(rewrite_proxied_html(&body, &final_url))
-    })
-    .await
-    .map_err(|error| error.to_string())??;
-
-    let sandbox_dir = app
-        .path()
-        .app_config_dir()
-        .map_err(|error| error.to_string())?
-        .join("html-sandbox");
-    std::fs::create_dir_all(&sandbox_dir).map_err(|error| error.to_string())?;
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_nanos())
-        .unwrap_or(0);
-    let file_name = format!("link-{nanos}.html");
-    atomic_write(&sandbox_dir.join(&file_name), html.as_bytes())?;
-    #[cfg(target_os = "windows")]
-    let served = format!("http://tactile-html.localhost/{file_name}");
-    #[cfg(not(target_os = "windows"))]
-    let served = format!("tactile-html://localhost/{file_name}");
-    Ok(served)
-}
-
-/// Rewrite a fetched page so it renders from the local `tactile-html` origin:
-/// drop CSP `<meta>` tags that would forbid the page's own cross-origin
-/// resources, then inject a `<base>` so relative hrefs/srcs resolve against
-/// the original address.
-fn rewrite_proxied_html(body: &str, final_url: &str) -> String {
-    let base_href = final_url.trim_end_matches('/');
-    let mut rewritten = String::with_capacity(body.len() + 256);
-    let mut rest = body;
-
-    while let Some(start) = rest.find("<meta") {
-        let end = match rest[start..].find('>') {
-            Some(offset) => start + offset + 1,
-            None => break,
-        };
-        let tag = &rest[start..end];
-        if tag.to_ascii_lowercase().contains("content-security-policy") {
-            rest = &rest[end..];
-        } else {
-            rewritten.push_str(&rest[..end]);
-            rest = &rest[end..];
-        }
-    }
-    rewritten.push_str(rest);
-
-    let injected = format!("<base href=\"{base_href}/\">");
-    if let Some(head) = rewritten.find("<head") {
-        if let Some(close) = rewritten[head..].find('>') {
-            let insert_at = head + close + 1;
-            rewritten.insert_str(insert_at, &injected);
-            return rewritten;
-        }
-    }
-    rewritten.insert_str(0, &injected);
-    rewritten
-}
-
 #[tauri::command]
 fn workspace_open_url(url: String) -> Result<(), String> {
     if !url.starts_with("http://") && !url.starts_with("https://") {
@@ -541,7 +446,7 @@ const PYTHON_RUNTIME_CANDIDATES: &[&str] = &["python3", "python", "py"];
 
 fn probe_runtime_tool(
     tool: &str,
-    candidates: &[String],
+    candidates: &[&str],
     executable_paths: &HashMap<String, String>,
 ) -> CodeRuntimeInfo {
     let configured = executable_paths
@@ -550,7 +455,12 @@ fn probe_runtime_tool(
         .filter(|path| !path.is_empty());
     let programs: Vec<String> = configured
         .map(|path| vec![path.to_owned()])
-        .unwrap_or_else(|| candidates.to_vec());
+        .unwrap_or_else(|| {
+            candidates
+                .iter()
+                .map(|candidate| (*candidate).to_owned())
+                .collect()
+        });
     let mut last_error = None;
     for program in &programs {
         match std::process::Command::new(program)
@@ -593,66 +503,26 @@ fn probe_runtime_tool(
     }
 }
 
-fn runtime_candidates(tool: &str) -> Vec<String> {
-    let from = |names: &[&str]| names.iter().map(|name| name.to_string()).collect();
-    match tool {
-        "python" => from(PYTHON_RUNTIME_CANDIDATES),
-        "node" => from(&["node"]),
-        "gcc" => from(&["gcc"]),
-        "gpp" => from(&["g++"]),
-        "javac" => from(&["javac"]),
-        "java" => from(&["java"]),
-        "rustc" => from(&["rustc"]),
-        "go" => from(&["go"]),
-        "ruby" => from(&["ruby"]),
-        "bash" => from(&["bash"]),
-        other => vec![other.to_owned()],
-    }
-}
-
-/// Probe a single runtime tool off the main thread. The plugin scans the
-/// languages the user selected one tool at a time through this command, so a
-/// slow `PATH` lookup for an uninstalled toolchain never freezes the UI.
 #[tauri::command]
-async fn workspace_probe_code_runtime(
-    tool: String,
-    executable_paths: Option<HashMap<String, String>>,
-) -> CodeRuntimeInfo {
-    let paths = executable_paths.unwrap_or_default();
-    let candidates = runtime_candidates(&tool);
-    let probe_tool = tool.clone();
-    let fallback_command = candidates.first().cloned().unwrap_or_default();
-    let task = tauri::async_runtime::spawn_blocking(move || {
-        probe_runtime_tool(&probe_tool, &candidates, &paths)
-    });
-    task.await.unwrap_or_else(|error| CodeRuntimeInfo {
-        tool,
-        command: fallback_command,
-        configured: false,
-        available: false,
-        version: String::new(),
-        error: Some(format!("runtime probe task failed: {error}")),
-    })
-}
-
-#[tauri::command]
-async fn workspace_discover_code_runtimes(
-    tools: Option<Vec<String>>,
+fn workspace_discover_code_runtimes(
     executable_paths: Option<HashMap<String, String>>,
 ) -> Vec<CodeRuntimeInfo> {
     let paths = executable_paths.unwrap_or_default();
-    let wanted = tools.unwrap_or_else(|| vec!["python".to_owned(), "node".to_owned()]);
-    let targets: Vec<(String, Vec<String>)> = wanted
-        .iter()
-        .map(|tool| (tool.clone(), runtime_candidates(tool)))
-        .collect();
-    let task = tauri::async_runtime::spawn_blocking(move || {
-        targets
-            .into_iter()
-            .map(|(tool, candidates)| probe_runtime_tool(&tool, &candidates, &paths))
-            .collect()
-    });
-    task.await.unwrap_or_default()
+    [
+        ("python", PYTHON_RUNTIME_CANDIDATES.to_vec()),
+        ("node", vec!["node"]),
+        ("gcc", vec!["gcc"]),
+        ("gpp", vec!["g++"]),
+        ("javac", vec!["javac"]),
+        ("java", vec!["java"]),
+        ("rustc", vec!["rustc"]),
+        ("go", vec!["go"]),
+        ("ruby", vec!["ruby"]),
+        ("bash", vec!["bash"]),
+    ]
+    .into_iter()
+    .map(|(tool, candidates)| probe_runtime_tool(tool, &candidates, &paths))
+    .collect()
 }
 
 fn run_code_impl(
@@ -882,107 +752,39 @@ struct UpdateInfo {
     current_version: String,
     body: Option<String>,
     download_url: String,
-}
-
-const STABLE_UPDATER_ENDPOINT: &str =
-    "https://github.com/aryanxxvii/tactile/releases/latest/download/latest.json";
-const GITHUB_RELEASES_API: &str =
-    "https://api.github.com/repos/aryanxxvii/tactile/releases?per_page=50";
-
-#[derive(Debug, Deserialize)]
-struct GithubRelease {
-    tag_name: String,
-    prerelease: bool,
-    draft: bool,
-}
-
-fn current_app_version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
-}
-
-fn infer_channel_from_version(version: &str) -> &str {
-    if version.contains("-alpha.") {
-        "alpha"
-    } else if version.contains("-rc.") {
-        "rc"
-    } else if version.contains('-') {
-        "prerelease"
-    } else {
-        "stable"
-    }
-}
-
-fn is_prerelease_channel(channel: &str) -> bool {
-    matches!(channel, "alpha" | "rc" | "prerelease" | "next")
-        || channel.contains("alpha")
-        || channel.contains("rc")
-}
-
-fn alpha_manifest_url_for_tag(tag: &str) -> String {
-    format!(
-        "https://github.com/aryanxxvii/tactile/releases/download/{}/latest-alpha.json",
-        tag
-    )
-}
-
-fn fetch_github_releases_blocking() -> Result<Vec<GithubRelease>, String> {
-    let agent = ureq::AgentBuilder::new()
-        .timeout(std::time::Duration::from_secs(12))
-        .build();
-    let response = agent
-        .get(GITHUB_RELEASES_API)
-        .set("User-Agent", "Tactile-updater")
-        .set("Accept", "application/vnd.github+json")
-        .call()
-        .map_err(|e| e.to_string())?;
-    if response.status() != 200 {
-        return Err(format!("GitHub API returned {}", response.status()));
-    }
-    let body = response.into_string().map_err(|e| e.to_string())?;
-    serde_json::from_str::<Vec<GithubRelease>>(&body).map_err(|e| e.to_string())
-}
-
-async fn fetch_latest_prerelease_tag() -> Result<Option<String>, String> {
-    let releases = tauri::async_runtime::spawn_blocking(fetch_github_releases_blocking)
-        .await
-        .map_err(|e| e.to_string())??;
-
-    let mut best: Option<(semver::Version, String)> = None;
-    for release in releases {
-        if release.draft || !release.prerelease {
-            continue;
-        }
-        let raw = release.tag_name.trim_start_matches('v');
-        let Ok(version) = semver::Version::parse(raw) else {
-            continue;
-        };
-        match &best {
-            Some((best_version, _)) if best_version >= &version => {}
-            _ => best = Some((version, release.tag_name)),
-        }
-    }
-    Ok(best.map(|(_, tag)| tag))
+    channel: updater::UpdateChannel,
 }
 
 #[tauri::command]
-async fn check_for_update(
+fn get_update_channel(app: tauri::AppHandle) -> Result<updater::UpdateChannel, String> {
+    updater::load_channel(&app)
+}
+
+#[tauri::command]
+fn set_update_channel(
     app: tauri::AppHandle,
-    channel: Option<String>,
-) -> Result<Option<UpdateInfo>, String> {
-    let current = current_app_version().to_string();
-    let requested = channel
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| infer_channel_from_version(&current))
-        .to_ascii_lowercase();
-    let update = resolve_best_update_for_channel(&app, &requested).await?;
-    Ok(update.map(|value| UpdateInfo {
-        version: value.version,
-        current_version: value.current_version,
-        body: value.body,
-        download_url: value.download_url.to_string(),
-    }))
+    channel: String,
+) -> Result<updater::UpdateChannel, String> {
+    let channel = updater::UpdateChannel::from_str(&channel)?;
+    updater::save_channel(&app, channel)?;
+    Ok(channel)
+}
+
+#[tauri::command]
+async fn check_for_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
+    let channel = updater::load_channel(&app)?;
+    let updater = updater::build_updater(&app, channel)?;
+    match updater.check().await {
+        Ok(Some(update)) => Ok(Some(UpdateInfo {
+            version: update.version,
+            current_version: updater::canonical_version().to_string(),
+            body: update.body,
+            download_url: update.download_url.to_string(),
+            channel,
+        })),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 // Frameless-window commands backing the custom TitleBar (move, resize,
@@ -1040,88 +842,11 @@ fn window_start_resize(app: tauri::AppHandle, direction: String) -> Result<(), S
         .map_err(|error| error.to_string())
 }
 
-async fn resolve_best_update_for_channel(
-    app: &tauri::AppHandle,
-    requested_channel: &str,
-) -> Result<Option<tauri_plugin_updater::Update>, String> {
-    if !is_prerelease_channel(requested_channel) {
-        let endpoint = url::Url::parse(STABLE_UPDATER_ENDPOINT).map_err(|e| e.to_string())?;
-        let updater = app
-            .updater_builder()
-            .endpoints(vec![endpoint])
-            .map_err(|e| e.to_string())?
-            .build()
-            .map_err(|e| e.to_string())?;
-        return updater.check().await.map_err(|e| e.to_string());
-    }
-
-    let alpha_tag = match fetch_latest_prerelease_tag().await {
-        Ok(tag) => tag,
-        Err(_) => None,
-    };
-    let mut candidates: Vec<tauri_plugin_updater::Update> = Vec::new();
-
-    if let Ok(updater) = app
-        .updater_builder()
-        .endpoints(vec![
-            url::Url::parse(STABLE_UPDATER_ENDPOINT).expect("stable updater url is valid"),
-        ])
-        .map_err(|e| e.to_string())?
-        .build()
-        .map_err(|e| e.to_string())
-    {
-        if let Ok(Some(update)) = updater.check().await {
-            candidates.push(update);
-        }
-    }
-
-    if let Some(tag) = alpha_tag {
-        let url_string = alpha_manifest_url_for_tag(&tag);
-        if let Ok(url) = url::Url::parse(&url_string) {
-            if let Ok(builder) = app
-                .updater_builder()
-                .endpoints(vec![url])
-                .map_err(|e| e.to_string())?
-                .build()
-                .map_err(|e| e.to_string())
-            {
-            if let Ok(Some(update)) = builder.check().await {
-                candidates.push(update);
-            }
-            }
-        }
-    }
-
-    if candidates.is_empty() {
-        return Ok(None);
-    }
-    candidates.sort_by(|left, right| {
-        let left_ok = semver::Version::parse(left.version.trim_start_matches('v'));
-        let right_ok = semver::Version::parse(right.version.trim_start_matches('v'));
-        match (left_ok, right_ok) {
-            (Ok(left_version), Ok(right_version)) => left_version.cmp(&right_version),
-            _ => left.version.cmp(&right.version),
-        }
-    });
-    Ok(candidates.into_iter().last())
-}
-
 #[tauri::command]
-async fn download_and_install_update(
-    app: tauri::AppHandle,
-    channel: Option<String>,
-) -> Result<(), String> {
-    let current = current_app_version().to_string();
-    let requested = channel
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| infer_channel_from_version(&current))
-        .to_ascii_lowercase();
-
-    let update = resolve_best_update_for_channel(&app, &requested)
-        .await
-        .map_err(|e| e.to_string())?;
+async fn download_and_install_update(app: tauri::AppHandle) -> Result<(), String> {
+    let channel = updater::load_channel(&app)?;
+    let updater = updater::build_updater(&app, channel)?;
+    let update = updater.check().await.map_err(|e| e.to_string())?;
     if let Some(update) = update {
         update
             .download_and_install(|_, _| {}, || {})
@@ -1145,10 +870,10 @@ pub fn run() {
             workspace_open_url,
             workspace_write_snapshot,
             workspace_serve_html,
-            workspace_fetch_webview,
             workspace_discover_code_runtimes,
-            workspace_probe_code_runtime,
             workspace_run_code,
+            get_update_channel,
+            set_update_channel,
             check_for_update,
             download_and_install_update,
             window_minimize,
@@ -1204,15 +929,14 @@ pub fn run() {
                     )
                 })?;
 
-            let main_window = tauri::WebviewWindowBuilder::from_config(app.handle(), window_config)?
+            tauri::WebviewWindowBuilder::from_config(app.handle(), window_config)?
                 .decorations(false)
                 .on_document_title_changed(|window, title| {
                     if let Err(error) = window.set_title(&native_window_title(&title)) {
                         eprintln!("failed to update the Tactile window title: {error}");
                     }
-                });
-
-            main_window.build()?;
+                })
+                .build()?;
 
             Ok(())
         })
