@@ -28,10 +28,31 @@ jobs:
   quality:
     name: Quality and unit tests
     runs-on: ubuntu-24.04
+    outputs:
+      source-changed: ${{ steps.source-changes.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Detect application source changes
+        id: source-changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${BASE_SHA:-}" || "$BASE_SHA" =~ ^0+$ ]]; then
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              BASE_SHA="$(git rev-parse HEAD^)"
+            else
+              BASE_SHA="$(git hash-object -t tree /dev/null)"
+            fi
+          fi
+          if git diff --quiet "$BASE_SHA" "$GITHUB_SHA" -- src/ src-tauri/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -61,7 +82,9 @@ jobs:
           fi
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test:unit
+      - name: Run unit tests
+        if: steps.source-changes.outputs.changed == 'true'
+        run: npm run test:unit
 
   web:
     name: Web build and browser tests
@@ -80,7 +103,9 @@ jobs:
       - run: npm run build
       - run: npm run test:sites
       - run: npm run test:component
-      - run: npm run test:e2e
+      - name: Run end-to-end tests
+        if: needs.quality.outputs.source-changed == 'true'
+        run: npm run test:e2e
       - name: Upload alpha web build
         if: github.event_name == 'push' && github.ref == 'refs/heads/alpha'
         uses: actions/upload-artifact@v4
