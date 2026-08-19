@@ -16,6 +16,9 @@ test-results/
 tmp/
 evidence/performance/playwright-results.json
 
+# Local dev server log written by the Tauri dev runner.
+/tauri-dev.log
+
 # Internal project planning and wave records are kept out of the public repository.
 /WORKFLOW.md
 /TRACKER.md

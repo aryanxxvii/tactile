@@ -26,8 +26,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.audio/1.0.0/plugin.js",
-      "sha256": "1f1b33e01314be60ad7e2ee3a1fe0c4d4be2d1cf2f0fe0c320a9f1158958b272",
-      "size": 23136,
+      "sha256": "2e071c00f50e94318766fa3342a2b336bb6390a500d1a3b7ca3e70c62bb84583",
+      "size": 23250,
       "assets": []
     },
     {
@@ -36,16 +36,16 @@
       "type": "code",
       "name": "Code",
       "description": "A local source file with language-aware presentation.",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "tactile": ">=1.1.0",
       "permissions": [
         "code.execute"
       ],
       "entry": "plugin.jsx",
       "status": "available",
-      "artifact": "plugins/tactile.code/1.0.0/plugin.js",
-      "sha256": "ae715ae3f56bba42df033b1c6a93ab6ce92b0f01209679258ae4d97c211d4226",
-      "size": 1093952,
+      "artifact": "plugins/tactile.code/1.0.2/plugin.js",
+      "sha256": "e9c6ba65700363a6eafdd8fe8dd6954f9a9a5b46c3eb879b16cfbef7b0a62ce8",
+      "size": 1096167,
       "assets": []
     },
     {
@@ -60,8 +60,8 @@
       "entry": "plugin.js",
       "status": "available",
       "artifact": "plugins/tactile.example-counter/1.0.0/plugin.js",
-      "sha256": "f83c54166de9900184ff50ce9c75a48e1625e7b31efd358c41e3e2a5fe01d3df",
-      "size": 3779,
+      "sha256": "4db3d7f93d8a6bfba3a241696f2f915afa128b5d471d7ca24ba4e349b6285f8a",
+      "size": 3834,
       "assets": []
     },
     {
@@ -85,8 +85,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.html/1.0.0/plugin.js",
-      "sha256": "4e3bd6693b9bf10cc95246f4c7a95a27ced2995a715b1628b792b17e31590a0e",
-      "size": 12708,
+      "sha256": "3c3c6202bdcf10ce8cb6e673d5ab8b6a1c0a9e66e0ad4ff0c427c97d4f1944f7",
+      "size": 12822,
       "assets": []
     },
     {
@@ -111,8 +111,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.image/1.0.0/plugin.js",
-      "sha256": "8668b6b7e2aaeeafef39e3f20a4c6f0d3b3af66e40957577daea6c4ed4c11ac8",
-      "size": 10710,
+      "sha256": "52336b4ea17bdbb7be06743b936e67148aed167b24ffffec0ffa21f34eda0db9",
+      "size": 10824,
       "assets": []
     },
     {
@@ -143,8 +143,26 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.pdf/1.0.0/plugin.js",
-      "sha256": "3dcad97d173bf2a894255a08257bd7ca7665b2ec17bb3944d9a7bf553bc29ca3",
-      "size": 351286
+      "sha256": "d484826d0041fade3240b1cc30485f9cd60d9a88b4f61af8543b03ba3e487a2f",
+      "size": 351400
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.sites",
+      "type": "sites",
+      "name": "Sites",
+      "description": "A web site embedded in the Tactile window as a real browser view.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [
+        "native.embedded-webview"
+      ],
+      "entry": "plugin.jsx",
+      "status": "available",
+      "artifact": "plugins/tactile.sites/1.0.0/plugin.js",
+      "sha256": "55c40681516189c09f07c7b8d762d00a28b48ddc25cc6e5e1d0d9e5c3814017a",
+      "size": 10957,
+      "assets": []
     },
     {
       "schemaVersion": 1,
@@ -164,8 +182,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.svg/1.0.0/plugin.js",
-      "sha256": "a9f7a5ac2779fbb6b7f2c57ca6d1a7cbe1f44218baafd8bb1371632b60337522",
-      "size": 11046,
+      "sha256": "f8b0a167cbc11fe3c94e036cde3485c2a73969e4eb3efc41d5ba8854c6e8d589",
+      "size": 11160,
       "assets": []
     },
     {
@@ -191,8 +209,8 @@
       ],
       "status": "available",
       "artifact": "plugins/tactile.video/1.0.0/plugin.js",
-      "sha256": "418057134c3d557416e2c789bd3c0f2235c48f23a1780ae826bdb95884b0fb51",
-      "size": 26150,
+      "sha256": "ce695be7d1d92da2a13e1c7fc62fe5c59f09790568713ed3d0169577c9156066",
+      "size": 26264,
       "assets": []
     }
   ]

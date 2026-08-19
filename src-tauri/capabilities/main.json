@@ -3,5 +3,5 @@
   "identifier": "main",
   "description": "The Tactile main window capability. Only the updater is exposed to the webview so it can check for and install new releases.",
   "windows": ["main"],
-  "permissions": ["updater:default"]
+  "permissions": ["updater:default", "core:webview:allow-internal-toggle-devtools"]
 }

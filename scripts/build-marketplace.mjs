@@ -58,6 +58,8 @@ function hostSdkPlugin() {
           export const CODE_RUNTIME_TOOLS = host.CODE_RUNTIME_TOOLS;
           export const getCodeRuntimeProfile = host.getCodeRuntimeProfile;
           export const setCodeRuntimePath = host.setCodeRuntimePath;
+          export const setCodeRuntimeSelected = host.setCodeRuntimeSelected;
+          export const setCodeRuntimeDiscovery = host.setCodeRuntimeDiscovery;
           export const subscribeCodeRuntimeProfile = host.subscribeCodeRuntimeProfile;
           export const objectTypeFor = host.objectTypeFor;
           export const pluginAssetUrl = host.pluginAssetUrl;

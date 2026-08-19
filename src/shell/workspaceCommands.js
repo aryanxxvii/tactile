@@ -62,13 +62,13 @@ export function useWorkspaceCommands({
 
   const createInCell = useCallback((parentObjectId, cell, type, sourceElement) => {
     if (!plugins.isEnabled(type)) {
-      showNotice("Enable that cell object in Settings → Plugins first");
+      showNotice("Enable that cell object in Settings â†’ Plugins first");
       return;
     }
     const created = createEmbeddedObject(parentObjectId, cell.id, type);
     if (!created || !sourceElement) return;
     schedule(() => {
-      openObject({
+      openObjectRef.current({
         objectId: created.id,
         sourceObjectId: parentObjectId,
         sourceAddress: cell.address,
@@ -78,7 +78,7 @@ export function useWorkspaceCommands({
         mode: "floating",
       });
     }, 20);
-  }, [createEmbeddedObject, openObject, plugins, schedule, showNotice]);
+  }, [createEmbeddedObject, plugins, schedule, showNotice]);
 
   const createFileInCell = useCallback(async (parentObjectId, cell, file, sourceElement) => {
     try {
@@ -87,13 +87,13 @@ export function useWorkspaceCommands({
       if (!plugins.isEnabled(type)) {
         const catalogEntry = plugins.catalogEntryForType(type);
         const action = catalogEntry?.status === "available" ? "Install" : "This file type needs";
-        showNotice(`${action} the ${catalogEntry?.name || type} plugin in Settings → Plugins before attaching this file`);
+        showNotice(`${action} the ${catalogEntry?.name || type} plugin in Settings â†’ Plugins before attaching this file`);
         return;
       }
       const created = createEmbeddedFile(parentObjectId, cell.id, asset);
       if (!created || !sourceElement) return;
       schedule(() => {
-        openObject({
+        openObjectRef.current({
           objectId: created.id,
           sourceObjectId: parentObjectId,
           sourceAddress: cell.address,
@@ -106,7 +106,7 @@ export function useWorkspaceCommands({
     } catch (error) {
       showNotice(error?.message || "That file could not be attached");
     }
-  }, [createEmbeddedFile, openObject, plugins, schedule, showNotice]);
+  }, [createEmbeddedFile, plugins, schedule, showNotice]);
 
   const openLinkCell = useCallback((parentObjectId, payload) => {
     const parent = workspace.objects[parentObjectId];
@@ -124,10 +124,9 @@ export function useWorkspaceCommands({
       });
       return;
     }
-    if (!plugins.isEnabled("link")) {
-      showNotice("Enable Link in Settings → Plugins first");
-      return;
-    }
+    // Pasted links always open in the built-in in-app browser, which fetches
+    // the page through the local proxy and renders it in an iframe. No plugin
+    // is required for this.
     const created = createEmbeddedLink(parentObjectId, payload.sourceCellId, payload.linkUrl);
     if (!created) return;
     schedule(() => {
@@ -139,7 +138,7 @@ export function useWorkspaceCommands({
         sourceType: "link",
       });
     }, 20);
-  }, [createEmbeddedLink, openObject, plugins, schedule, showNotice, workspace.objects]);
+  }, [createEmbeddedLink, schedule, workspace.objects]);
 
   const replaceFileObject = useCallback(async (objectId, file) => {
     try {

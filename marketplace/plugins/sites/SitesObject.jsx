@@ -1,14 +1,17 @@
-import { useMemo, useState } from "react";
-import { IconBrackets, IconExternalLink, IconReload } from "@tabler/icons-react";
-import { ObjectHeader } from "../../components/ObjectHeader.jsx";
-import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
-import { useLocalDraft } from "../../components/localEditSession.js";
-import { useSitePreview } from "../../components/useSitePreview.js";
-import { bareUrlTitle, isBareUrlValue } from "../../model.js";
+import { IconExternalLink, IconReload } from "@tabler/icons-react";
+import {
+  ObjectGlyph,
+  ObjectHeader,
+  React,
+  useLocalDraft,
+  useMemo,
+  useState,
+} from "tactile:host";
+import { useSitePreview } from "./useSitePreview.js";
+import "./SitesObject.css";
 
-export function LinkObject({
+export function SitesObject({
   object,
-  spatialPhase,
   path,
   saveState,
   onUpdateObject,
@@ -19,23 +22,30 @@ export function LinkObject({
   onOpenExternal,
 }) {
   const url = object.url || "";
-  const host = useMemo(() => bareUrlTitle(url), [url]);
+  const host = useMemo(() => {
+    try {
+      return new URL(url).hostname || url;
+    } catch {
+      return url;
+    }
+  }, [url]);
+
   const [loaded, setLoaded] = useState(false);
   const urlDraft = useLocalDraft(url, (next) => {
     const trimmed = String(next || "").trim();
-    if (trimmed && isBareUrlValue(trimmed)) onUpdateObject?.({ url: trimmed });
+    if (trimmed) onUpdateObject?.({ url: trimmed });
   });
 
   const commitUrl = () => {
     const trimmed = String(urlDraft.draftRef.current || "").trim();
-    if (trimmed && isBareUrlValue(trimmed)) urlDraft.commitDraft(trimmed);
+    if (trimmed) urlDraft.commitDraft(trimmed);
     else urlDraft.cancelDraft();
   };
 
   const { src, loading, error, reload } = useSitePreview({ url });
 
   return (
-    <article className="object-surface link-object" data-object-type="link" data-spatial-phase={spatialPhase}>
+    <article className="object-surface sites-object" data-object-type="sites">
       <ObjectHeader
         object={object}
         path={path}
@@ -47,21 +57,23 @@ export function LinkObject({
         onReparentObject={onReparentObject}
       />
 
-      <main className="link-workspace">
-        <div className="link-toolbar" aria-label="Link controls">
+      <main className="sites-workspace">
+        <div className="sites-toolbar" aria-label="Site controls">
           <button
             type="button"
-            className="link-tool-button"
+            className="sites-action"
             onClick={reload}
             disabled={!url || loading}
-            data-tooltip="Reload page"
+            data-tooltip="Reload site"
           >
             <IconReload size={13} stroke={1.6} /> Reload
           </button>
-          <label className="link-url-field">
-            <span className="visually-hidden">Link address</span>
+          <label className="sites-url-field">
+            <span className="visually-hidden">Site address</span>
             <input
               value={urlDraft.draft}
+              placeholder="https://example.com"
+              spellCheck="false"
               onChange={(event) => urlDraft.updateDraft(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
@@ -76,12 +88,11 @@ export function LinkObject({
                 }
               }}
               onBlur={commitUrl}
-              spellCheck="false"
             />
           </label>
           <button
             type="button"
-            className="link-tool-button"
+            className="sites-action sites-external"
             onClick={() => onOpenExternal?.(url)}
             disabled={!url}
             data-tooltip="Open in your system browser"
@@ -89,11 +100,12 @@ export function LinkObject({
             <IconExternalLink size={13} stroke={1.6} /> Open in browser
           </button>
         </div>
-        <div className="link-stage">
+
+        <div className="sites-stage">
           {url ? (
             src ? (
               <>
-                {loading && !loaded ? <div className="link-loading" aria-hidden="true" /> : null}
+                {loading && !loaded ? <div className="sites-loading" aria-hidden="true" /> : null}
                 <iframe
                   key={src}
                   title={object.title}
@@ -104,7 +116,7 @@ export function LinkObject({
                 />
               </>
             ) : (
-              <div className="link-empty-state">
+              <div className="sites-empty-state">
                 <ObjectGlyph item={object} size={29} stroke={1.3} />
                 <h2>{loading ? "Loading…" : error ? "Unable to open this address" : "No address yet"}</h2>
                 <p>
@@ -115,7 +127,7 @@ export function LinkObject({
               </div>
             )
           ) : (
-            <div className="link-empty-state">
+            <div className="sites-empty-state">
               <ObjectGlyph item={object} size={29} stroke={1.3} />
               <h2>No address yet</h2>
               <p>Enter an http or https address above to open it inside Tactile.</p>
@@ -126,9 +138,13 @@ export function LinkObject({
 
       <footer className="object-statusbar">
         <span className="status-spacer" />
-        <span className="status-item"><ObjectGlyph item={object} size={14} stroke={1.55} /> Link{host ? ` · ${host}` : ""}</span>
+        <span className="status-item">
+          <ObjectGlyph item={object} size={14} stroke={1.55} /> Sites{host ? ` · ${host}` : ""}
+        </span>
         <span className="status-divider">·</span>
-        <span className="status-item keyboard-hint"><IconBrackets size={14} stroke={1.6} /> <kbd>[</kbd> out</span>
+        <span className="status-item keyboard-hint">
+          <IconExternalLink size={14} stroke={1.6} /> <kbd>[</kbd> out
+        </span>
       </footer>
     </article>
   );
