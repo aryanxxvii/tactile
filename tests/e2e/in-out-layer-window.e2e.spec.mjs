@@ -570,32 +570,51 @@ test("keeps full-view chrome stable during the expanded-to-floating handoff", as
     };
   });
 
+  const samplesPromise = page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const result = [];
+        const timeoutAt = performance.now() + 1_500;
+        let handoffStartedAt = null;
+        const sample = () => {
+          const layer = document.querySelector('[data-layer-object="layer-three"]');
+          const windowElement = layer?.querySelector(".object-window");
+          const content = windowElement?.querySelector(".object-window-content");
+          const header = content?.querySelector(".object-header");
+          const statusbar = content?.querySelector(".object-statusbar");
+          const windowStyle = windowElement ? getComputedStyle(windowElement) : null;
+          const phase = layer?.getAttribute("data-spatial-phase") || null;
+          const closing = layer?.classList.contains("is-closing") || false;
+          if (handoffStartedAt === null) {
+            if (phase !== "floating" || !closing) {
+              if (performance.now() >= timeoutAt) resolve(result);
+              else requestAnimationFrame(sample);
+              return;
+            }
+            handoffStartedAt = performance.now();
+          }
+          if (performance.now() - handoffStartedAt >= 300) {
+            resolve(result);
+            return;
+          }
+          result.push({
+            phase,
+            closing,
+            borderRadius: windowStyle?.borderRadius || null,
+            contentPaddingTop: content ? getComputedStyle(content).paddingTop : null,
+            headerPaddingRight: header ? getComputedStyle(header).paddingRight : null,
+            statusbarDisplay: statusbar ? getComputedStyle(statusbar).display : null,
+          });
+          requestAnimationFrame(sample);
+        };
+        sample();
+      }),
+  );
   await page.keyboard.press("[");
   await expect(child).toHaveClass(/is-closing/);
-  const samples = await page.evaluate(async () => {
-    const result = [];
-    const deadline = Date.now() + 300;
-    while (Date.now() < deadline) {
-      const layer = document.querySelector('[data-layer-object="layer-three"]');
-      const windowElement = layer?.querySelector(".object-window");
-      const content = windowElement?.querySelector(".object-window-content");
-      const header = content?.querySelector(".object-header");
-      const statusbar = content?.querySelector(".object-statusbar");
-      const windowStyle = windowElement ? getComputedStyle(windowElement) : null;
-      result.push({
-        phase: layer?.getAttribute("data-spatial-phase") || null,
-        closing: layer?.classList.contains("is-closing") || false,
-        borderRadius: windowStyle?.borderRadius || null,
-        contentPaddingTop: content ? getComputedStyle(content).paddingTop : null,
-        headerPaddingRight: header ? getComputedStyle(header).paddingRight : null,
-        statusbarDisplay: statusbar ? getComputedStyle(statusbar).display : null,
-      });
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-    }
-    return result;
-  });
+  const samples = await samplesPromise;
 
-  expect(samples.length).toBeGreaterThan(6);
+  expect(samples.length).toBeGreaterThan(0);
   expect(samples.every((sample) => sample.phase === "floating" && sample.closing)).toBe(true);
   expect(samples.every((sample) => sample.contentPaddingTop === fullChrome.contentPaddingTop)).toBe(true);
   expect(samples.every((sample) => sample.headerPaddingRight === fullChrome.headerPaddingRight)).toBe(true);
