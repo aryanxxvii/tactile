@@ -15,7 +15,7 @@ function parseArgs(argv) {
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (!["--dir", "--version", "--output", "--repo"].includes(argument)) {
+    if (!["--dir", "--version", "--output", "--repo", "--tag"].includes(argument)) {
       fail(`Unknown argument: ${argument}`);
     }
     const value = argv[index + 1];
@@ -25,8 +25,8 @@ function parseArgs(argv) {
     options[argument.slice(2)] = value;
     index += 1;
   }
-  if (!options.dir || !options.version || !options.repo) {
-    fail("--dir, --version, and --repo are required");
+  if (!options.dir || !options.version || !options.repo || !options.tag) {
+    fail("--dir, --version, --repo, and --tag are required");
   }
   return options;
 }
@@ -69,7 +69,7 @@ async function main() {
       fail(`Missing updater signature for ${path.basename(bundle)}`);
     }
     const signature = (await readFile(signatureFile, "utf8")).trim();
-    const url = `https://github.com/${options.repo}/releases/latest/download/${path.basename(bundle)}`;
+    const url = `https://github.com/${options.repo}/releases/download/${options.tag}/${path.basename(bundle)}`;
     for (const target of targets) {
       platforms[target] = { signature, url };
     }

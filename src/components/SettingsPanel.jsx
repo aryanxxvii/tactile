@@ -170,6 +170,8 @@ export function SettingsPanel({
   onExportWorkspace,
 onChangeWorkspaceFolder,
   onOpenWorkspaceFolder,
+  onGetUpdateChannel,
+  onSetUpdateChannel,
   onCheckForUpdate,
   onDownloadAndInstallUpdate,
   onOpenGuide,
@@ -182,6 +184,8 @@ onChangeWorkspaceFolder,
   const [authoringPromptCopied, setAuthoringPromptCopied] = useState(false);
   const [updateState, setUpdateState] = useState("idle");
   const [updateInfo, setUpdateInfo] = useState(null);
+  const [updateChannel, setUpdateChannel] = useState(null);
+  const [channelChanging, setChannelChanging] = useState(false);
   const themeInputRef = useRef(null);
   const panelRef = useRef(null);
   const closeRef = useRef(null);
@@ -251,23 +255,61 @@ onChangeWorkspaceFolder,
     if (tab.startsWith("plugin:") && !activePluginSettings) setTab("plugins");
   }, [activePluginSettings, tab]);
 
+  useEffect(() => {
+    if (tab !== "updates" || !onGetUpdateChannel) return undefined;
+    let active = true;
+    onGetUpdateChannel()
+      .then((channel) => {
+        if (active) setUpdateChannel(channel);
+      })
+      .catch(() => {
+        if (active) setUpdateState("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, [onGetUpdateChannel, tab]);
+
   const runUpdateCheck = async () => {
     if (!onCheckForUpdate) return;
     setUpdateState("checking");
-    const result = await onCheckForUpdate();
-    if (!result) {
-      setUpdateState("unavailable");
-    } else {
-      setUpdateInfo(result);
-      setUpdateState("available");
+    try {
+      const result = await onCheckForUpdate();
+      if (!result) {
+        setUpdateInfo(null);
+        setUpdateState("current");
+      } else {
+        setUpdateInfo(result);
+        setUpdateState("available");
+      }
+    } catch {
+      setUpdateState("error");
     }
   };
 
   const runUpdateInstall = async () => {
     if (!onDownloadAndInstallUpdate) return;
     setUpdateState("installing");
-    const installed = await onDownloadAndInstallUpdate();
-    if (!installed) setUpdateState("error");
+    try {
+      await onDownloadAndInstallUpdate();
+    } catch {
+      setUpdateState("error");
+    }
+  };
+
+  const changeUpdateChannel = async (channel) => {
+    if (!onSetUpdateChannel || channel === updateChannel) return;
+    setChannelChanging(true);
+    setUpdateInfo(null);
+    try {
+      const selected = await onSetUpdateChannel(channel);
+      setUpdateChannel(selected);
+      await runUpdateCheck();
+    } catch {
+      setUpdateState("error");
+    } finally {
+      setChannelChanging(false);
+    }
   };
 
   return (
@@ -507,11 +549,31 @@ onChangeWorkspaceFolder,
                   </small>
                 </div>
               </div>
+              <div className="updates-channel" aria-labelledby="updates-channel-label">
+                <div>
+                  <strong id="updates-channel-label">Update channel</strong>
+                  <small>Nightly includes alpha and release-candidate builds and may be less reliable.</small>
+                </div>
+                <div className="updates-channel-options" role="group" aria-label="Update channel">
+                  {["stable", "nightly"].map((channel) => (
+                    <button
+                      className={updateChannel === channel ? "is-selected" : ""}
+                      type="button"
+                      aria-pressed={updateChannel === channel}
+                      disabled={!updateChannel || channelChanging || updateState === "checking" || updateState === "installing"}
+                      onClick={() => changeUpdateChannel(channel)}
+                      key={channel}
+                    >
+                      {channel === "stable" ? "Stable" : "Nightly"}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="updates-status" role="status">
                 {updateState === "idle" || updateState === "checking"
-                  ? <em>{updateState === "checking" ? "Checking for updates…" : "Not checked yet."}</em>
-                  : updateState === "unavailable"
-                    ? <em>You are on the latest version.</em>
+                  ? <em>{updateState === "checking" ? "Checking for updates…" : updateChannel ? "Not checked yet." : "Loading update channel…"}</em>
+                  : updateState === "current"
+                    ? <em>{updateChannel === "nightly" ? "No newer alpha or RC build is available." : "No newer stable version is available."}</em>
                     : updateState === "error"
                       ? <em className="is-error">Update failed. Try again.</em>
                       : updateState === "installing"

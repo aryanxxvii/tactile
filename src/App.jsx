@@ -684,6 +684,8 @@ export function App() {
             onExportWorkspace={commands.exportWorkspace}
             onChangeWorkspaceFolder={nativeRuntime ? changeNativeWorkspaceFolder : undefined}
             onOpenWorkspaceFolder={nativeRuntime ? openNativeWorkspaceFolder : undefined}
+            onGetUpdateChannel={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.getUpdateChannel()) : undefined}
+            onSetUpdateChannel={nativeRuntime ? (channel) => import("./platform/tauri/updater.js").then((m) => m.setUpdateChannel(channel)) : undefined}
             onCheckForUpdate={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.checkForUpdate()) : undefined}
             onDownloadAndInstallUpdate={nativeRuntime ? () => import("./platform/tauri/updater.js").then((m) => m.downloadAndInstallUpdate()) : undefined}
             onOpenGuide={nativeRuntime ? () => setNativeGuideOpen(true) : undefined}

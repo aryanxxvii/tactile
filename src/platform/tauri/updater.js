@@ -1,23 +1,24 @@
 import { resolveTauriInvoke } from "./runtime.ts";
 
-export async function checkForUpdate() {
+function requireInvoke() {
   const invoke = resolveTauriInvoke();
-  if (!invoke) return null;
-  try {
-    const result = await invoke("check_for_update");
-    return result ?? null;
-  } catch {
-    return null;
-  }
+  if (!invoke) throw new Error("Tauri updater is unavailable");
+  return invoke;
+}
+
+export async function getUpdateChannel() {
+  return requireInvoke()("get_update_channel");
+}
+
+export async function setUpdateChannel(channel) {
+  return requireInvoke()("set_update_channel", { channel });
+}
+
+export async function checkForUpdate() {
+  const result = await requireInvoke()("check_for_update");
+  return result ?? null;
 }
 
 export async function downloadAndInstallUpdate() {
-  const invoke = resolveTauriInvoke();
-  if (!invoke) return false;
-  try {
-    await invoke("download_and_install_update");
-    return true;
-  } catch {
-    return false;
-  }
+  await requireInvoke()("download_and_install_update");
 }
