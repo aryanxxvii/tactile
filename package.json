@@ -13,6 +13,7 @@
     "postcss": "8.5.26"
   },
   "scripts": {
+    "git:install": "node scripts/release/install-git-build.mjs",
     "version:sync": "node scripts/release/sync-version.mjs",
     "version:check": "node scripts/release/sync-version.mjs --check",
     "predev": "npm run version:sync && npm run version:check",

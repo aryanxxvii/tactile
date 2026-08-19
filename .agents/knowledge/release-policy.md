@@ -11,7 +11,9 @@ Block force-push/deletion on both long-lived branches. Delete temporary branches
 
 ## Versions and tags
 
-`version.json` is the only manually edited app version. Synchronize npm, Tauri, and Cargo mirrors with `npm run version:sync`.
+`version.json` is the app version authority. Use the repository-local `git build` command for app releases; it updates
+`version.json`, synchronizes npm, Tauri, and Cargo mirrors, validates, commits, and publishes only from the required
+branch. Manual repair uses `npm run version:sync`.
 
 | Tag                  | Source  | Publication                       |
 | -------------------- | ------- | --------------------------------- |
@@ -21,6 +23,11 @@ Block force-push/deletion on both long-lived branches. Delete temporary branches
 | `tactile.name@X.Y.Z` | `main`  | One-plugin draft release          |
 
 Tags and published versions are immutable. CI validates source branch, tag, and manifests before building.
+
+Canonical prerelease versions use `X.Y.Z-alpha.N` or `X.Y.Z-rc.N`, with `N` in `1..9999`. WiX/MSI cannot encode
+named prerelease identifiers, so Windows CI projects alpha builds to `X.Y.Z-(10000 + N)` and RC builds to
+`X.Y.Z-(20000 + N)` at bundle time. This platform projection is not committed and does not replace the canonical
+version or release tag.
 
 ## Artifacts
 

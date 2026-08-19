@@ -49,11 +49,14 @@ See [the developer release workflow](.agents/knowledge/development-workflow.md) 
 `version.json` owns the complete app version. Do not directly edit the mirrored version fields in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, or `src-tauri/Cargo.lock`.
 
 ```text
+npm run git:install
 npm run version:sync
 npm run version:check
 ```
 
-Development and production npm/Tauri builds synchronize automatically. Direct Cargo builds and release workflows only validate and fail on drift; they do not repair committed files. Marketplace plugin versions remain independent. See [the release policy](.agents/knowledge/release-policy.md#versions-and-tags) for ownership rules and [the developer workflow](.agents/knowledge/development-workflow.md) for release commands.
+`npm run git:install` adds the repository-local `git build` release command for the current clone. Run `git build alpha` on `alpha` to select, commit, tag, and atomically push the next prerelease. Run `git build stable X.Y.Z` on `alpha`, merge the resulting release PR to `main`, then run `git build stable X.Y.Z --publish` on `main`.
+
+Development and production npm/Tauri builds synchronize automatically. Direct Cargo builds and release workflows only validate and fail on drift; they do not repair committed files. Canonical alpha/RC versions retain their named SemVer identifiers; Windows CI derives a numeric-only MSI bundle version without changing committed metadata. Marketplace plugin versions remain independent. See [the release policy](.agents/knowledge/release-policy.md#versions-and-tags) for ownership rules and [the developer workflow](.agents/knowledge/development-workflow.md) for release commands.
 
 ## Marketplace plugins
 

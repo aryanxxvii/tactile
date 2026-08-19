@@ -97,6 +97,16 @@ jobs:
           echo "VITE_TACTILE_PLATFORM=${{ matrix.platform }}" >> "$GITHUB_ENV"
           echo "VITE_TACTILE_COMMIT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
+      - name: Resolve Windows bundle version
+        if: matrix.platform == 'windows-x64'
+        id: windows-bundle-version
+        shell: pwsh
+        run: |
+          $version = node scripts/release/windows-bundle-version.mjs "$env:GITHUB_REF_NAME"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "Windows bundle version: $version" >> $env:GITHUB_STEP_SUMMARY
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -246,9 +256,11 @@ jobs:
         env:
           WINDOWS_CERTIFICATE_THUMBPRINT: ${{ steps.windows-prereqs.outputs.certificate_thumbprint }}
           WINDOWS_TIMESTAMP_URL: ${{ steps.windows-prereqs.outputs.timestamp_url }}
+          WINDOWS_BUNDLE_VERSION: ${{ steps.windows-bundle-version.outputs.version }}
         run: |
           $configPath = Join-Path $env:RUNNER_TEMP "tactile-windows-signing.json"
           $config = @{
+            version = $env:WINDOWS_BUNDLE_VERSION
             bundle = @{
               windows = @{
                 certificateThumbprint = $env:WINDOWS_CERTIFICATE_THUMBPRINT
@@ -267,10 +279,18 @@ jobs:
       - name: Build unsigned Windows Tauri bundle
         if: matrix.platform == 'windows-x64' && steps.windows-prereqs.outputs.signing_ready != 'true'
         shell: pwsh
+        env:
+          WINDOWS_BUNDLE_VERSION: ${{ steps.windows-bundle-version.outputs.version }}
         run: |
+          $configPath = Join-Path $env:RUNNER_TEMP "tactile-windows-version.json"
+          @{ version = $env:WINDOWS_BUNDLE_VERSION } |
+            ConvertTo-Json |
+            Set-Content -Path $configPath -Encoding utf8
+
           npx --yes @tauri-apps/cli@2.11.4 build `
             --target '${{ matrix.rust-target }}' `
-            --bundles '${{ matrix.bundles }}'
+            --bundles '${{ matrix.bundles }}' `
+            --config $configPath
 
       - name: Build non-Windows Tauri bundle
         if: matrix.platform != 'windows-x64'
