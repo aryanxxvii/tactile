@@ -15,6 +15,8 @@ function versionFromTag(tag, pattern, description) {
   return match;
 }
 
+const APP_RELEASE_TAG_PATTERN = /^v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:alpha|rc)\.(?:0|[1-9]\d*))?)$/;
+
 function cargoPackageVersion(contents, filePath) {
   const version = /\[\[?package\]?\][\s\S]*?^name\s*=\s*"tactile"\s*$[\s\S]*?^version\s*=\s*"([^"]+)"\s*$/m.exec(
     contents,
@@ -24,7 +26,11 @@ function cargoPackageVersion(contents, filePath) {
 }
 
 async function validateApp(tag) {
-  const [, , tagVersion] = versionFromTag(tag, /^(alpha|release)@([^@]+)$/, "alpha@<version> or release@<version>");
+  const [, tagVersion] = versionFromTag(
+    tag,
+    APP_RELEASE_TAG_PATTERN,
+    "v<major>.<minor>.<patch>, v<version>-alpha.<number>, or v<version>-rc.<number>",
+  );
   const authoritativeVersion = String((await readJson("version.json")).version || "");
   const packageVersion = String((await readJson("package.json")).version || "");
   const packageLock = await readJson("package-lock.json");

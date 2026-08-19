@@ -80,15 +80,20 @@ export function SheetObject({
     }
   };
 
-  const focusFormulaBar = (initialValue, targetAddress = selectedCell?.address || "A1") => {
+  const focusFormulaBar = (initialValue, targetAddress = selectedCell?.address || "A1", options = {}) => {
     const targetCoordinates = coordinatesFromAddress(targetAddress);
     const targetCellId = targetCoordinates
       ? cellId(targetCoordinates.row, targetCoordinates.column)
       : selectedCell?.id || null;
     if (targetAddress !== selectedCell?.address) onSelectAddress(targetAddress);
+    if (options.inline === false) {
+      setEditingCellId(null);
+      window.requestAnimationFrame(() => formulaEditorRef.current?.focus());
+      return;
+    }
     setEditingCellId(targetCellId);
     window.requestAnimationFrame(() => {
-      if (initialValue != null) dispatchCellEditSeed(formulaEditorRef.current, initialValue);
+      if (initialValue != null) dispatchCellEditSeed(formulaEditorRef.current, initialValue, { focus: false });
       const input = document.querySelector(
         `[data-object-id="${object.id}"][data-cell-address="${targetAddress}"] .cell-inline-editor`,
       );

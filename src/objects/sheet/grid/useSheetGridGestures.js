@@ -36,11 +36,20 @@ function edgeScrollStep(coordinate, start, end) {
 
 function domCellAddressAtPoint(event, objectId) {
   if (!Number.isFinite(event?.clientX) || !Number.isFinite(event?.clientY)) return null;
-  return document
-    .elementsFromPoint(event.clientX, event.clientY)
-    .map((element) => element.closest?.(".sheet-cell"))
-    .find((cell) => cell?.dataset.objectId === objectId)
-    ?.dataset.cellAddress || null;
+  const slot = [...document.querySelectorAll(
+    `.virtual-cell-slot[data-virtual-object-id="${CSS.escape(objectId)}"]`,
+  )].find((element) => {
+    const bounds = element.getBoundingClientRect();
+    return event.clientX >= bounds.left && event.clientX < bounds.right
+      && event.clientY >= bounds.top && event.clientY < bounds.bottom;
+  });
+  if (slot) return slot.dataset.virtualCellAddress || null;
+  const elements = document.elementsFromPoint(event.clientX, event.clientY);
+  for (const element of elements) {
+    const cell = element.closest?.(".sheet-cell");
+    if (cell?.dataset.objectId === objectId) return cell.dataset.cellAddress || null;
+  }
+  return null;
 }
 
 function captureGesturePointer(gesture, event) {
@@ -57,7 +66,7 @@ function captureGesturePointer(gesture, event) {
 
 function focusSelectedGestureCell(objectId, address, attempt = 0) {
   window.requestAnimationFrame(() => {
-    if (document.activeElement?.matches(".formula-editor")) return;
+    if (document.activeElement?.matches(".formula-editor, .cell-inline-editor")) return;
     const nextCell = document.querySelector(
       `[data-object-id="${objectId}"][data-cell-address="${address}"]`,
     );
@@ -195,7 +204,7 @@ export function useSheetGridGestures({
       focusFrameRef.current = window.requestAnimationFrame(() => {
         focusFrameRef.current = window.requestAnimationFrame(() => {
           focusFrameRef.current = null;
-          if (document.activeElement?.matches(".formula-editor")) return;
+          if (document.activeElement?.matches(".formula-editor, .cell-inline-editor")) return;
           const nextCell = scroller.querySelector(
             `.sheet-cell[data-cell-address="${selectedAddress}"]`,
           );
@@ -330,7 +339,7 @@ export function useSheetGridGestures({
     const pending = selectionRangePendingRef.current;
     selectionRangePendingRef.current = null;
     if (pending) {
-      gestureCallbacksRef.current?.onSelectRange?.(pending.anchor, pending.focus);
+      gestureCallbacksRef.current?.onSelectRange?.(pending.anchor, pending.focus, pending.focus);
     }
   }, []);
 
@@ -350,7 +359,7 @@ export function useSheetGridGestures({
       const pending = selectionRangePendingRef.current;
       selectionRangePendingRef.current = null;
       if (pending) {
-        gestureCallbacksRef.current?.onSelectRange?.(pending.anchor, pending.focus);
+        gestureCallbacksRef.current?.onSelectRange?.(pending.anchor, pending.focus, pending.focus);
       }
     });
   }, []);
@@ -468,6 +477,7 @@ export function useSheetGridGestures({
       }
       selectionDragRef.current = null;
       selectionPointerRef.current = null;
+      delete scrollRef.current?.dataset.selectionDragging;
       formulaReferenceDragRef.current = null;
       const target = fillTargetRef.current;
       fillDragRef.current = null;
@@ -508,8 +518,9 @@ export function useSheetGridGestures({
     // Let the browser own drags that begin on a cell's value text. A grid
     // selection gesture would otherwise capture the pointer before a partial
     // text selection can be painted, while clicks still select the cell.
-    const selectingText = event.target instanceof Element
-      && event.target.closest(".cell-value");
+    const selectingText = Boolean((cell.value || cell.formula)
+      && event.target instanceof Element
+      && event.target.closest(".cell-value"));
     const nativeSelection = typeof window !== "undefined" ? window.getSelection() : null;
     const selectionBelongsToCell = nativeSelection?.anchorNode
       && event.currentTarget.contains(nativeSelection.anchorNode);
@@ -541,6 +552,7 @@ export function useSheetGridGestures({
         captureTarget,
         captured: false,
       };
+      if (scrollRef.current) scrollRef.current.dataset.selectionDragging = "true";
       selectionPointerRef.current = {
         clientX: event.clientX,
         clientY: event.clientY,
@@ -574,6 +586,7 @@ export function useSheetGridGestures({
         // fallback beneath the cell under the pointer.
         selectionDragRef.current = null;
         selectionPointerRef.current = null;
+        delete scrollRef.current?.dataset.selectionDragging;
         stopSelectionAutoScroll();
         return;
       }

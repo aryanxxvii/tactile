@@ -3,8 +3,7 @@ name: Release app packages
 on:
   push:
     tags:
-      - "alpha@*"
-      - "release@*"
+      - "v*"
 
 concurrency:
   group: release-${{ github.ref }}
@@ -53,6 +52,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -65,6 +66,36 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: node scripts/release/validate-release-version.mjs app "$RELEASE_TAG"
+
+      - name: Validate release source branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          required_branch=main
+          if [[ "$version" == *-alpha.* || "$version" == *-rc.* ]]; then
+            required_branch=alpha
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$required_branch"; then
+            echo "Tag $GITHUB_REF_NAME must identify a commit from $required_branch." >&2
+            exit 1
+          fi
+
+      - name: Set build metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          channel=release
+          if [[ "$version" == *-alpha.* ]]; then
+            channel=alpha
+          elif [[ "$version" == *-rc.* ]]; then
+            channel=rc
+          fi
+          echo "VITE_TACTILE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "VITE_TACTILE_CHANNEL=$channel" >> "$GITHUB_ENV"
+          echo "VITE_TACTILE_PLATFORM=${{ matrix.platform }}" >> "$GITHUB_ENV"
+          echo "VITE_TACTILE_COMMIT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -189,7 +220,7 @@ jobs:
         run: npm ci
 
       - name: Apply alpha app icon
-        if: startsWith(github.ref, 'refs/tags/alpha@')
+        if: contains(github.ref_name, '-alpha.')
         shell: bash
         run: |
           set -euo pipefail
@@ -331,10 +362,10 @@ jobs:
           MACOS_STATUS: ${{ steps.release-label.outputs.suffix }}
         run: |
           set -euo pipefail
-          build_type="${GITHUB_REF_NAME%%@*}"
-          if [[ "$build_type" != alpha && "$build_type" != release ]]; then
-            echo "Unsupported app release tag: $GITHUB_REF_NAME" >&2
-            exit 1
+          version="${GITHUB_REF_NAME#v}"
+          build_type=release
+          if [[ "$version" == *-alpha.* ]]; then
+            build_type=alpha
           fi
           suffix="$build_type"
           if [[ -n "${MACOS_STATUS:-}" ]]; then
@@ -366,9 +397,6 @@ jobs:
 
   publish:
     name: Publish release assets
-    if: >-
-      startsWith(github.ref, 'refs/tags/alpha@') ||
-      startsWith(github.ref, 'refs/tags/release@')
     needs: package
     runs-on: ubuntu-24.04
     permissions:
@@ -400,10 +428,11 @@ jobs:
         run: node scripts/release/validate-artifacts.mjs --dir release-artifacts --expected msi,dmg,tar.gz,appimage,deb --checksums release-artifacts/SHA256SUMS.txt
 
       - name: Generate updater manifest
+        if: ${{ ! contains(github.ref_name, '-') }}
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#*@}"
+          version="${GITHUB_REF_NAME#v}"
           node scripts/release/create-updater-manifest.mjs \
             --dir release-artifacts \
             --version "$version" \
@@ -418,16 +447,21 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create or update draft GitHub release
+      - name: Publish immutable GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" release-artifacts/* --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" release-artifacts/* \
-              --draft \
-              --generate-notes \
-              --title "Tactile $GITHUB_REF_NAME"
+            echo "Release $GITHUB_REF_NAME already exists; published versions are immutable." >&2
+            exit 1
           fi
+
+          version="${GITHUB_REF_NAME#v}"
+          release_flags=(--generate-notes --title "Tactile $GITHUB_REF_NAME")
+          if [[ "$version" == *-* ]]; then
+            release_flags+=(--prerelease)
+          else
+            release_flags+=(--draft)
+          fi
+          gh release create "$GITHUB_REF_NAME" release-artifacts/* "${release_flags[@]}"

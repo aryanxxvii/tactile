@@ -25,7 +25,7 @@ import {
   adjustFormulaForAxis,
   reorderFormulaForAxis,
 } from "../sheet/structure.js";
-import { loadWorkspace, loadWorkspaceCache, saveWorkspace } from "../storage.js";
+import { loadWorkspace, loadWorkspaceCache, saveWorkspace, saveWorkspaceCache } from "../storage.js";
 import { createWave2Shadow } from "../core/engine/shadow.js";
 import { recordCellChanges } from "../objects/sheet/grid/cellChangeJournal.js";
 import { isTauriRuntime } from "../platform/tauri/runtime.ts";
@@ -224,6 +224,7 @@ export function useLocalWorkspace() {
     if (!hydrated) return undefined;
     const shadow = wave2ShadowRef.current;
     const sequence = ++saveSequenceRef.current;
+    saveWorkspaceCache(workspace);
     // The Wave 2 record adapter persists dirty cells and metadata as patches.
     // Falling back to the legacy snapshot writer here during normal edits
     // serializes the entire workspace on the input path, including large

@@ -5,5 +5,5 @@ await runBrowserBaseline([
   "--screenshots",
   "tests/visual/baselines",
   "--output",
-  "docs/performance/visual-results.json",
+  "evidence/performance/visual-results.json",
 ]);

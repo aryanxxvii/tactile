@@ -25,7 +25,7 @@ No public release line or supported-version window is declared. The repository c
 - Native storage uses acknowledged WAL frames and atomic checkpoints in the current recovery scaffold. A torn journal tail is truncated during replay, and a deleted cache can be rebuilt from portable files.
 - Storage errors intentionally expose stable categories rather than raw filesystem paths.
 
-These controls are implementation evidence, not a guarantee that every object renderer, WebView, operating-system file handler, or future plugin is safe. See [the threat model](docs/security/threat-model.md) for residual risks and release gates.
+These controls are implementation evidence, not a guarantee that every object renderer, WebView, operating-system file handler, or future plugin is safe. See [security knowledge](.agents/knowledge/security.md) for residual risks and release gates.
 
 ## Reporting useful evidence
 
@@ -35,7 +35,7 @@ For a sensitive report, wait for the owner-configured private channel. Do not at
 
 ## Supply-chain response
 
-Dependency changes must update the relevant lockfile and regenerate `docs/release/sbom-npm.cdx.json`, `docs/release/sbom-cargo.cdx.json`, and `docs/release/third-party-inventory.json`. Run the applicable audit and test gates, record exceptions, and require owner/legal review of license obligations. The current repository does not evidence a signing key, provenance service, or complete third-party notice bundle; those are release prerequisites.
+Dependency changes must update the relevant lockfile and regenerate `evidence/release/sbom-npm.cdx.json`, `evidence/release/sbom-cargo.cdx.json`, and `evidence/release/third-party-inventory.json`. Run the applicable audit and test gates, record exceptions, and require owner/legal review of license obligations. The current repository does not evidence a signing key, provenance service, or complete third-party notice bundle; those are release prerequisites.
 
 ## Owner prerequisites before a public release
 

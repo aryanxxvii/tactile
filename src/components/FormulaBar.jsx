@@ -278,6 +278,7 @@ function FormulaEditor({ value, address, cellId, cell, formulaSheet, inputRef, o
       setActiveIndex(0);
       publishDraft(next);
       onFormulaModeChange?.(next.startsWith("="));
+      if (event.detail?.focus === false) return;
       window.requestAnimationFrame(() => {
         input.focus();
         const caret = input.value.length;

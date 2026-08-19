@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -34,7 +36,19 @@ jobs:
           cache: npm
 
       - name: Validate plugin release version
-        run: node scripts/release/validate-release-version.mjs plugin "$GITHUB_REF_NAME"
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/release/validate-release-version.mjs plugin "$RELEASE_TAG"
+
+      - name: Validate plugin release source branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Plugin tag $GITHUB_REF_NAME must identify a commit from main." >&2
+            exit 1
+          fi
 
       - name: Install JavaScript dependencies
         run: npm ci
@@ -74,7 +88,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create or update draft GitHub release
+      - name: Create immutable draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_ID: ${{ steps.plugin.outputs.package_id }}
@@ -82,10 +96,10 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" plugin-release-artifacts/* --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" plugin-release-artifacts/* \
-              --draft \
-              --generate-notes \
-              --title "$PACKAGE_ID ${{ steps.plugin.outputs.tag_version }}"
+            echo "Release $GITHUB_REF_NAME already exists; published plugin versions are immutable." >&2
+            exit 1
           fi
+          gh release create "$GITHUB_REF_NAME" plugin-release-artifacts/* \
+            --draft \
+            --generate-notes \
+            --title "$PACKAGE_ID ${{ steps.plugin.outputs.tag_version }}"

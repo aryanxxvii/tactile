@@ -3,11 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+
 import {
   fixtureFingerprint,
   validatePerformanceWorkspace,
   writePerformanceFixture,
 } from "../../benchmarks/generate-fixture.mjs";
+
 import { measureBundle } from "./bundle.mjs";
 import {
   createMeasurementInitScript,
@@ -24,7 +26,7 @@ function parseArgs(argv) {
   const args = {
     baseUrl: "http://127.0.0.1:5173",
     fixture: "",
-    output: "docs/performance/browser-results.json",
+    output: "evidence/performance/browser-results.json",
     screenshots: "tests/visual/baselines",
     runs: 1,
     headless: true,

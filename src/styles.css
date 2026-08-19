@@ -1216,6 +1216,10 @@ input:focus-visible,
   transform: translateY(-2px);
 }
 
+.sheet-scroll[data-selection-dragging="true"] .sheet-cell {
+  transition: none;
+}
+
 .sheet-cell.is-selected {
   z-index: 6;
   border-color: transparent;
@@ -5596,7 +5600,7 @@ kbd {
   /*padding: "5px";*/
   inset: auto 0 0;
   z-index: 240;
-  height: 31px;
+  height: 32px;
   /*display: flex;*/
   align-items: center;
   transform: translate3d(0, 0, 0);
@@ -5622,6 +5626,11 @@ kbd {
   /* The dock remains an active navigation surface while a child is
      floating; only the parent worksheet surface is inert. */
   pointer-events: auto;
+  background: var(--paper);
+}
+
+.tactile-app.has-floating-layer .app-bottom-bar > .app-dock {
+  background: transparent;
 }
 
 .tactile-app.settings-open .app-bottom-bar {
@@ -5732,15 +5741,6 @@ kbd {
   gap: 8px;
 }
 
-.app-dock-path-panel.is-entering,
-.app-dock-path-panel.is-leaving {
-  animation: files-panel-in 180ms ease-out both;
-}
-
-.app-dock-path-panel.is-leaving {
-  animation-direction: reverse;
-}
-
 .app-dock-path-part {
   min-width: 0;
   flex: 0 1 auto;
@@ -5782,6 +5782,7 @@ kbd {
 }
 
 .app-dock-path-part > .app-dock-path-button:hover,
+.app-dock-path-part > .app-dock-path-button.is-hovered,
 .app-dock-path-part > .app-dock-path-button:focus-visible {
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -6114,6 +6115,11 @@ kbd {
   z-index: 240;
   opacity: 1;
   filter: none;
+  background: var(--paper);
+}
+
+.tactile-app:has(> .files-layer):not(.has-floating-layer):not(.settings-open) .app-bottom-bar > .app-dock {
+  background: transparent;
 }
 
 .files-scrim {
@@ -6338,7 +6344,6 @@ kbd {
   align-items: stretch;
   padding-left: calc(var(--files-depth) * 15px);
   border-radius: 4px;
-  transition: background-color 120ms ease, box-shadow 120ms ease;
 }
 
 .files-tree-row:hover,
@@ -7372,6 +7377,7 @@ kbd {
    its richer command groups, but the rail, groups, buttons, and color
    triggers use the same dimensions and surfaces as the sheet formatter. */
 .markdown-toolbar.cell-format-toolbar {
+  position: relative;
   width: 100%;
   max-width: 100%;
   align-self: center;
@@ -7383,6 +7389,15 @@ kbd {
   border: 0;
   background: transparent;
   overflow: visible;
+}
+
+.markdown-toolbar.cell-format-toolbar > .markdown-insert-group + .markdown-toolbar-separator {
+  display: none;
+}
+
+.markdown-toolbar.cell-format-toolbar > .markdown-style-group:last-child {
+  position: absolute;
+  right: 0;
 }
 
 .markdown-toolbar .markdown-mode-switch {
@@ -7471,5 +7486,9 @@ kbd {
     justify-content: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
+  }
+
+  .markdown-toolbar.cell-format-toolbar > .markdown-style-group:last-child {
+    position: static;
   }
 }

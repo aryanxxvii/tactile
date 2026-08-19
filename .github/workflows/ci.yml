@@ -1,0 +1,120 @@
+name: Application CI
+
+on:
+  push:
+    branches:
+      - alpha
+      - "feature/**"
+      - "fix/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - alpha
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_AUDIT: "false"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality:
+    name: Quality and unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run version:check
+      - name: Check changed-file formatting
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${BASE_SHA:-}" || "$BASE_SHA" =~ ^0+$ ]]; then
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              BASE_SHA="$(git rev-parse HEAD^)"
+            else
+              BASE_SHA="$(git hash-object -t tree /dev/null)"
+            fi
+          fi
+          mapfile -d '' files < <(
+            git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$GITHUB_SHA" -- \
+              '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.json' '*.yml' '*.yaml' '*.md' '*.css' '*.html' \
+              ':(exclude)evidence/**'
+          )
+          if (( ${#files[@]} )); then
+            npx prettier --check "${files[@]}"
+          fi
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
+
+  web:
+    name: Web build and browser tests
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/alpha'
+    needs: quality
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:sites
+      - run: npm run test:component
+      - run: npm run test:e2e
+      - name: Upload alpha web build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/alpha'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactile-alpha-web-${{ github.sha }}
+          path: dist/client
+          if-no-files-found: error
+          retention-days: 1
+
+  native:
+    name: Native checks
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/alpha'
+    needs: quality
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Tauri Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential \
+            file \
+            libayatana-appindicator3-dev \
+            libglib2.0-dev \
+            libgtk-3-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            librsvg2-dev \
+            pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+      - run: cargo check --manifest-path src-tauri/Cargo.toml
+      - run: cargo test --manifest-path src-tauri/Cargo.toml

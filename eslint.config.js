@@ -44,7 +44,7 @@ export default tseslint.config(
       "*.js",
       "*.mjs",
       "benchmarks/**/*.mjs",
-      "docs/**/*.mjs",
+      "config/**/*.mjs",
       "scripts/**/*.mjs",
       "tests/**/*.mjs",
       "src/compat/**/*.js",

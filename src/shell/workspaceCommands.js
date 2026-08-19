@@ -1,15 +1,9 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
+import { downloadWorkspaceZip, importWorkspaceFile } from "../export.js";
 import { cloneTheme, downloadTheme, themeFromFile } from "../themes.js";
 import { inferFileObjectType, isBareUrlValue } from "../model.js";
 import { readLocalFile } from "./selectionCommands.js";
 import { useObjectPluginCommands } from "../objects/registry/ObjectPluginProvider.jsx";
-
-let portableCommandsPromise;
-
-function loadPortableCommands() {
-  portableCommandsPromise ||= import("../export.js");
-  return portableCommandsPromise;
-}
 
 export function useWorkspaceCommands({
   workspace,
@@ -33,11 +27,12 @@ export function useWorkspaceCommands({
   importInputRef,
   resetSelection,
 }) {
+  const openObjectRef = useRef(openObject);
+  openObjectRef.current = openObject;
   const plugins = useObjectPluginCommands();
   const exportWorkspace = useCallback(async () => {
     setExportState("exporting");
     try {
-      const { downloadWorkspaceZip } = await loadPortableCommands();
       await downloadWorkspaceZip(workspace);
       showNotice("Portable .zip workspace exported");
     } catch (error) {
@@ -56,7 +51,6 @@ export function useWorkspaceCommands({
     event.target.value = "";
     if (!file) return;
     try {
-      const { importWorkspaceFile } = await loadPortableCommands();
       const imported = await importWorkspaceFile(file);
       replaceWorkspace(imported);
       resetSelection();
@@ -137,7 +131,7 @@ export function useWorkspaceCommands({
     const created = createEmbeddedLink(parentObjectId, payload.sourceCellId, payload.linkUrl);
     if (!created) return;
     schedule(() => {
-      openObject({
+      openObjectRef.current?.({
         ...payload,
         objectId: created.id,
         sourceObjectId: parentObjectId,

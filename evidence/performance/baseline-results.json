@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "packet": "A01",
+  "phase": "integrated-wave-0",
+  "capturedOn": "2026-08-12",
+  "product": "Tactile",
+  "baselineKind": "unmodified-product-wave-0",
+  "environment": {
+    "node": "v24.13.0",
+    "platform": "win32",
+    "arch": "x64",
+    "logicalCpuCount": 12,
+    "totalMemoryBytes": 16477036544,
+    "referenceTarget": "four-core, 16 GB machine not available in this environment"
+  },
+  "fixture": {
+    "fingerprint": "8131f38127645b677ad39c84e2296bcafdb2d0fd4490ebc0737e69d5a8db46a4",
+    "objects": 100,
+    "sheets": 6,
+    "usedCells": 250000,
+    "rootSheetUsedCells": 100000,
+    "formulas": 25000,
+    "conditionalFormatRules": 25,
+    "nestedEmbedDepth": 5,
+    "markdownBytes": 256000,
+    "binaryAssetBytesRepresented": 104857600
+  },
+  "bundle": {
+    "javascript": { "rawBytes": 471710, "gzipBytes": 140125, "budgetGzipBytes": 112640, "budgetStatus": "over" },
+    "css": { "rawBytes": 81918, "gzipBytes": 14505, "budgetGzipBytes": 18432, "budgetStatus": "within" },
+    "transformedModules": 6258,
+    "buildSecondsObserved": 32.1
+  },
+  "browserHarness": {
+    "status": "measured",
+    "resultFile": "evidence/performance/browser-results.json",
+    "visualResultFile": "evidence/performance/visual-results.json",
+    "typingActionCompleted": true,
+    "reactCommitCountsObservable": true,
+    "scenarios": {
+      "fixtureImport": { "reactCommitCount": 9, "mountedCellsMax": 390 },
+      "scroll": { "frameTimeP95Ms": 200.1, "maxLongTaskMs": 1801, "mountedCellsMax": 570, "reactCommitCount": 54 },
+      "typing": {
+        "frameTimeP95Ms": 283.2,
+        "inputLatencyP95Ms": 2536,
+        "maxLongTaskMs": 2509,
+        "mountedCellsMax": 390,
+        "reactCommitCount": 7
+      },
+      "inOut": {
+        "frameTimeP95Ms": 166.7,
+        "inputLatencyP95Ms": 2536,
+        "maxLongTaskMs": 2509,
+        "mountedCellsMax": 780,
+        "reactCommitCount": 14
+      },
+      "nested": {
+        "frameTimeP95Ms": 300.1,
+        "inputLatencyP95Ms": 2528,
+        "maxLongTaskMs": 2509,
+        "mountedCellsMax": 1935,
+        "reactCommitCount": 52
+      }
+    }
+  },
+  "releaseBudgets": {
+    "inputToPaintP95Ms": 50,
+    "frameTimeP95Ms": 16.7,
+    "repeatedMainThreadTaskMs": 50,
+    "initialJavascriptGzipBytes": 112640,
+    "cssGzipBytes": 18432,
+    "regressionTolerance": 0.1
+  },
+  "verification": {
+    "tests": 32,
+    "sitesArtifacts": true,
+    "npmAuditHighOrCritical": 0,
+    "rustAvailable": true,
+    "rustVersion": "1.97.1",
+    "cargoFmtCheck": true,
+    "cargoClippyWarningsDenied": true,
+    "cargoTest": true
+  }
+}

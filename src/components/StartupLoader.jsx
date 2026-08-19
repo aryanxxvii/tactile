@@ -4,7 +4,8 @@ const LOADER_STYLE = `
 .startup-loader { position: fixed; inset: 0; z-index: 1400; display: grid; place-items: center; background: var(--app-background, #ede9e2); animation: startup-loader-in 180ms ease-out both; }
 html[data-startup-theme="dark"] .startup-loader { background: #1f232b; }
 html[data-startup-theme="light"] .startup-loader { background: #ede9e2; }
-.startup-loader.is-leaving { pointer-events: none; animation: startup-loader-out 260ms ease-in both; }
+.startup-loader.is-ready { pointer-events: none; }
+.startup-loader.is-leaving { animation: startup-loader-out 260ms ease-in both; }
 .startup-loader-mark { display: block; width: 96px; height: 96px; overflow: visible; filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--accent, #b34d35) 18%, transparent)); animation: startup-loader-mark 4800ms cubic-bezier(.45, 0, .25, 1) infinite; }
 @keyframes startup-loader-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes startup-loader-out { from { opacity: 1; } to { opacity: 0; } }
@@ -25,6 +26,7 @@ export function StartupLoader({ active = true, holdUntilReady = false, minimumDu
     }
     const handleReady = () => setReady(true);
     window.addEventListener("tactile:startup-ready", handleReady, { once: true });
+    if (document.documentElement.dataset.startupReady === "true") handleReady();
     return () => window.removeEventListener("tactile:startup-ready", handleReady);
   }, [active, holdUntilReady]);
 
@@ -44,7 +46,7 @@ export function StartupLoader({ active = true, holdUntilReady = false, minimumDu
   return (
     <>
       <style>{LOADER_STYLE}</style>
-      <div className={`startup-loader ${leaving ? "is-leaving" : "is-active"}`} role="status" aria-label="Loading Tactile">
+      <div className={`startup-loader ${ready ? "is-ready" : ""} ${leaving ? "is-leaving" : "is-active"}`} role="status" aria-label="Loading Tactile">
         <svg className="startup-loader-mark" viewBox="0 0 64 64" aria-hidden="true">
           <defs>
             <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">

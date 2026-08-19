@@ -16,6 +16,7 @@ try {
   // The dark native startup surface remains the safe fallback.
 }
 document.documentElement.dataset.startupTheme = startupTheme;
+delete document.documentElement.dataset.startupReady;
 
 const App = lazy(() => import("./App.jsx").then(({ App: Component }) => ({ default: Component })));
 

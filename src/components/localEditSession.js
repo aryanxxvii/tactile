@@ -46,11 +46,11 @@ export function subscribeSurfaceCellDrafts(surface, listener) {
   };
 }
 
-export function dispatchCellEditSeed(sourceElement, value) {
+export function dispatchCellEditSeed(sourceElement, value, options = {}) {
   const editor = sourceElement?.closest?.(".object-surface")?.querySelector?.(".formula-editor");
   if (!editor) return false;
   editor.dispatchEvent(new CustomEvent(CELL_EDIT_SEED_EVENT, {
-    detail: { value },
+    detail: { value, ...options },
   }));
   return true;
 }

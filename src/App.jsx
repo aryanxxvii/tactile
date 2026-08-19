@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AppDock } from "./components/AppDock.jsx";
 import { SpatialLayer } from "./components/SpatialLayer.jsx";
 import { useLocalWorkspace } from "./hooks/useLocalWorkspace.js";
@@ -93,6 +93,7 @@ export function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
   const filesIndexRef = useRef(null);
+  const resetSelectionRef = useRef(null);
   const filesIndex = useMemo(() => {
     const next = buildFilesIndex(workspace, filesIndexRef.current);
     filesIndexRef.current = next;
@@ -118,6 +119,7 @@ export function App() {
     showNotice: shell.showNotice,
     setExportState: shell.setExportState,
     importInputRef: shell.importInputRef,
+    resetSelection: () => resetSelectionRef.current?.(),
   });
   const selection = useSelectionCommands({
     workspace,
@@ -131,6 +133,7 @@ export function App() {
     undo,
     redo,
   });
+  resetSelectionRef.current = selection.resetSelection;
 
   // Keep the document-level keyboard and clipboard bridge mounted once. The
   // active shell/selection callbacks change as workspace state changes, but
@@ -310,8 +313,10 @@ export function App() {
     document.title = `Tactile — ${currentObjectTitle}`;
   }, [currentObjectTitle]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!hydrated) return;
+    document.documentElement.dataset.startupReady = "true";
+    document.querySelector(".startup-loader")?.classList.add("is-ready");
     window.dispatchEvent(new Event("tactile:startup-ready"));
   }, [hydrated]);
 
@@ -498,6 +503,7 @@ export function App() {
     const multiSelectedAddresses = selection.multiSelectedByObject[object.id] || [];
     const sharedProps = {
       object,
+      spatialPhase: layer.phase,
       path: objectPaths[index],
       saveState,
       selectedAddress,
@@ -602,7 +608,7 @@ export function App() {
             layer={layer}
             depth={childIndex + 1}
             viewportInsetLeft={filesSidebarWidth}
-            key={layer.key}
+            key={childIndex}
             onExpand={inOut.expandLayer}
             onClose={inOut.closeTopLayer}
           >

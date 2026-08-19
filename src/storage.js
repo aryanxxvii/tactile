@@ -81,7 +81,24 @@ export function loadWorkspaceCache() {
   }
 }
 
+export function saveWorkspaceCache(workspace) {
+  try {
+    const cache = {
+      ...workspace,
+      assets: Object.fromEntries(Object.entries(workspace.assets || {}).map(([id, asset]) => {
+        const { dataUrl, blob, ...metadata } = asset;
+        return [id, metadata];
+      })),
+    };
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function loadWorkspace() {
+  const cachedWorkspace = loadWorkspaceCache();
   let browserWorkspace = null;
   try {
     const database = await openDatabase();
@@ -92,9 +109,11 @@ export async function loadWorkspace() {
       request.onerror = () => reject(request.error || new Error("Unable to read local workspace."));
     });
     database.close();
-    browserWorkspace = result || loadWorkspaceCache();
+    const storedTime = Date.parse(result?.updatedAt || "") || 0;
+    const cachedTime = Date.parse(cachedWorkspace?.updatedAt || "") || 0;
+    browserWorkspace = cachedTime > storedTime ? cachedWorkspace : result || cachedWorkspace;
   } catch {
-    browserWorkspace = loadWorkspaceCache();
+    browserWorkspace = cachedWorkspace;
   }
   // A selected native folder is canonical. The browser cache is only a
   // fallback for a first launch or when the folder is temporarily unavailable.
@@ -102,18 +121,7 @@ export async function loadWorkspace() {
 }
 
 export async function saveWorkspace(workspace) {
-  try {
-    const cache = {
-      ...workspace,
-      assets: Object.fromEntries(Object.entries(workspace.assets || {}).map(([id, asset]) => {
-        const { dataUrl, blob, ...metadata } = asset;
-        return [id, metadata];
-      })),
-    };
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // IndexedDB remains the canonical browser store when the cache is unavailable.
-  }
+  saveWorkspaceCache(workspace);
 
   try {
     const database = await openDatabase();

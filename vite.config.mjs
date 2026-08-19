@@ -1,5 +1,5 @@
 import { execFile, execFileSync } from "node:child_process";
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { defineConfig } from "vite";
@@ -13,7 +13,10 @@ function gitValue(args, fallback) {
   }
 }
 
-const tactileCommit = gitValue(["rev-parse", "--short=7", "HEAD"], "unknown");
+const tactileCommit = process.env.VITE_TACTILE_COMMIT || gitValue(["rev-parse", "--short=7", "HEAD"], "unknown");
+const tactileVersion = process.env.VITE_TACTILE_VERSION || JSON.parse(readFileSync("version.json", "utf8")).version;
+const tactileChannel = process.env.VITE_TACTILE_CHANNEL || "development";
+const tactilePlatform = process.env.VITE_TACTILE_PLATFORM || "web";
 // Ignore unrelated workspace files (for example local package experiments)
 // so the badge only marks source/test changes that can affect the preview.
 const tactileDirty = Boolean(
@@ -89,9 +92,13 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_TACTILE_COMMIT": JSON.stringify(tactileCommit),
     "import.meta.env.VITE_TACTILE_DIRTY": JSON.stringify(String(tactileDirty)),
+    "import.meta.env.VITE_TACTILE_VERSION": JSON.stringify(tactileVersion),
+    "import.meta.env.VITE_TACTILE_CHANNEL": JSON.stringify(tactileChannel),
+    "import.meta.env.VITE_TACTILE_PLATFORM": JSON.stringify(tactilePlatform),
   },
   build: {
     outDir: "dist/client",
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         manualChunks(id) {

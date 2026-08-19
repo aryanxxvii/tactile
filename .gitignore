@@ -5,6 +5,7 @@ dist/
 *.png
 !src-tauri/icons/*.png
 !src-tauri/icons-alpha/*.png
+!images/*.png
 *.xlsx
 audits/
 .cache/
@@ -12,13 +13,13 @@ coverage/
 test-results-*/
 *.tsbuildinfo
 test-results/
+tmp/
+evidence/performance/playwright-results.json
 
 # Internal project planning and wave records are kept out of the public repository.
-/AGENTS.md
 /WORKFLOW.md
 /TRACKER.md
 /IDEAS.md
-/CHANGELOG.md
 /docs/wave-*/
 /docs/wave-*.md
 /.codex-remote-attachments/

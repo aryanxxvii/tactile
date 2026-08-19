@@ -1,0 +1,9 @@
+# Release domain
+
+`version.json` is the app version authority. `scripts/release/sync-version.mjs` owns npm, Tauri, and Cargo mirrors. Marketplace manifests version plugins independently.
+
+CI validates branches; tags authorize publication. Prereleases do not replace stable updater metadata. Release jobs use clean tagged checkouts, locked dependencies, expected-artifact validation, SHA-256 checksums, updater signatures, and platform signing when credentials exist.
+
+Do not commit `dist/client`, `src-tauri/target`, installers, coverage, or test output. `marketplace/dist` is the deliberate generated exception while production serves the committed catalog.
+
+Load `knowledge/release-policy.md` for policy, `knowledge/development-workflow.md` for commands, and `knowledge/reproducible-build.md` for evidence requirements.
