@@ -7,6 +7,7 @@ import { bareUrlTitle, isBareUrlValue } from "../../model.js";
 
 export function LinkObject({
   object,
+  spatialPhase,
   path,
   saveState,
   onUpdateObject,
@@ -31,7 +32,7 @@ export function LinkObject({
   };
 
   return (
-    <article className="object-surface link-object" data-object-type="link">
+    <article className="object-surface link-object" data-object-type="link" data-spatial-phase={spatialPhase}>
       <ObjectHeader
         object={object}
         path={path}

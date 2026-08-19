@@ -47,11 +47,15 @@ const darkDepthTokens = {
   surfaceHighlightSoft: "rgba(255,255,255,.03)",
   elevationShadow: "rgba(0,0,0,.42)",
   cellShadow: "inset 0 1px 0 var(--surface-highlight), inset 0 -1px 0 color-mix(in srgb, var(--elevation-shadow) 68%, transparent), 0 1px 1px color-mix(in srgb, var(--elevation-shadow) 80%, transparent), 0 2px 5px color-mix(in srgb, var(--elevation-shadow) 48%, transparent)",
-  cellHoverShadow: "inset 0 1px 0 color-mix(in srgb, var(--surface-highlight) 92%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--elevation-shadow) 76%, transparent), 0 3px 8px var(--elevation-shadow)",
+  cellHoverShadow: "inset 0 1px 0 var(--surface-highlight), inset 0 -1px 0 color-mix(in srgb, var(--elevation-shadow) 76%, transparent), 0 3px 8px var(--elevation-shadow)",
 };
 
 function builtInTheme(id, name, description, tokens = {}) {
-  const resolvedTokens = { ...baseTokens, ...tokens };
+  const resolvedTokens = {
+    ...baseTokens,
+    ...(tokens.colorScheme === "dark" ? darkDepthTokens : {}),
+    ...tokens,
+  };
   if (!Object.prototype.hasOwnProperty.call(tokens, "defaultInk")) {
     resolvedTokens.defaultInk = tokens.ink || baseTokens.defaultInk;
   }
@@ -473,8 +477,13 @@ export function themeStyle(theme) {
   const providedTokens = theme?.tokens || {};
   const tokens = {
     ...baseTokens,
-    ...(providedTokens.colorScheme === "dark" ? darkDepthTokens : {}),
     ...providedTokens,
+    ...(providedTokens.colorScheme === "dark" ? {
+      ...darkDepthTokens,
+      ...Object.fromEntries(
+        Object.entries(providedTokens).filter(([key]) => !Object.hasOwn(darkDepthTokens, key)),
+      ),
+    } : {}),
   };
   const selectionBackground = tokens.selectionBackground || tokens.accentSoft;
   const selectionForeground = tokens.selectionForeground || tokens.ink;

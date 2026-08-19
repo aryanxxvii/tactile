@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { cloneTheme, downloadTheme, themeFromFile } from "../themes.js";
 import { inferFileObjectType, isBareUrlValue } from "../model.js";
 import { readLocalFile } from "./selectionCommands.js";
@@ -33,6 +33,8 @@ export function useWorkspaceCommands({
   importInputRef,
   resetSelection,
 }) {
+  const openObjectRef = useRef(openObject);
+  openObjectRef.current = openObject;
   const plugins = useObjectPluginCommands();
   const exportWorkspace = useCallback(async () => {
     setExportState("exporting");
@@ -137,7 +139,7 @@ export function useWorkspaceCommands({
     const created = createEmbeddedLink(parentObjectId, payload.sourceCellId, payload.linkUrl);
     if (!created) return;
     schedule(() => {
-      openObject({
+      openObjectRef.current?.({
         ...payload,
         objectId: created.id,
         sourceObjectId: parentObjectId,

@@ -4,7 +4,6 @@ import { ObjectGlyph } from "../../components/ObjectGlyph.jsx";
 import { FORMULA_CATALOG } from "../../sheet/formulas.js";
 import {
   dispatchCellEditCommitAny,
-  dispatchCellEditSeed,
   dispatchCellEditUpdate,
   useLocalCellDraft,
 } from "../../components/localEditSession.js";
@@ -272,7 +271,7 @@ const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).rep
         }
         if ((event.key === "Enter" || event.key === "F2") && !hasEmbed && !formulaEditingCellId) {
           event.preventDefault();
-          onFocusFormulaBar?.();
+          onFocusFormulaBar?.(undefined, address, { inline: false });
           return;
         }
         const isPrintable = event.key.length === 1
@@ -284,8 +283,7 @@ const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).rep
         const isNavigationShortcut = event.key === "[" || event.key === "]";
         if (isPrintable && !isNavigationShortcut && isEmpty && !formulaEditingCellId) {
           event.preventDefault();
-          onFocusFormulaBar?.();
-          if (!dispatchCellEditSeed(event.currentTarget, event.key)) onFocusFormulaBar?.(event.key);
+          onFocusFormulaBar?.(event.key, address);
         }
       }}
     >
@@ -342,7 +340,7 @@ const numeric = shownValue !== "" && !Number.isNaN(Number(String(shownValue).rep
                 }
                 if (event.key === "Enter" || event.key === "Escape") {
                   event.preventDefault();
-                  dispatchCellEditCommitAny(event.currentTarget, { moveAfter: event.key === "Enter" });
+                  dispatchCellEditCommitAny(event.currentTarget);
                 }
               }}
               onBlur={(event) => dispatchCellEditCommitAny(event.currentTarget)}

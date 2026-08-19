@@ -39,12 +39,16 @@ const TEXT_COLORS = [
 ];
 
 const HIGHLIGHT_COLORS = [
-  { name: "Straw", value: "#f4e7a1" },
+  { name: "Yellow", value: "#f4e7a1" },
   { name: "Rose", value: "#f0c7bd" },
   { name: "Sage", value: "#cfe0cc" },
   { name: "Sky", value: "#cbdde9" },
   { name: "Clay", value: "#e8d0bd" },
 ];
+
+const CONTEXT_HIGHLIGHT_COLORS = HIGHLIGHT_COLORS.map((color) => (
+  color.name === "Yellow" ? { ...color, name: "Straw" } : color
+));
 
 const MARKDOWN_PLACEHOLDERS = [
   "# Differential Diagnosis",
@@ -864,7 +868,7 @@ export function MarkdownObject({ object, path, saveState, onUpdateObject, onBack
         onClose={closeMarkdownContextMenu}
         onAction={handleMarkdownContextAction}
         textColors={TEXT_COLORS}
-        highlightColors={HIGHLIGHT_COLORS}
+        highlightColors={CONTEXT_HIGHLIGHT_COLORS}
       />
       <MarkdownContextMenu
         menu={previewMenu}

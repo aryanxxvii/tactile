@@ -8,7 +8,6 @@ import {
 import { PaperPortal } from "./PaperPortal.jsx";
 
 const PATH_CLOSE_DELAY = 360;
-const PATH_TRANSITION_MS = 180;
 
 function collapsedDockPath(path = []) {
   const entries = path.slice(1);
@@ -19,25 +18,19 @@ function collapsedDockPath(path = []) {
   };
 }
 
-function dockPathSignature(path = []) {
-  return path.map((item, index) => `${item.id}:${item.title}:${index}`).join("\u0001");
-}
-
-function sameDockPathItem(left, right) {
-  return left?.id === right?.id && left?.title === right?.title;
-}
-
-function DockPathButton({ item, onNavigate, current = false, overflow = false, controls, expanded = false, buttonRef }) {
+function DockPathButton({ item, onNavigate, current = false, overflow = false, controls, expanded = false, buttonRef, active = true, hovered = false, onPointerEnter, onPointerLeave }) {
   return (
     <button
-      className={`app-dock-path-button ${overflow ? "is-overflow" : ""}`}
+      className={`app-dock-path-button ${overflow ? "is-overflow" : ""} ${hovered ? "is-hovered" : ""}`.trim()}
       type="button"
       aria-label={overflow ? "Show full object path" : `Go to ${item.title}`}
       aria-current={current ? "location" : undefined}
       aria-controls={controls}
       aria-expanded={overflow ? expanded : undefined}
       onClick={() => onNavigate?.(item)}
-      data-path-object-id={item.id}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+      data-path-object-id={active ? item.id : undefined}
       ref={buttonRef}
     >
       <span className="app-dock-path-button-text">{item.title}</span>
@@ -145,13 +138,9 @@ function FullPathPopover({ id, path, anchorRect, themeSource, onNavigate, onPoin
 
 function DockPath({ path = [], onNavigatePath }) {
   const { visible: visiblePath, omitted } = useMemo(() => collapsedDockPath(path), [path]);
-  const pathKey = useMemo(() => dockPathSignature(visiblePath), [visiblePath]);
-  const previousPathRef = useRef(visiblePath);
-  const previousPathKeyRef = useRef(pathKey);
-  const transitionIdRef = useRef(0);
-  const [transition, setTransition] = useState(null);
   const [pathPopoverOpen, setPathPopoverOpen] = useState(false);
   const [pathAnchor, setPathAnchor] = useState(null);
+  const [hoveredPathId, setHoveredPathId] = useState(null);
   const closeTimerRef = useRef(null);
   const overflowButtonRef = useRef(null);
   const pathPopoverId = useId();
@@ -160,22 +149,15 @@ function DockPath({ path = [], onNavigatePath }) {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
   }, []);
 
-  useLayoutEffect(() => {
-    if (previousPathKeyRef.current === pathKey) return undefined;
-    const id = transitionIdRef.current + 1;
-    transitionIdRef.current = id;
-    const from = previousPathRef.current;
-    const to = visiblePath;
-    previousPathRef.current = to;
-    previousPathKeyRef.current = pathKey;
-    setPathPopoverOpen(false);
-    setPathAnchor(null);
-    setTransition({ id, from, to });
-    const timer = window.setTimeout(() => {
-      setTransition((current) => current?.id === id ? null : current);
-    }, PATH_TRANSITION_MS);
-    return () => window.clearTimeout(timer);
-  }, [pathKey, visiblePath]);
+  useEffect(() => {
+    const trackPointer = (event) => {
+      const button = event.target?.closest?.(".app-dock-path .app-dock-path-button[data-path-object-id]");
+      const objectId = button?.dataset.pathObjectId || null;
+      setHoveredPathId((current) => current === objectId ? current : objectId);
+    };
+    window.addEventListener("pointermove", trackPointer, { passive: true });
+    return () => window.removeEventListener("pointermove", trackPointer);
+  }, []);
 
 const openPathPopover = () => {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
@@ -199,13 +181,11 @@ const openPathPopover = () => {
     setPathAnchor(null);
   };
 
-const renderPanel = (items, { entering = false, leaving = false, current = !leaving } = {}) => {
+const renderPanel = (items) => {
     return (
       <div
-        className={`app-dock-path-panel ${entering ? "is-entering" : ""} ${leaving ? "is-leaving" : ""}`.trim()}
+        className="app-dock-path-panel"
         style={{ width: "max-content", justifySelf: "start" }}
-        aria-hidden={leaving ? "true" : undefined}
-        inert={leaving ? true : undefined}
       >
         {items.map((item, index) => (
           <span className="app-dock-path-part" key={`${item.id}-${index}`}>
@@ -213,27 +193,29 @@ const renderPanel = (items, { entering = false, leaving = false, current = !leav
             {item.id === "ellipsis" ? (
               <span
                 className="app-dock-path-overflow"
-                onPointerEnter={leaving ? undefined : openPathPopover}
-                onPointerLeave={leaving ? undefined : closePathPopover}
-                onFocus={leaving ? undefined : openPathPopover}
-                onBlur={leaving ? undefined : (event) => {
+                onPointerEnter={openPathPopover}
+                onPointerLeave={closePathPopover}
+                onFocus={openPathPopover}
+                onBlur={(event) => {
                   if (!event.currentTarget.contains(event.relatedTarget)) closePathPopover();
                 }}
               >
                 <DockPathButton
                   item={item}
                   overflow
-                  onNavigate={leaving ? undefined : openPathPopover}
+                  onNavigate={openPathPopover}
                   controls={pathPopoverId}
-                  expanded={!leaving && pathPopoverOpen}
-                  buttonRef={leaving ? undefined : overflowButtonRef}
+                  expanded={pathPopoverOpen}
+                  buttonRef={overflowButtonRef}
                 />
               </span>
             ) : (
               <DockPathButton
                 item={item}
-                onNavigate={leaving ? undefined : navigatePath}
-                current={current && index === items.length - 1}
+                hovered={hoveredPathId === item.id}
+                onPointerEnter={() => setHoveredPathId(item.id)}
+                onNavigate={navigatePath}
+                current={index === items.length - 1}
               />
             )}
           </span>
@@ -242,39 +224,15 @@ const renderPanel = (items, { entering = false, leaving = false, current = !leav
     );
   };
 
-  if (!visiblePath.length && !transition?.from.length) return null;
-
-  const transitionParts = transition ? (() => {
-    let sharedLength = 0;
-    while (sharedLength < transition.from.length
-      && sharedLength < transition.to.length
-      && sameDockPathItem(transition.from[sharedLength], transition.to[sharedLength])) {
-      sharedLength += 1;
-    }
-    return {
-      shared: transition.from.slice(0, sharedLength),
-      from: transition.from.slice(sharedLength),
-      to: transition.to.slice(sharedLength),
-    };
-  })() : null;
+  if (!visiblePath.length) return null;
 
   return (
     <nav
-      className={`app-dock-path ${transition ? "is-transitioning" : ""}`.trim()}
+      className="app-dock-path"
       style={{ flex: "0 1 auto", minWidth: 0, width: "fit-content", paddingLeft: "6px", display: "inline-flex", alignItems: "center" }}
       aria-label="Object path"
     >
-      {transition ? (
-        <>
-          {transitionParts.shared.length ? renderPanel(transitionParts.shared, {
-            current: !transitionParts.to.length,
-          }) : null}
-          <div style={{ display: "inline-grid", width: "max-content" }}>
-            {transitionParts.from.length ? renderPanel(transitionParts.from, { leaving: true }) : null}
-            {transitionParts.to.length ? renderPanel(transitionParts.to, { entering: true }) : null}
-          </div>
-        </>
-) : renderPanel(visiblePath)}
+      {renderPanel(visiblePath)}
       {pathPopoverOpen && omitted.length ? (
         <FullPathPopover
           id={pathPopoverId}
@@ -302,17 +260,7 @@ export function AppDock({
   canRedo,
 }) {
   const { visible: visiblePath } = useMemo(() => collapsedDockPath(path), [path]);
-  const pathKey = useMemo(() => dockPathSignature(visiblePath), [visiblePath]);
-  const [pathPresent, setPathPresent] = useState(visiblePath.length > 0);
-
-  useLayoutEffect(() => {
-    if (visiblePath.length) {
-      setPathPresent(true);
-      return undefined;
-    }
-    const timer = window.setTimeout(() => setPathPresent(false), PATH_TRANSITION_MS);
-    return () => window.clearTimeout(timer);
-  }, [pathKey, visiblePath.length]);
+  const pathPresent = visiblePath.length > 0;
 
   return (
     <div

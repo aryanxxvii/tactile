@@ -28,8 +28,9 @@ export function historyUrlForStack(stack, workspaceId = "", rootObjectId = "") {
   const url = new URL(window.location.href);
   ["in", "mode", "from", "cell", "depth", "workspace", "route", "root"].forEach((key) => url.searchParams.delete(key));
   const top = stack[stack.length - 1];
-  if (workspaceId && (top || rootObjectId)) url.searchParams.set("workspace", workspaceId);
-  if (rootObjectId) url.searchParams.set("root", rootObjectId);
+  const explicitRoot = rootObjectId && rootObjectId !== "home";
+  if (workspaceId && (top || explicitRoot)) url.searchParams.set("workspace", workspaceId);
+  if (rootObjectId && (top || explicitRoot)) url.searchParams.set("root", rootObjectId);
   if (top) {
     url.searchParams.set("in", top.objectId);
     url.searchParams.set("mode", top.mode || "floating");
@@ -742,6 +743,13 @@ export function useInOut({ workspace, workspaceRootId, workspaceHydrated = true 
       writeHistoryStack(targetStack, false, targetRootId);
       setLayers([{ key: "root", objectId: targetRootId, phase: "base", closing: false }]);
       window.requestAnimationFrame(() => syncHistoryStack(targetStack, targetRootId));
+      return true;
+    }
+    if (top.phase === "full" && !top.fullHistoryStep) {
+      const targetStack = currentHistoryStack().slice(0, -1);
+      const targetRootId = targetStack[0]?.sourceObjectId || top.sourceObjectId || current[0]?.objectId;
+      writeHistoryStack(targetStack, true, targetRootId);
+      syncHistoryStack(targetStack, targetRootId, { immediate: true });
       return true;
     }
     if (window.history.state?.tactile === HISTORY_KIND && currentHistoryStack().length) {

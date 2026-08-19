@@ -59,6 +59,8 @@ const CellSlot = memo(function CellSlot({
       className={`virtual-cell-slot ${selected ? "is-active-cell-slot" : ""}`}
       data-row={row}
       data-column={column}
+      data-virtual-cell-address={address}
+      data-virtual-object-id={objectId}
       style={{ left, top, width, height }}
     >
       <SheetCell

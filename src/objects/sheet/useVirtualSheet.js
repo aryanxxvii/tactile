@@ -463,7 +463,10 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
       }
       pendingRangeRef.current = null;
       requestedRangeRef.current = nextRange;
-      flushSync(() => setRange(nextRange));
+      flushSync(() => {
+        committedRangeRef.current = nextRange;
+        setRange(nextRange);
+      });
       return;
     }
     scheduleRange(nextRange);
@@ -494,21 +497,33 @@ export function useVirtualSheet(rows, columns, customMetrics, customRowIndexMap,
     syncViewportRef.current?.(element);
     element.addEventListener("scroll", handleNativeScroll, { passive: true });
 
+    const scrollDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "scrollTop");
+    const synchronousProperties = scrollDescriptor?.configurable && scrollDescriptor.get && scrollDescriptor.set
+      ? ["scrollLeft", "scrollTop"]
+      : [];
+    synchronousProperties.forEach((property) => {
+      const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, property);
+      Object.defineProperty(element, property, {
+        configurable: true,
+        enumerable: descriptor.enumerable,
+        get: () => descriptor.get.call(element),
+        set: (value) => {
+          descriptor.set.call(element, value);
+          syncViewportRef.current?.(element, { immediate: true });
+        },
+      });
+    });
+
     const observer = typeof ResizeObserver === "function"
       ? new ResizeObserver(() => syncViewportRef.current?.(element))
       : null;
     observer?.observe(element);
-    // The first layout can settle after the observer is attached (notably
-    // when the object shell and bottom dock finish sizing together). Refresh
-    // once on the next frame so the initial fallback viewport cannot leave a
-    // permanently undersized render window and blank lower rows.
-    let layoutFrame = window.requestAnimationFrame(() => {
-      syncViewportRef.current?.(element);
-    });
+    const layoutFrame = window.requestAnimationFrame(() => syncViewportRef.current?.(element));
     return () => {
       window.cancelAnimationFrame(layoutFrame);
       observer?.disconnect();
       element.removeEventListener("scroll", handleNativeScroll);
+      synchronousProperties.forEach((property) => delete element[property]);
     };
   }, [showScrollFallback, viewStateKey]);
 
