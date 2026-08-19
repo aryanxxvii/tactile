@@ -2,13 +2,14 @@ const APPLICATION_TITLE_PREFIX: &str = "Tactile — ";
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
+use std::str::FromStr;
 use tauri::http::{header::CONTENT_SECURITY_POLICY, Response as HttpResponse, StatusCode};
 use tauri::{AppHandle, Manager};
-use tauri_plugin_updater::UpdaterExt;
 
 pub mod assets;
 pub mod portable;
 pub mod storage;
+mod updater;
 
 #[derive(Debug, Deserialize)]
 struct NativeWorkspaceFile {
@@ -751,17 +752,35 @@ struct UpdateInfo {
     current_version: String,
     body: Option<String>,
     download_url: String,
+    channel: updater::UpdateChannel,
+}
+
+#[tauri::command]
+fn get_update_channel(app: tauri::AppHandle) -> Result<updater::UpdateChannel, String> {
+    updater::load_channel(&app)
+}
+
+#[tauri::command]
+fn set_update_channel(
+    app: tauri::AppHandle,
+    channel: String,
+) -> Result<updater::UpdateChannel, String> {
+    let channel = updater::UpdateChannel::from_str(&channel)?;
+    updater::save_channel(&app, channel)?;
+    Ok(channel)
 }
 
 #[tauri::command]
 async fn check_for_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
-    let updater = app.updater().map_err(|e| e.to_string())?;
+    let channel = updater::load_channel(&app)?;
+    let updater = updater::build_updater(&app, channel)?;
     match updater.check().await {
         Ok(Some(update)) => Ok(Some(UpdateInfo {
             version: update.version,
-            current_version: update.current_version,
+            current_version: updater::canonical_version().to_string(),
             body: update.body,
             download_url: update.download_url.to_string(),
+            channel,
         })),
         Ok(None) => Ok(None),
         Err(e) => Err(e.to_string()),
@@ -825,7 +844,8 @@ fn window_start_resize(app: tauri::AppHandle, direction: String) -> Result<(), S
 
 #[tauri::command]
 async fn download_and_install_update(app: tauri::AppHandle) -> Result<(), String> {
-    let updater = app.updater().map_err(|e| e.to_string())?;
+    let channel = updater::load_channel(&app)?;
+    let updater = updater::build_updater(&app, channel)?;
     let update = updater.check().await.map_err(|e| e.to_string())?;
     if let Some(update) = update {
         update
@@ -852,6 +872,8 @@ pub fn run() {
             workspace_serve_html,
             workspace_discover_code_runtimes,
             workspace_run_code,
+            get_update_channel,
+            set_update_channel,
             check_for_update,
             download_and_install_update,
             window_minimize,
