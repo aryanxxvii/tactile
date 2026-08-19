@@ -6,6 +6,7 @@ import {
 } from "../sheet/coordinates.js";
 import { parseTactileLink } from "../format/csv.js";
 import { repairWorkspaceTopology } from "../core/topology.js";
+
 import { PortableCompatibilityError } from "./errors.js";
 import {
   assertSupportedPortableVersion,

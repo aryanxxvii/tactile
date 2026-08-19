@@ -42,7 +42,7 @@ function FullPathPopover({ id, path, anchorRect, themeSource, onNavigate, onPoin
   const popoverRef = useRef(null);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [marqueeDistances, setMarqueeDistances] = useState({});
-  const parentPath = useMemo(() => path.slice(1).reverse(), [path]);
+  const parentPath = useMemo(() => path.slice(1).toReversed(), [path]);
 
   useLayoutEffect(() => {
     if (!anchorRect) return undefined;
@@ -168,6 +168,8 @@ const openPathPopover = () => {
   const closePathPopover = () => {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
     closeTimerRef.current = window.setTimeout(() => {
+      const popover = document.getElementById(pathPopoverId);
+      if (overflowButtonRef.current?.matches(":hover") || popover?.matches(":hover")) return;
       setPathPopoverOpen(false);
       setPathAnchor(null);
     }, PATH_CLOSE_DELAY);
@@ -175,6 +177,12 @@ const openPathPopover = () => {
   const keepPopoverOpen = () => {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
   };
+
+  useLayoutEffect(() => {
+    const overflow = overflowButtonRef.current?.closest(".app-dock-path-overflow");
+    if (overflow?.matches(":hover")) openPathPopover();
+  }, [path]);
+
   const navigatePath = (item) => {
     onNavigatePath?.(item);
     setPathPopoverOpen(false);
@@ -194,6 +202,7 @@ const renderPanel = (items) => {
               <span
                 className="app-dock-path-overflow"
                 onPointerEnter={openPathPopover}
+                onPointerMove={openPathPopover}
                 onPointerLeave={closePathPopover}
                 onFocus={openPathPopover}
                 onBlur={(event) => {

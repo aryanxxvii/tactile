@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+
 import { evaluatePerformanceCertification, RELEASE_BUDGETS } from "./measurement.mjs";
 
 function cleanLeakChecks() {

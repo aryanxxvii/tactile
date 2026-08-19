@@ -3,11 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+
 import {
   fixtureFingerprint,
   validatePerformanceWorkspace,
   writePerformanceFixture,
 } from "../../benchmarks/generate-fixture.mjs";
+
 import { measureBundle } from "./bundle.mjs";
 import {
   createMeasurementInitScript,

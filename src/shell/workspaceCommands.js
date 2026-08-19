@@ -1,15 +1,9 @@
 import { useCallback, useRef } from "react";
+import { downloadWorkspaceZip, importWorkspaceFile } from "../export.js";
 import { cloneTheme, downloadTheme, themeFromFile } from "../themes.js";
 import { inferFileObjectType, isBareUrlValue } from "../model.js";
 import { readLocalFile } from "./selectionCommands.js";
 import { useObjectPluginCommands } from "../objects/registry/ObjectPluginProvider.jsx";
-
-let portableCommandsPromise;
-
-function loadPortableCommands() {
-  portableCommandsPromise ||= import("../export.js");
-  return portableCommandsPromise;
-}
 
 export function useWorkspaceCommands({
   workspace,
@@ -39,7 +33,6 @@ export function useWorkspaceCommands({
   const exportWorkspace = useCallback(async () => {
     setExportState("exporting");
     try {
-      const { downloadWorkspaceZip } = await loadPortableCommands();
       await downloadWorkspaceZip(workspace);
       showNotice("Portable .zip workspace exported");
     } catch (error) {
@@ -58,7 +51,6 @@ export function useWorkspaceCommands({
     event.target.value = "";
     if (!file) return;
     try {
-      const { importWorkspaceFile } = await loadPortableCommands();
       const imported = await importWorkspaceFile(file);
       replaceWorkspace(imported);
       resetSelection();

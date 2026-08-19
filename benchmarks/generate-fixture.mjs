@@ -206,8 +206,6 @@ function columnLabelToIndex(label) {
 function makeSheet({ id, title, rows, columns, sheetIndex, formulaMode = false, embedAt }) {
   const cells = {};
   const geometry = geometryForSheet(id, rows, columns);
-  const rowGroups = geometry.rowGroups;
-  const columnGroups = geometry.columnGroups;
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
       const formula =

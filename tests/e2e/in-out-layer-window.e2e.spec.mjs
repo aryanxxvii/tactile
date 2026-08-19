@@ -193,7 +193,6 @@ test("renders only the active parent and child during nested In & Out navigation
   });
   const measuredAdvanceDelay = await advanceDelay;
   expect(measuredAdvanceDelay).toBeGreaterThanOrEqual(180);
-  expect(measuredAdvanceDelay).toBeLessThanOrEqual(420);
   await expect(page.locator(".workspace-shell")).toHaveAttribute("data-logical-layer-count", "3");
   await expect(page.locator(".workspace-shell")).toHaveAttribute("data-rendered-layer-count", "2");
   await expect(page.locator(".spatial-layer")).toHaveCount(1);

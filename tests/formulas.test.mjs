@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+
 import { createCellRecord, createSheetObject } from "../src/model.js";
 import { evaluateCell, formatFormulaResult } from "../src/sheet/formulas.js";
 

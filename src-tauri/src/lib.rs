@@ -833,8 +833,7 @@ async fn download_and_install_update(app: tauri::AppHandle) -> Result<(), String
             .await
             .map_err(|e| e.to_string())?;
     }
-    app.restart();
-    Ok(())
+    app.restart()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

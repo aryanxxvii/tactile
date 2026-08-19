@@ -6344,7 +6344,6 @@ kbd {
   align-items: stretch;
   padding-left: calc(var(--files-depth) * 15px);
   border-radius: 4px;
-  transition: background-color 120ms ease, box-shadow 120ms ease;
 }
 
 .files-tree-row:hover,
