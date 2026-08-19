@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "packageId": "tactile.sites",
+  "type": "sites",
+  "name": "Sites",
+  "description": "A web site embedded in the Tactile window as a real browser view.",
+  "version": "1.0.0",
+  "tactile": ">=1.1.0",
+  "permissions": ["native.embedded-webview"],
+  "entry": "plugin.jsx"
+}

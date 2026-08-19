@@ -15,6 +15,7 @@ const expected = [
   "tactile.html",
   "tactile.image",
   "tactile.pdf",
+  "tactile.sites",
   "tactile.svg",
   "tactile.video",
 ];

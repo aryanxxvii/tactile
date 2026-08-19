@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppDock } from "./components/AppDock.jsx";
 import { SpatialLayer } from "./components/SpatialLayer.jsx";
 import { useLocalWorkspace } from "./hooks/useLocalWorkspace.js";
@@ -19,6 +19,10 @@ import {
   themeStyle,
 } from "./themes.js";
 import { isTauriRuntime, resolveTauriInvoke } from "./platform/tauri/runtime.ts";
+import {
+  publishCodeRuntimeProfile,
+  registerCodeRuntimeProfileWriter,
+} from "./platform/code/runtimeProfiles.js";
 import { TitleBar } from "./components/TitleBar.jsx";
 
 const FilesPanel = lazy(() => import("./components/FilesPanel.jsx").then(({ FilesPanel: Component }) => ({ default: Component })));
@@ -71,6 +75,24 @@ export function App() {
   const inOut = useInOut({ workspace, workspaceRootId, workspaceHydrated: hydrated });
   const nativeRuntime = useMemo(() => isTauriRuntime(), []);
   const nativeInvoke = useMemo(() => resolveTauriInvoke(), []);
+  const openExternalUrl = useCallback(async (url) => {
+    if (!isBareUrlValue(url)) return;
+    if (nativeInvoke) {
+      try {
+        await nativeInvoke("workspace_open_url", { url });
+        return;
+      } catch {
+        // Fall back to a browser tab/window when the native opener is absent.
+      }
+    }
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }, [nativeInvoke]);
   const nativeSnapshotRef = useRef({ version: 0, pending: null, writing: false });
   const [nativeGuideOpen, setNativeGuideOpen] = useState(false);
   const nativeGuideShownRef = useRef(false);
@@ -80,6 +102,10 @@ export function App() {
     onUpdateSettings: updateSettings,
     workspaceHydrated: hydrated,
   });
+  useEffect(() => {
+    registerCodeRuntimeProfileWriter((next) => updateSettings({ codeRuntime: next }));
+    publishCodeRuntimeProfile(workspace.settings.codeRuntime);
+  }, [updateSettings, workspace.settings.codeRuntime]);
   const [viewport, setViewport] = useState(() => ({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -449,25 +475,6 @@ export function App() {
     } catch (error) {
       shell.showNotice(error?.message || "That folder could not be opened");
     }
-  };
-
-  const openExternalUrl = async (url) => {
-    if (!isBareUrlValue(url)) return;
-    if (nativeInvoke) {
-      try {
-        await nativeInvoke("workspace_open_url", { url });
-        return;
-      } catch {
-        // Fall back to a browser tab/window when the native opener is absent.
-      }
-    }
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
   };
 
   const activeTheme = useMemo(

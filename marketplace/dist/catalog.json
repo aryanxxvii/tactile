@@ -36,16 +36,16 @@
       "type": "code",
       "name": "Code",
       "description": "A local source file with language-aware presentation.",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "tactile": ">=1.1.0",
       "permissions": [
         "code.execute"
       ],
       "entry": "plugin.jsx",
       "status": "available",
-      "artifact": "plugins/tactile.code/1.0.0/plugin.js",
-      "sha256": "ae715ae3f56bba42df033b1c6a93ab6ce92b0f01209679258ae4d97c211d4226",
-      "size": 1093952,
+      "artifact": "plugins/tactile.code/1.0.2/plugin.js",
+      "sha256": "e9c6ba65700363a6eafdd8fe8dd6954f9a9a5b46c3eb879b16cfbef7b0a62ce8",
+      "size": 1096167,
       "assets": []
     },
     {
@@ -145,6 +145,24 @@
       "artifact": "plugins/tactile.pdf/1.0.0/plugin.js",
       "sha256": "3dcad97d173bf2a894255a08257bd7ca7665b2ec17bb3944d9a7bf553bc29ca3",
       "size": 351286
+    },
+    {
+      "schemaVersion": 1,
+      "packageId": "tactile.sites",
+      "type": "sites",
+      "name": "Sites",
+      "description": "A web site embedded in the Tactile window as a real browser view.",
+      "version": "1.0.0",
+      "tactile": ">=1.1.0",
+      "permissions": [
+        "native.embedded-webview"
+      ],
+      "entry": "plugin.jsx",
+      "status": "available",
+      "artifact": "plugins/tactile.sites/1.0.0/plugin.js",
+      "sha256": "c0d87029994e22b711a19a42376ea471c9fb924eaef61af4d21272da776222d9",
+      "size": 10843,
+      "assets": []
     },
     {
       "schemaVersion": 1,
