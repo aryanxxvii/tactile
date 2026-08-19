@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { format, resolveConfig } from "prettier";
 
 const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
@@ -11,8 +12,8 @@ async function readJson(filePath) {
   return JSON.parse(await readFile(filePath, "utf8"));
 }
 
-function formatJson(value) {
-  return `${JSON.stringify(value, null, 2)}\n`;
+async function formatJson(value, filePath) {
+  return format(JSON.stringify(value), { ...(await resolveConfig(filePath)), filepath: filePath });
 }
 
 function replacePackageVersion(contents, version, filePath) {
@@ -45,9 +46,21 @@ async function versionTargets(version) {
   const expectedCargoLock = replacePackageVersion(cargoLock, version, cargoLockPath);
 
   return [
-    { filePath: "package.json", synchronized: packageJsonSynchronized, expected: formatJson(packageJson) },
-    { filePath: "package-lock.json", synchronized: packageLockSynchronized, expected: formatJson(packageLock) },
-    { filePath: tauriConfigPath, synchronized: tauriConfigSynchronized, expected: formatJson(tauriConfig) },
+    {
+      filePath: "package.json",
+      synchronized: packageJsonSynchronized,
+      expected: await formatJson(packageJson, "package.json"),
+    },
+    {
+      filePath: "package-lock.json",
+      synchronized: packageLockSynchronized,
+      expected: await formatJson(packageLock, "package-lock.json"),
+    },
+    {
+      filePath: tauriConfigPath,
+      synchronized: tauriConfigSynchronized,
+      expected: await formatJson(tauriConfig, tauriConfigPath),
+    },
     { filePath: cargoTomlPath, synchronized: cargoToml === expectedCargoToml, expected: expectedCargoToml },
     { filePath: cargoLockPath, synchronized: cargoLock === expectedCargoLock, expected: expectedCargoLock },
   ];
