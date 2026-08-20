@@ -528,7 +528,7 @@ jobs:
           node scripts/release/promote-updater-channel.mjs "${args[@]}"
 
       - name: Publish nightly channel manifest
-        if: steps.promotion.outputs.promote == 'true'
+        if: steps.promotion.outputs.promote == 'true' || steps.promotion.outputs.promote == true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
