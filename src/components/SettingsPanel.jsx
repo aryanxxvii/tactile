@@ -610,6 +610,7 @@ onChangeWorkspaceFolder,
                     const Icon = definition.icon || IconPlugConnected;
                     const packageId = definition.package?.id;
                     const installedRecord = packageId ? plugins.installed[packageId] : null;
+                    const isBuiltIn = definition.source === "built-in" && !packageId;
                     const enabled = installedRecord
                       ? installedRecord.enabled !== false
                       : plugins.isEnabled(definition.type);
@@ -621,14 +622,28 @@ onChangeWorkspaceFolder,
                           <small>{definition.description || `${definition.type} cell object`}</small>
                         </span>
                         <span className="plugin-source">{definition.source === "built-in" ? "Offline" : definition.package?.version || "Installed"}</span>
-                        <Switch
-                          label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
-                          checked={enabled}
-                          onChange={(checked) => {
-                            if (installedRecord) void plugins.setInstalledEnabled(packageId, checked);
-                            else plugins.setEnabled(definition.type, checked);
-                          }}
-                        />
+                        <span className="plugin-installed-actions">
+                          <Switch
+                            label={`${enabled ? "Disable" : "Enable"} ${definition.label}`}
+                            checked={enabled}
+                            disabled={isBuiltIn}
+                            onChange={(checked) => {
+                              if (installedRecord) void plugins.setInstalledEnabled(packageId, checked);
+                              else plugins.setEnabled(definition.type, checked);
+                            }}
+                          />
+                          {installedRecord ? (
+                            <button
+                              className="settings-close plugin-uninstall"
+                              type="button"
+                              aria-label={`Uninstall ${definition.label}`}
+                              data-tooltip={`Uninstall ${definition.label}`}
+                              onClick={() => void plugins.uninstallMarketplacePlugin(packageId)}
+                            >
+                              <IconTrash size={14} />
+                            </button>
+                          ) : null}
+                        </span>
                       </div>
                     );
                   })}
@@ -642,7 +657,7 @@ onChangeWorkspaceFolder,
                     <h3 id="marketplace-title">Marketplace</h3>
                     <p>Optional first-party cell objects are downloaded, verified, and cached locally.</p>
                   </div>
-                  <button type="button" onClick={() => void plugins.refreshCatalog()} data-tooltip="Refresh marketplace"><IconRefresh size={14} /></button>
+                  <button className="plugins-refresh" type="button" onClick={() => void plugins.refreshCatalog()} data-tooltip="Refresh marketplace"><IconRefresh size={14} /></button>
                 </div>
                 {plugins.marketplaceError ? <p className="is-error" role="alert">{plugins.marketplaceError}</p> : null}
                 <div className="plugin-list">
