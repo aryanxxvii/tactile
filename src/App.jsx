@@ -414,7 +414,9 @@ export function App() {
       // Ensure the directory structure exists without overwriting workspace.json.
       try {
         await nativeInvoke("workspace_prepare_directory", { path });
-      } catch {}
+      } catch {
+        void 0;
+      }
       saveNativeWorkspacePath(path);
       try {
         await nativeInvoke?.("workspace_set_last_path", { path });
