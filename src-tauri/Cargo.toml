@@ -1,6 +1,6 @@
 [package]
 name = "tactile"
-version = "1.2.0-alpha.1"
+version = "1.2.0-alpha.2"
 description = "Tactile local workspace shell"
 authors = ["Tactile contributors"]
 edition = "2021"
