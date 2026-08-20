@@ -1,5 +1,6 @@
 import { chmod, copyFile, mkdir, readdir, stat } from "node:fs/promises";
 import path from "node:path";
+import { githubAssetName } from "./github-asset-name.mjs";
 
 const PLATFORM_BUNDLES = Object.freeze({
   "windows-x64": ["msi"],
@@ -112,7 +113,7 @@ async function main() {
     : `tactile-${options.platform}-`;
 
   for (const sourceFile of selected) {
-    const destination = path.join(output, `${prefix}${path.basename(sourceFile)}`);
+    const destination = path.join(output, `${prefix}${githubAssetName(path.basename(sourceFile))}`);
     await copyFile(sourceFile, destination);
 
     if (process.platform !== "win32") {

@@ -49,6 +49,47 @@ test("generates updater manifests with immutable tag-specific artifact URLs", as
   }
 });
 
+test("updater manifest URLs use GitHub-sanitized asset names", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "tactile-updater-"));
+  try {
+    const name = "tactile-windows-x64-alpha-Tactile Alpha_1.2.0-10003_x64_en-US.msi";
+    const macName = "tactile-macos-universal-alpha-ad-hoc-Tactile Alpha.app.tar.gz";
+    const linuxName = "tactile-linux-x64-alpha-Tactile Alpha_1.2.0-alpha.3_amd64.AppImage";
+    for (const candidate of [name, macName, linuxName]) {
+      await writeFile(path.join(directory, candidate), "bundle");
+      await writeFile(path.join(directory, `${candidate}.sig`), `signature-${candidate}`);
+    }
+    const output = path.join(directory, "latest.json");
+    const result = run("scripts/release/create-updater-manifest.mjs", [
+      "--dir",
+      directory,
+      "--version",
+      "1.2.0-alpha.3",
+      "--tag",
+      "v1.2.0-alpha.3",
+      "--repo",
+      "aryanxxvii/tactile",
+      "--output",
+      output,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+    const manifest = JSON.parse(await readFile(output, "utf8"));
+    assert.equal(
+      manifest.platforms["windows-x86_64"].url,
+      "https://github.com/aryanxxvii/tactile/releases/download/v1.2.0-alpha.3/tactile-windows-x64-alpha-Tactile.Alpha_1.2.0-10003_x64_en-US.msi",
+    );
+    assert.equal(
+      manifest.platforms["darwin-aarch64"].url,
+      "https://github.com/aryanxxvii/tactile/releases/download/v1.2.0-alpha.3/tactile-macos-universal-alpha-ad-hoc-Tactile.Alpha.app.tar.gz",
+    );
+    for (const platform of Object.values(manifest.platforms)) {
+      assert.doesNotMatch(platform.url, / /);
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("promotes only newer alpha or RC manifests", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "tactile-promotion-"));
   try {

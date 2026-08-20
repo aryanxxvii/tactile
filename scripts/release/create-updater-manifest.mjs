@@ -1,5 +1,6 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
+import { githubAssetName } from "./github-asset-name.mjs";
 
 const TARGET_FOR = [
   { platform: "windows-x64", extension: ".msi", targets: ["windows-x86_64"] },
@@ -69,7 +70,8 @@ async function main() {
       fail(`Missing updater signature for ${path.basename(bundle)}`);
     }
     const signature = (await readFile(signatureFile, "utf8")).trim();
-    const url = `https://github.com/${options.repo}/releases/download/${options.tag}/${path.basename(bundle)}`;
+    const assetName = githubAssetName(path.basename(bundle));
+    const url = `https://github.com/${options.repo}/releases/download/${options.tag}/${assetName}`;
     for (const target of targets) {
       platforms[target] = { signature, url };
     }
