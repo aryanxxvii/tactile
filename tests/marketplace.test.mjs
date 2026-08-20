@@ -10,6 +10,7 @@ import {
   downloadMarketplacePlugin,
   fetchMarketplaceCatalog,
   HOSTED_MARKETPLACE_CATALOG_URL,
+  hostedMarketplaceCatalogUrl,
   isPluginUpdateAvailable,
   LOCAL_MARKETPLACE_CATALOG_URL,
   localDevelopmentPluginRecord,
@@ -51,6 +52,22 @@ test("development uses local marketplace artifacts while production defaults to 
   assert.equal(marketplaceCatalogUrl({ development: true, storage }), LOCAL_MARKETPLACE_CATALOG_URL);
   assert.equal(marketplaceCatalogUrl({ development: false, storage: null }), HOSTED_MARKETPLACE_CATALOG_URL);
   assert.equal(marketplaceCatalogUrl({ development: false, storage }), "https://example.test/override/catalog.json");
+});
+
+test("alpha and RC builds use the alpha marketplace catalog while stable uses main", () => {
+  const alphaUrl = "https://raw.githubusercontent.com/aryanxxvii/tactile/alpha/marketplace/dist/catalog.json";
+  assert.equal(hostedMarketplaceCatalogUrl("alpha"), alphaUrl);
+  assert.equal(hostedMarketplaceCatalogUrl("rc"), alphaUrl);
+  assert.equal(hostedMarketplaceCatalogUrl("release"), HOSTED_MARKETPLACE_CATALOG_URL);
+  assert.equal(hostedMarketplaceCatalogUrl("development"), HOSTED_MARKETPLACE_CATALOG_URL);
+  assert.equal(
+    marketplaceCatalogUrl({ development: false, storage: null, channel: "alpha" }),
+    alphaUrl,
+  );
+  assert.equal(
+    marketplaceCatalogUrl({ development: false, storage: null, channel: "release" }),
+    HOSTED_MARKETPLACE_CATALOG_URL,
+  );
 });
 
 test("development activation replaces stale cached source without changing install state", async () => {

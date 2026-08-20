@@ -1,5 +1,6 @@
 import * as React from "react";
 import { createId } from "../../model.js";
+import { TACTILE_CHANNEL } from "../../buildRevision.js";
 
 const DATABASE_NAME = "tactile-plugin-cache";
 const DATABASE_VERSION = 1;
@@ -8,6 +9,13 @@ const CATALOG_STORAGE_KEY = "tactile.marketplace.catalogUrl";
 export const LOCAL_MARKETPLACE_CATALOG_URL = "/marketplace/catalog.json";
 export const HOSTED_MARKETPLACE_CATALOG_URL = "https://raw.githubusercontent.com/aryanxxvii/tactile/main/marketplace/dist/catalog.json";
 
+export function hostedMarketplaceCatalogUrl(channel = TACTILE_CHANNEL) {
+  if (channel === "alpha" || channel === "rc") {
+    return "https://raw.githubusercontent.com/aryanxxvii/tactile/alpha/marketplace/dist/catalog.json";
+  }
+  return HOSTED_MARKETPLACE_CATALOG_URL;
+}
+
 export function isLocalMarketplaceDevelopment(environment = import.meta.env) {
   return environment?.DEV === true;
 }
@@ -15,12 +23,13 @@ export function isLocalMarketplaceDevelopment(environment = import.meta.env) {
 export function marketplaceCatalogUrl({
   development = isLocalMarketplaceDevelopment(),
   storage = globalThis.localStorage,
+  channel = TACTILE_CHANNEL,
 } = {}) {
   if (development) return LOCAL_MARKETPLACE_CATALOG_URL;
   try {
-    return storage?.getItem(CATALOG_STORAGE_KEY) || HOSTED_MARKETPLACE_CATALOG_URL;
+    return storage?.getItem(CATALOG_STORAGE_KEY) || hostedMarketplaceCatalogUrl(channel);
   } catch {
-    return HOSTED_MARKETPLACE_CATALOG_URL;
+    return hostedMarketplaceCatalogUrl(channel);
   }
 }
 
