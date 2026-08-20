@@ -240,6 +240,102 @@ fn workspace_serve_html(app: AppHandle, content: String) -> Result<String, Strin
     Ok(url)
 }
 
+/// Fetch a remote page through the backend and re-serve it over the local
+/// `tactile-html` protocol, so the app can render it inside an ordinary
+/// `<iframe>` without the remote site's `X-Frame-Options` /
+/// `frame-ancestors` blocks applying. The page's own CSP meta tags are
+/// removed (they would block the cross-origin assets the page loads from its
+/// real origin) and a `<base>` element is injected so relative links and
+/// resources resolve against the original address. Static and content sites
+/// render fully; cookie-authenticated and API-driven apps remain limited
+/// because the proxied page runs on the local protocol origin.
+#[tauri::command]
+async fn workspace_fetch_webview(app: tauri::AppHandle, url: String) -> Result<String, String> {
+    use std::io::Read;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("only http and https addresses may be embedded".to_owned());
+    }
+
+    let html = tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
+        let agent = ureq::AgentBuilder::new()
+            .timeout(std::time::Duration::from_secs(25))
+            .build();
+        let response = agent
+            .get(&url)
+            .set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36")
+            .set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+            .call()
+            .map_err(|error| format!("failed to fetch {url}: {error}"))?;
+        let final_url = response.get_url().to_string();
+        let mut bytes: Vec<u8> = Vec::new();
+        response
+            .into_reader()
+            .take(8 * 1024 * 1024)
+            .read_to_end(&mut bytes)
+            .map_err(|error| format!("failed to read response: {error}"))?;
+        let body = String::from_utf8_lossy(&bytes).into_owned();
+        Ok(rewrite_proxied_html(&body, &final_url))
+    })
+    .await
+    .map_err(|error| error.to_string())??;
+
+    let sandbox_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|error| error.to_string())?
+        .join("html-sandbox");
+    std::fs::create_dir_all(&sandbox_dir).map_err(|error| error.to_string())?;
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    let file_name = format!("link-{nanos}.html");
+    atomic_write(&sandbox_dir.join(&file_name), html.as_bytes())?;
+    #[cfg(target_os = "windows")]
+    let served = format!("http://tactile-html.localhost/{file_name}");
+    #[cfg(not(target_os = "windows"))]
+    let served = format!("tactile-html://localhost/{file_name}");
+    Ok(served)
+}
+
+/// Rewrite a fetched page so it renders from the local `tactile-html` origin:
+/// drop CSP `<meta>` tags that would forbid the page's own cross-origin
+/// resources, then inject a `<base>` so relative hrefs/srcs resolve against
+/// the original address.
+fn rewrite_proxied_html(body: &str, final_url: &str) -> String {
+    let base_href = final_url.trim_end_matches('/');
+    let mut rewritten = String::with_capacity(body.len() + 256);
+    let mut rest = body;
+
+    while let Some(start) = rest.find("<meta") {
+        let end = match rest[start..].find('>') {
+            Some(offset) => start + offset + 1,
+            None => break,
+        };
+        let tag = &rest[start..end];
+        if tag.to_ascii_lowercase().contains("content-security-policy") {
+            rest = &rest[end..];
+        } else {
+            rewritten.push_str(&rest[..end]);
+            rest = &rest[end..];
+        }
+    }
+    rewritten.push_str(rest);
+
+    let injected = format!("<base href=\"{base_href}/\">");
+    if let Some(head) = rewritten.find("<head") {
+        if let Some(close) = rewritten[head..].find('>') {
+            let insert_at = head + close + 1;
+            rewritten.insert_str(insert_at, &injected);
+            return rewritten;
+        }
+    }
+    rewritten.insert_str(0, &injected);
+    rewritten
+}
+
 #[tauri::command]
 fn workspace_open_url(url: String) -> Result<(), String> {
     if !url.starts_with("http://") && !url.starts_with("https://") {
@@ -503,26 +599,66 @@ fn probe_runtime_tool(
     }
 }
 
+fn runtime_candidates(tool: &str) -> Vec<String> {
+    let from = |names: &[&str]| names.iter().map(|name| name.to_string()).collect();
+    match tool {
+        "python" => from(PYTHON_RUNTIME_CANDIDATES),
+        "node" => from(&["node"]),
+        "gcc" => from(&["gcc"]),
+        "gpp" => from(&["g++"]),
+        "javac" => from(&["javac"]),
+        "java" => from(&["java"]),
+        "rustc" => from(&["rustc"]),
+        "go" => from(&["go"]),
+        "ruby" => from(&["ruby"]),
+        "bash" => from(&["bash"]),
+        other => vec![other.to_owned()],
+    }
+}
+
+/// Probe a single runtime tool off the main thread. The plugin scans the
+/// languages the user selected one tool at a time through this command, so a
+/// slow `PATH` lookup for an uninstalled toolchain never freezes the UI.
 #[tauri::command]
-fn workspace_discover_code_runtimes(
+async fn workspace_probe_code_runtime(
+    tool: String,
+    executable_paths: Option<HashMap<String, String>>,
+) -> CodeRuntimeInfo {
+    let paths = executable_paths.unwrap_or_default();
+    let candidates = runtime_candidates(&tool);
+    let probe_tool = tool.clone();
+    let fallback_command = candidates.first().cloned().unwrap_or_default();
+    let task = tauri::async_runtime::spawn_blocking(move || {
+        probe_runtime_tool(&probe_tool, &candidates, &paths)
+    });
+    task.await.unwrap_or_else(|error| CodeRuntimeInfo {
+        tool,
+        command: fallback_command,
+        configured: false,
+        available: false,
+        version: String::new(),
+        error: Some(format!("runtime probe task failed: {error}")),
+    })
+}
+
+#[tauri::command]
+async fn workspace_discover_code_runtimes(
+    tools: Option<Vec<String>>,
     executable_paths: Option<HashMap<String, String>>,
 ) -> Vec<CodeRuntimeInfo> {
     let paths = executable_paths.unwrap_or_default();
-    [
-        ("python", PYTHON_RUNTIME_CANDIDATES.to_vec()),
-        ("node", vec!["node"]),
-        ("gcc", vec!["gcc"]),
-        ("gpp", vec!["g++"]),
-        ("javac", vec!["javac"]),
-        ("java", vec!["java"]),
-        ("rustc", vec!["rustc"]),
-        ("go", vec!["go"]),
-        ("ruby", vec!["ruby"]),
-        ("bash", vec!["bash"]),
-    ]
-    .into_iter()
-    .map(|(tool, candidates)| probe_runtime_tool(tool, &candidates, &paths))
-    .collect()
+    let wanted = tools.unwrap_or_else(|| vec!["python".to_owned(), "node".to_owned()]);
+    let targets: Vec<(String, Vec<String>)> = wanted
+        .iter()
+        .map(|tool| (tool.clone(), runtime_candidates(tool)))
+        .collect();
+    let task = tauri::async_runtime::spawn_blocking(move || {
+        targets
+            .into_iter()
+            .map(|(tool, candidates)| probe_runtime_tool(&tool, &candidates, &paths))
+            .collect()
+    });
+    task.await.unwrap_or_default()
 }
 
 fn run_code_impl(
@@ -870,7 +1006,9 @@ pub fn run() {
             workspace_open_url,
             workspace_write_snapshot,
             workspace_serve_html,
+            workspace_fetch_webview,
             workspace_discover_code_runtimes,
+            workspace_probe_code_runtime,
             workspace_run_code,
             get_update_channel,
             set_update_channel,
