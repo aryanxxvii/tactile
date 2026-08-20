@@ -35,7 +35,7 @@ async function main() {
   const current = options.current ? await manifestVersion(options.current) : null;
   const promote = !current || compareAppVersions(candidate, current) > 0;
   const result = `promote=${promote}\n`;
-  if (options.githubOutput) await appendFile(options.githubOutput, result, "utf8");
+  if (options["github-output"]) await appendFile(options["github-output"], result, "utf8");
   process.stdout.write(result);
 }
 

@@ -57,14 +57,26 @@ test("promotes only newer alpha or RC manifests", async () => {
     await writeFile(current, JSON.stringify({ version: "1.2.0-rc.2" }));
 
     await writeFile(candidate, JSON.stringify({ version: "1.2.0-alpha.9" }));
-    let result = run("scripts/release/promote-updater-channel.mjs", ["--candidate", candidate, "--current", current]);
+    const outputFile = path.join(directory, "output.txt");
+    let result = run("scripts/release/promote-updater-channel.mjs", [
+      "--candidate", candidate,
+      "--current", current,
+      "--github-output", outputFile,
+    ]);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout, "promote=false\n");
+    assert.equal(await readFile(outputFile, "utf8"), "promote=false\n");
 
     await writeFile(candidate, JSON.stringify({ version: "1.2.1-alpha.1" }));
-    result = run("scripts/release/promote-updater-channel.mjs", ["--candidate", candidate, "--current", current]);
+    await rm(outputFile, { force: true });
+    result = run("scripts/release/promote-updater-channel.mjs", [
+      "--candidate", candidate,
+      "--current", current,
+      "--github-output", outputFile,
+    ]);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout, "promote=true\n");
+    assert.equal(await readFile(outputFile, "utf8"), "promote=true\n");
 
     await writeFile(candidate, JSON.stringify({ version: "1.2.1" }));
     result = run("scripts/release/promote-updater-channel.mjs", ["--candidate", candidate]);
