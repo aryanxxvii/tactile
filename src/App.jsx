@@ -373,10 +373,48 @@ export function App() {
 
   const finishNativeGuide = async (selectedPath = "") => {
     const path = selectedPath || workspace.settings.nativeWorkspacePath;
-    if (path && nativeInvoke && path !== workspace.settings.nativeWorkspacePath) {
-      await nativeInvoke("workspace_prepare_directory", { path });
+    if (!path) {
+      updateSettings({
+        onboardingComplete: true,
+        onboardingThemeId: workspace.settings.onboardingThemeId || "one-dark",
+      });
+      setNativeGuideOpen(false);
+      return;
     }
-    if (path) {
+    // If the chosen folder already contains a workspace, reuse it — only
+    // create a blank workspace when the folder is truly empty.
+    let nextWorkspace = null;
+    if (nativeInvoke) {
+      try {
+        const result = await nativeInvoke("workspace_read_snapshot", { path });
+        const raw = typeof result === "string" ? result : result?.contents;
+        if (raw) {
+          try {
+            const parsed = normalizeWorkspace(JSON.parse(raw));
+            nextWorkspace = normalizeWorkspace({
+              ...parsed,
+              settings: {
+                ...parsed.settings,
+                nativeWorkspacePath: path,
+                onboardingComplete: true,
+                onboardingThemeId:
+                  parsed.settings.onboardingThemeId ||
+                  workspace.settings.onboardingThemeId ||
+                  "one-dark",
+              },
+            });
+          } catch {
+            shell.showNotice("That folder has an unreadable workspace file");
+            return;
+          }
+        }
+      } catch {
+        // Treat read errors as empty — fall through to blank creation.
+      }
+      // Ensure the directory structure exists without overwriting workspace.json.
+      try {
+        await nativeInvoke("workspace_prepare_directory", { path });
+      } catch {}
       saveNativeWorkspacePath(path);
       try {
         await nativeInvoke?.("workspace_set_last_path", { path });
@@ -384,12 +422,19 @@ export function App() {
         // Keep the browser marker as a compatibility fallback while an older
         // native build is still running during an update.
       }
+    } else {
+      saveNativeWorkspacePath(path);
     }
-    updateSettings({
-      onboardingComplete: true,
-      onboardingThemeId: workspace.settings.onboardingThemeId || "one-dark",
-      ...(path ? { nativeWorkspacePath: path } : {}),
-    });
+    if (nextWorkspace) {
+      replaceWorkspace(nextWorkspace);
+      shell.showNotice("Workspace loaded from selected folder");
+    } else {
+      updateSettings({
+        onboardingComplete: true,
+        onboardingThemeId: workspace.settings.onboardingThemeId || "one-dark",
+        nativeWorkspacePath: path,
+      });
+    }
     setNativeGuideOpen(false);
   };
 
