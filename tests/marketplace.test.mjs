@@ -60,10 +60,7 @@ test("alpha and RC builds use the alpha marketplace catalog while stable uses ma
   assert.equal(hostedMarketplaceCatalogUrl("rc"), alphaUrl);
   assert.equal(hostedMarketplaceCatalogUrl("release"), HOSTED_MARKETPLACE_CATALOG_URL);
   assert.equal(hostedMarketplaceCatalogUrl("development"), HOSTED_MARKETPLACE_CATALOG_URL);
-  assert.equal(
-    marketplaceCatalogUrl({ development: false, storage: null, channel: "alpha" }),
-    alphaUrl,
-  );
+  assert.equal(marketplaceCatalogUrl({ development: false, storage: null, channel: "alpha" }), alphaUrl);
   assert.equal(
     marketplaceCatalogUrl({ development: false, storage: null, channel: "release" }),
     HOSTED_MARKETPLACE_CATALOG_URL,

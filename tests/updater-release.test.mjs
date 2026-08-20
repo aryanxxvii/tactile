@@ -59,9 +59,12 @@ test("promotes only newer alpha or RC manifests", async () => {
     await writeFile(candidate, JSON.stringify({ version: "1.2.0-alpha.9" }));
     const outputFile = path.join(directory, "output.txt");
     let result = run("scripts/release/promote-updater-channel.mjs", [
-      "--candidate", candidate,
-      "--current", current,
-      "--github-output", outputFile,
+      "--candidate",
+      candidate,
+      "--current",
+      current,
+      "--github-output",
+      outputFile,
     ]);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout, "promote=false\n");
@@ -70,9 +73,12 @@ test("promotes only newer alpha or RC manifests", async () => {
     await writeFile(candidate, JSON.stringify({ version: "1.2.1-alpha.1" }));
     await rm(outputFile, { force: true });
     result = run("scripts/release/promote-updater-channel.mjs", [
-      "--candidate", candidate,
-      "--current", current,
-      "--github-output", outputFile,
+      "--candidate",
+      candidate,
+      "--current",
+      current,
+      "--github-output",
+      outputFile,
     ]);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout, "promote=true\n");
