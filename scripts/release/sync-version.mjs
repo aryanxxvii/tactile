@@ -35,8 +35,21 @@ async function versionTargets(version) {
 
   const tauriConfigPath = path.join("src-tauri", "tauri.conf.json");
   const tauriConfig = await readJson(tauriConfigPath);
-  const tauriConfigSynchronized = tauriConfig.version === version;
+  // Allow side-by-side installs: stable and prerelease (alpha/rc) use
+  // different product names and bundle identifiers so the OS treats them as
+  // distinct apps. The channel is inferred from the SemVer prerelease tag.
+  const isPrerelease = String(version).includes("-");
+  const expectedProductName = isPrerelease ? "Tactile Alpha" : "Tactile";
+  const expectedIdentifier = isPrerelease
+    ? "com.tactile.workspace.alpha"
+    : "com.tactile.workspace";
+  const tauriConfigSynchronized =
+    tauriConfig.version === version &&
+    tauriConfig.productName === expectedProductName &&
+    tauriConfig.identifier === expectedIdentifier;
   tauriConfig.version = version;
+  tauriConfig.productName = expectedProductName;
+  tauriConfig.identifier = expectedIdentifier;
 
   const cargoTomlPath = path.join("src-tauri", "Cargo.toml");
   const cargoLockPath = path.join("src-tauri", "Cargo.lock");
