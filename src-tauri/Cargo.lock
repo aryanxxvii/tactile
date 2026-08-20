@@ -3754,7 +3754,7 @@ dependencies = [
 
 [[package]]
 name = "tactile"
-version = "1.1.2-alpha.6"
+version = "1.2.0-alpha.1"
 dependencies = [
  "rfd",
  "rusqlite",
