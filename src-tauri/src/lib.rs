@@ -542,7 +542,7 @@ const PYTHON_RUNTIME_CANDIDATES: &[&str] = &["python3", "python", "py"];
 
 fn probe_runtime_tool(
     tool: &str,
-    candidates: &[&str],
+    candidates: &[String],
     executable_paths: &HashMap<String, String>,
 ) -> CodeRuntimeInfo {
     let configured = executable_paths
@@ -551,12 +551,7 @@ fn probe_runtime_tool(
         .filter(|path| !path.is_empty());
     let programs: Vec<String> = configured
         .map(|path| vec![path.to_owned()])
-        .unwrap_or_else(|| {
-            candidates
-                .iter()
-                .map(|candidate| (*candidate).to_owned())
-                .collect()
-        });
+        .unwrap_or_else(|| candidates.to_vec());
     let mut last_error = None;
     for program in &programs {
         match std::process::Command::new(program)
