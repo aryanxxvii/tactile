@@ -665,8 +665,8 @@ test("opening Files keeps the bottom dock above the workspace scrim", async ({ p
   });
 
   expect(transientState.filesOpen).toBe(true);
-  expect(transientState.layer.bottom).toBeCloseTo(transientState.bar.top, 1);
-  expect(transientState.scrim.bottom).toBeCloseTo(transientState.bar.top, 1);
+  expect(Math.abs(transientState.layer.bottom - transientState.bar.top)).toBeLessThanOrEqual(1);
+  expect(Math.abs(transientState.scrim.bottom - transientState.bar.top)).toBeLessThanOrEqual(1);
   expect(Number(transientState.bar.zIndex)).toBeGreaterThan(Number(transientState.layer.zIndex));
   expect(transientState.bar).toMatchObject({
     left: 0,

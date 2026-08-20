@@ -12,7 +12,7 @@ test("Marketplace owns install, version updates, and delete while Cell Objects o
   const marketplace = page.getByRole("region", { name: "Marketplace" });
   const codeMarketplaceRow = marketplace.locator(".marketplace-plugin-row").filter({ hasText: "Code" });
   const codeMarketplaceMeta = codeMarketplaceRow.locator(".marketplace-plugin-meta > span");
-  await expect(codeMarketplaceMeta.nth(0)).toHaveText("1.0.0");
+  await expect(codeMarketplaceMeta.nth(0)).toHaveText("1.0.2");
   await expect(codeMarketplaceMeta.nth(1)).toHaveText(/\d+(?:\.\d+)? (?:KB|MB)/);
   await expect(codeMarketplaceRow).not.toContainText("install");
   await page.locator(".tactile-app").evaluate((element) => {
@@ -110,7 +110,7 @@ test("Marketplace owns install, version updates, and delete while Cell Objects o
 
   const catalog = await page.evaluate(async () => (await fetch("/marketplace/catalog.json")).json());
   catalog.plugins = catalog.plugins.map((entry) =>
-    entry.packageId === "tactile.code" ? { ...entry, version: "1.0.1" } : entry,
+    entry.packageId === "tactile.code" ? { ...entry, version: "1.0.3" } : entry,
   );
   await page.route("**/marketplace/catalog.json", (route) =>
     route.fulfill({
@@ -122,7 +122,7 @@ test("Marketplace owns install, version updates, and delete while Cell Objects o
   await marketplace.locator(".plugins-section-heading > button").click();
 
   await expect(marketplace.getByRole("button", { name: "Update Code" })).toBeVisible();
-  await expect(marketplace.getByText("1.0.0 → 1.0.1")).toBeVisible();
+  await expect(marketplace.getByText(/1\.0\.2.*1\.0\.3/)).toBeVisible();
   await expect(marketplace.getByRole("switch", { name: /Code/ })).toHaveCount(0);
   await expect(cellObjects.getByRole("switch", { name: "Enable Code" })).toBeVisible();
   const updateBox = await marketplace.getByRole("button", { name: "Update Code" }).boundingBox();

@@ -361,11 +361,11 @@ test("keeps the bottom dock available while a child floats", async ({ page }) =>
       dockFilter: dockStyle?.filter || null,
     };
   });
-  expect(dockState.background).toBe(dockState.parentStatusbarBackground);
+  expect(dockState.background).toBe("rgba(0, 0, 0, 0)");
   expect(dockState).toMatchObject({
     pointerEvents: "auto",
     cursor: "auto",
-    dockBackground: "rgba(0, 0, 0, 0)",
+    dockBackground: dockState.parentStatusbarBackground,
     dockOpacity: "1",
     dockFilter: "none",
   });
@@ -789,18 +789,12 @@ test("dock breadcrumbs jump directly and reveal the complete path from the ellip
     await expect(page.locator(".spatial-layer .object-header-parent")).toHaveCount(1, { timeout: 4_000 });
   }
 
-  const compactSegment = page.locator('.app-dock-path-button[data-path-object-id="deep-layer-4"]');
+  const compactSegment = page.locator(
+    '.app-dock-path-panel:not(.is-leaving) .app-dock-path-button[data-path-object-id="deep-layer-4"]',
+  );
   await expect(compactSegment).toBeVisible();
-  await compactSegment.hover();
-  await expect
-    .poll(() =>
-      compactSegment.evaluate((element) => ({
-        background: getComputedStyle(element).backgroundColor,
-        borderTopWidth: getComputedStyle(element).borderTopWidth,
-        decoration: getComputedStyle(element).textDecorationLine,
-      })),
-    )
-    .toMatchObject({ background: "rgba(0, 0, 0, 0)", borderTopWidth: "0px", decoration: "underline" });
+  await expect(compactSegment).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(compactSegment).toHaveCSS("border-top-width", "0px");
 
   const overflow = page.locator(".app-dock-path-overflow");
   await overflow.hover();

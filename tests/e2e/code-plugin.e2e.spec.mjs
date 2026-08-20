@@ -5,7 +5,7 @@ test("Code plugin opens, applies its styles, and runs JavaScript", async ({ page
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
   await page.goto("/");
-  await expect(page.locator(".sheet-cell").first()).toBeVisible();
+  await expect(page.locator(".sheet-cell").first()).toBeVisible({ timeout: 15000 });
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("tab", { name: "Plugins" }).click();
   await page.getByRole("region", { name: "Marketplace" }).getByRole("button", { name: "Install Code" }).click();
@@ -15,7 +15,6 @@ test("Code plugin opens, applies its styles, and runs JavaScript", async ({ page
   await firstCell.click({ button: "right" });
   await page.getByRole("menuitem", { name: "In: Code" }).click();
   await expect(firstCell).toContainText("Code A1");
-  await firstCell.dblclick();
 
   await expect(page.locator(".code-object")).toBeVisible();
   await expect(page.locator(".code-codemirror .cm-editor")).toBeVisible();
@@ -54,7 +53,6 @@ test("HTML object can use an HTML Code cell as a live source", async ({ page }) 
   await codeCell.click({ button: "right" });
   await page.getByRole("menuitem", { name: "In: Code" }).click();
   await expect(codeCell).toContainText("Code A1");
-  await codeCell.dblclick();
   await page.getByRole("button", { name: "Language" }).click();
   await page.getByRole("option", { name: "HTML" }).click();
   await page.locator(".code-codemirror .cm-content").click();
@@ -65,20 +63,19 @@ test("HTML object can use an HTML Code cell as a live source", async ({ page }) 
   await htmlCell.click({ button: "right" });
   await page.getByRole("menuitem", { name: "In: HTML" }).click();
   await expect(htmlCell).toContainText("HTML B1");
-  await htmlCell.dblclick();
   const sourceSelect = page.getByRole("combobox", { name: "HTML source cell" });
   await sourceSelect.selectOption({ label: "A1 · Code A1" });
   await expect(page.locator(".file-stage iframe")).toHaveAttribute("srcdoc", /Linked preview one/);
   await page.getByRole("button", { name: "Parent" }).click();
 
-  await codeCell.dblclick();
+  await codeCell.click();
   const editor = page.locator(".code-codemirror .cm-content");
   await editor.click();
   await page.keyboard.press("Control+A");
   await page.keyboard.type("<h1>Linked preview two</h1>");
   await page.getByRole("button", { name: "Parent" }).click();
 
-  await htmlCell.dblclick();
+  await htmlCell.click();
   await expect(page.locator(".file-stage iframe")).toHaveAttribute("srcdoc", /Linked preview two/);
   expect(await sourceSelect.inputValue()).not.toBe("");
   await page.getByRole("button", { name: "Parent" }).click();

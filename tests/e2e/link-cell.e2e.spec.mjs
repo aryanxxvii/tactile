@@ -32,7 +32,7 @@ test("a bare-URL tile opens as a floating link window and materializes a link ob
   await expect(page.locator(".tactile-app")).toHaveClass(/has-floating-layer/);
   await expect(linkLayer).toHaveAttribute("data-spatial-phase", "floating");
   await expect(page.locator(".link-toolbar input")).toHaveValue("https://example.com/docs");
-  await expect(page.locator(".link-open-external")).toBeVisible();
+  await expect(linkLayer.getByRole("button", { name: "Open in browser", exact: true })).toBeVisible();
   await expect(linkLayer.locator(".link-stage iframe")).toHaveAttribute("src", "https://example.com/docs");
 
   await page.keyboard.press("[");
