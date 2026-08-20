@@ -76,7 +76,8 @@ fn main_capability_is_local_only_and_updater_only() {
     // frameless titlebar; no other capabilities are expected.
     for permission in permissions {
         assert!(
-            permission == "updater:default" || permission == "core:webview:allow-internal-toggle-devtools",
+            permission == "updater:default"
+                || permission == "core:webview:allow-internal-toggle-devtools",
             "unexpected capability permission: {permission}"
         );
     }
